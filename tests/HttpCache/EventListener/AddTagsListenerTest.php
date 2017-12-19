@@ -15,6 +15,8 @@ namespace ApiPlatform\Core\Tests\HttpCache\EventListener;
 
 use ApiPlatform\Core\Api\IriConverterInterface;
 use ApiPlatform\Core\HttpCache\EventListener\AddTagsListener;
+use ApiPlatform\Core\Metadata\Resource\Factory\ResourceMetadataFactoryInterface;
+use ApiPlatform\Core\Metadata\Resource\Factory\ResourceNameCollectionFactoryInterface;
 use ApiPlatform\Core\Tests\Fixtures\TestBundle\Entity\Dummy;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request;
@@ -29,6 +31,8 @@ class AddTagsListenerTest extends TestCase
     public function testDoNotSetHeaderWhenMethodNotCacheable()
     {
         $iriConverterProphecy = $this->prophesize(IriConverterInterface::class);
+        $resourceNameCollectionFactoryProphecy = $this->prophesize(ResourceNameCollectionFactoryInterface::class);
+        $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
 
         $request = new Request([], [], ['_resources' => ['/foo', '/bar'], '_api_resource_class' => Dummy::class, '_api_item_operation_name' => 'get']);
         $request->setMethod('PUT');
@@ -41,7 +45,7 @@ class AddTagsListenerTest extends TestCase
         $event->getRequest()->willReturn($request)->shouldBeCalled();
         $event->getResponse()->willReturn($response)->shouldBeCalled();
 
-        $listener = new AddTagsListener($iriConverterProphecy->reveal());
+        $listener = new AddTagsListener($iriConverterProphecy->reveal(), $resourceNameCollectionFactoryProphecy->reveal(), $resourceMetadataFactoryProphecy->reveal());
         $listener->onKernelResponse($event->reveal());
 
         $this->assertFalse($response->headers->has('Cache-Tags'));
@@ -50,6 +54,8 @@ class AddTagsListenerTest extends TestCase
     public function testDoNotSetHeaderWhenResponseNotCacheable()
     {
         $iriConverterProphecy = $this->prophesize(IriConverterInterface::class);
+        $resourceNameCollectionFactoryProphecy = $this->prophesize(ResourceNameCollectionFactoryInterface::class);
+        $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
 
         $request = new Request([], [], ['_resources' => ['/foo', '/bar'], '_api_resource_class' => Dummy::class, '_api_item_operation_name' => 'get']);
 
@@ -59,7 +65,7 @@ class AddTagsListenerTest extends TestCase
         $event->getRequest()->willReturn($request)->shouldBeCalled();
         $event->getResponse()->willReturn($response)->shouldBeCalled();
 
-        $listener = new AddTagsListener($iriConverterProphecy->reveal());
+        $listener = new AddTagsListener($iriConverterProphecy->reveal(), $resourceNameCollectionFactoryProphecy->reveal(), $resourceMetadataFactoryProphecy->reveal());
         $listener->onKernelResponse($event->reveal());
 
         $this->assertFalse($response->headers->has('Cache-Tags'));
@@ -68,6 +74,8 @@ class AddTagsListenerTest extends TestCase
     public function testDoNotSetHeaderWhenNotAnApiOperation()
     {
         $iriConverterProphecy = $this->prophesize(IriConverterInterface::class);
+        $resourceNameCollectionFactoryProphecy = $this->prophesize(ResourceNameCollectionFactoryInterface::class);
+        $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
 
         $request = new Request([], [], ['_resources' => ['/foo', '/bar']]);
 
@@ -79,7 +87,7 @@ class AddTagsListenerTest extends TestCase
         $event->getRequest()->willReturn($request)->shouldBeCalled();
         $event->getResponse()->willReturn($response)->shouldBeCalled();
 
-        $listener = new AddTagsListener($iriConverterProphecy->reveal());
+        $listener = new AddTagsListener($iriConverterProphecy->reveal(), $resourceNameCollectionFactoryProphecy->reveal(), $resourceMetadataFactoryProphecy->reveal());
         $listener->onKernelResponse($event->reveal());
 
         $this->assertFalse($response->headers->has('Cache-Tags'));
@@ -88,6 +96,8 @@ class AddTagsListenerTest extends TestCase
     public function testDoNotSetHeaderWhenEmptyTagList()
     {
         $iriConverterProphecy = $this->prophesize(IriConverterInterface::class);
+        $resourceNameCollectionFactoryProphecy = $this->prophesize(ResourceNameCollectionFactoryInterface::class);
+        $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
 
         $request = new Request([], [], ['_resources' => [], '_api_resource_class' => Dummy::class, '_api_item_operation_name' => 'get']);
 
@@ -99,7 +109,7 @@ class AddTagsListenerTest extends TestCase
         $event->getRequest()->willReturn($request)->shouldBeCalled();
         $event->getResponse()->willReturn($response)->shouldBeCalled();
 
-        $listener = new AddTagsListener($iriConverterProphecy->reveal());
+        $listener = new AddTagsListener($iriConverterProphecy->reveal(), $resourceNameCollectionFactoryProphecy->reveal(), $resourceMetadataFactoryProphecy->reveal());
         $listener->onKernelResponse($event->reveal());
 
         $this->assertFalse($response->headers->has('Cache-Tags'));
@@ -108,6 +118,8 @@ class AddTagsListenerTest extends TestCase
     public function testAddTags()
     {
         $iriConverterProphecy = $this->prophesize(IriConverterInterface::class);
+        $resourceNameCollectionFactoryProphecy = $this->prophesize(ResourceNameCollectionFactoryInterface::class);
+        $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
 
         $request = new Request([], [], ['_resources' => ['/foo', '/bar'], '_api_resource_class' => Dummy::class, '_api_item_operation_name' => 'get']);
 
@@ -119,7 +131,7 @@ class AddTagsListenerTest extends TestCase
         $event->getRequest()->willReturn($request)->shouldBeCalled();
         $event->getResponse()->willReturn($response)->shouldBeCalled();
 
-        $listener = new AddTagsListener($iriConverterProphecy->reveal());
+        $listener = new AddTagsListener($iriConverterProphecy->reveal(), $resourceNameCollectionFactoryProphecy->reveal(), $resourceMetadataFactoryProphecy->reveal());
         $listener->onKernelResponse($event->reveal());
 
         $this->assertSame('/foo,/bar', $response->headers->get('Cache-Tags'));
@@ -128,6 +140,9 @@ class AddTagsListenerTest extends TestCase
     public function testAddCollectionIri()
     {
         $iriConverterProphecy = $this->prophesize(IriConverterInterface::class);
+        $resourceNameCollectionFactoryProphecy = $this->prophesize(ResourceNameCollectionFactoryInterface::class);
+        $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
+
         $iriConverterProphecy->getIriFromResourceClass(Dummy::class)->willReturn('/dummies')->shouldBeCalled();
 
         $request = new Request([], [], ['_resources' => ['/foo', '/bar'], '_api_resource_class' => Dummy::class, '_api_collection_operation_name' => 'get']);
@@ -140,7 +155,7 @@ class AddTagsListenerTest extends TestCase
         $event->getRequest()->willReturn($request)->shouldBeCalled();
         $event->getResponse()->willReturn($response)->shouldBeCalled();
 
-        $listener = new AddTagsListener($iriConverterProphecy->reveal());
+        $listener = new AddTagsListener($iriConverterProphecy->reveal(), $resourceNameCollectionFactoryProphecy->reveal(), $resourceMetadataFactoryProphecy->reveal());
         $listener->onKernelResponse($event->reveal());
 
         $this->assertSame('/foo,/bar,/dummies', $response->headers->get('Cache-Tags'));
@@ -149,6 +164,9 @@ class AddTagsListenerTest extends TestCase
     public function testAddCollectionIriWhenCollectionIsEmpty()
     {
         $iriConverterProphecy = $this->prophesize(IriConverterInterface::class);
+        $resourceNameCollectionFactoryProphecy = $this->prophesize(ResourceNameCollectionFactoryInterface::class);
+        $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
+
         $iriConverterProphecy->getIriFromResourceClass(Dummy::class)->willReturn('/dummies')->shouldBeCalled();
 
         $request = new Request([], [], ['_resources' => [], '_api_resource_class' => Dummy::class, '_api_collection_operation_name' => 'get']);
@@ -161,7 +179,7 @@ class AddTagsListenerTest extends TestCase
         $event->getRequest()->willReturn($request)->shouldBeCalled();
         $event->getResponse()->willReturn($response)->shouldBeCalled();
 
-        $listener = new AddTagsListener($iriConverterProphecy->reveal());
+        $listener = new AddTagsListener($iriConverterProphecy->reveal(), $resourceNameCollectionFactoryProphecy->reveal(), $resourceMetadataFactoryProphecy->reveal());
         $listener->onKernelResponse($event->reveal());
 
         $this->assertSame('/dummies', $response->headers->get('Cache-Tags'));

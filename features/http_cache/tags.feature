@@ -44,6 +44,16 @@ Feature: Cache invalidation through HTTP Cache tags
     Then the response status code should be 200
     And the header "Cache-Tags" should be equal to "/relation_embedders/1,/related_dummies/1,/third_levels/1,/relation_embedders/2,/related_dummies/2,/third_levels/2,/relation_embedders"
 
+  Scenario: Tags must be set for Hydra API doc
+    When I send a "GET" request to "/docs"
+    Then the response status code should be 200
+    And the header "Cache-Tags" should be equal to "_api/docs"
+
+  Scenario: Tags must be set for Hydra context
+    When I send a "GET" request to "/contexts/Foo"
+    Then the response status code should be 200
+    And the header "Cache-Tags" should be equal to "_api/contexts/Foo"
+
   Scenario: Purge item on update
     When I add "Content-Type" header equal to "application/ld+json"
     And I send a "PUT" request to "/relation_embedders/1" with body:

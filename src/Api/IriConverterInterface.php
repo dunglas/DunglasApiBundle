@@ -74,6 +74,25 @@ interface IriConverterInterface
     public function getItemIriFromResourceClass(string $resourceClass, array $identifiers, int $referenceType = UrlGeneratorInterface::ABS_PATH): string;
 
     /**
+     * Gets the context's IRI associated with the given resource.
+     *
+     * @param string $shortName
+     * @param int    $referenceType
+     *
+     * @return string
+     */
+    public function getContextIriFromShortName(string $shortName, int $referenceType = UrlGeneratorInterface::ABS_PATH): string;
+
+    /**
+     * Gets the IRI associated with the API doc.
+     *
+     * @param int $referenceType
+     *
+     * @return string
+     */
+    public function getApiDocIri(int $referenceType = UrlGeneratorInterface::ABS_PATH): string;
+
+    /**
      * Gets the IRI associated with the given resource subresource.
      *
      * @param string $resourceClass

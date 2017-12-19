@@ -588,6 +588,7 @@ class ApiPlatformExtensionTest extends TestCase
             'api_platform.http_cache.purger.varnish',
             'api_platform.http_cache.purger.varnish_client',
             'api_platform.http_cache.listener.response.add_tags',
+            'api_platform.http_cache.clearer.varnish',
         ];
 
         foreach ($definitions as $definition) {

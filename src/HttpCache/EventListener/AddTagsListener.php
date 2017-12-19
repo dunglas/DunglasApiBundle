@@ -14,6 +14,9 @@ declare(strict_types=1);
 namespace ApiPlatform\Core\HttpCache\EventListener;
 
 use ApiPlatform\Core\Api\IriConverterInterface;
+use ApiPlatform\Core\JsonLd\Action\ContextAction;
+use ApiPlatform\Core\Metadata\Resource\Factory\ResourceMetadataFactoryInterface;
+use ApiPlatform\Core\Metadata\Resource\Factory\ResourceNameCollectionFactoryInterface;
 use ApiPlatform\Core\Util\RequestAttributesExtractor;
 use Symfony\Component\HttpKernel\Event\FilterResponseEvent;
 
@@ -31,10 +34,14 @@ use Symfony\Component\HttpKernel\Event\FilterResponseEvent;
 final class AddTagsListener
 {
     private $iriConverter;
+    private $resourceNameCollectionFactory;
+    private $resourceMetadataFactory;
 
-    public function __construct(IriConverterInterface $iriConverter)
+    public function __construct(IriConverterInterface $iriConverter, ResourceNameCollectionFactoryInterface $resourceNameCollectionFactory, ResourceMetadataFactoryInterface $resourceMetadataFactory)
     {
         $this->iriConverter = $iriConverter;
+        $this->resourceNameCollectionFactory = $resourceNameCollectionFactory;
+        $this->resourceMetadataFactory = $resourceMetadataFactory;
     }
 
     /**
@@ -47,23 +54,48 @@ final class AddTagsListener
         $request = $event->getRequest();
         $response = $event->getResponse();
 
-        if (
-            !$request->isMethodCacheable()
-            || !$response->isCacheable()
-            || (!$attributes = RequestAttributesExtractor::extractAttributes($request))
-        ) {
+        if (!$request->isMethodCacheable() || !$response->isCacheable()) {
             return;
         }
 
         $resources = $request->attributes->get('_resources');
-        if (isset($attributes['collection_operation_name'])) {
-            // Allows to purge collections
-            $iri = $this->iriConverter->getIriFromResourceClass($attributes['resource_class']);
-            $resources[$iri] = $iri;
+        $isDocEndpoint = false;
+
+        if (!$resources && $request->attributes->get('_api_respond')) {
+            if (($routeParams = $request->attributes->get('_route_params')) && isset($routeParams['shortName'])) {
+                if (array_key_exists($routeParams['shortName'], ContextAction::RESERVED_SHORT_NAMES + ['Entrypoint' => true])) {
+                    $iri = $this->iriConverter->getContextIriFromShortName($routeParams['shortName']);
+                } else {
+                    foreach ($this->resourceNameCollectionFactory->create() as $resourceClass) {
+                        if ($routeParams['shortName'] === $this->resourceMetadataFactory->create($resourceClass)->getShortName()) {
+                            $iri = $this->iriConverter->getContextIriFromShortName($routeParams['shortName']);
+                            break;
+                        }
+                    }
+                }
+            } else {
+                $iri = $this->iriConverter->getApiDocIri();
+            }
+
+            if ($isDocEndpoint = isset($iri)) {
+                $resources[$iri] = $iri;
+            }
         }
 
-        if (!$resources) {
-            return;
+        if (!$isDocEndpoint) {
+            if (!$attributes = RequestAttributesExtractor::extractAttributes($request)) {
+                return;
+            }
+
+            if (isset($attributes['collection_operation_name'])) {
+                // Allows to purge collections
+                $iri = $this->iriConverter->getIriFromResourceClass($attributes['resource_class']);
+                $resources[$iri] = $iri;
+            }
+
+            if (!$resources) {
+                return;
+            }
         }
 
         $event->getResponse()->headers->set('Cache-Tags', implode(',', $resources));

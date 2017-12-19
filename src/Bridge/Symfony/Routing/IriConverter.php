@@ -39,6 +39,8 @@ final class IriConverter implements IriConverterInterface
 {
     use ClassInfoTrait;
 
+    const IRI_INTERNAL_PREFIX = '_api';
+
     private $propertyNameCollectionFactory;
     private $propertyMetadataFactory;
     private $itemDataProvider;
@@ -133,6 +135,22 @@ final class IriConverter implements IriConverterInterface
         } catch (RoutingExceptionInterface $e) {
             throw new InvalidArgumentException(sprintf('Unable to generate an IRI for "%s".', $resourceClass), $e->getCode(), $e);
         }
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getContextIriFromShortName(string $shortName, int $referenceType = UrlGeneratorInterface::ABS_PATH): string
+    {
+        return self::IRI_INTERNAL_PREFIX.$this->router->generate('api_jsonld_context', ['shortName' => $shortName], $referenceType);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getApiDocIri(int $referenceType = UrlGeneratorInterface::ABS_PATH): string
+    {
+        return self::IRI_INTERNAL_PREFIX.$this->router->generate('api_doc', [], $referenceType);
     }
 
     /**

@@ -49,7 +49,7 @@ class AddHeadersListenerTest extends TestCase
 
         $event = $this->prophesize(FilterResponseEvent::class);
         $event->getRequest()->willReturn($request)->shouldBeCalled();
-        $event->getResponse()->willReturn($response)->shouldNotBeCalled();
+        $event->getResponse()->willReturn($response)->shouldBeCalled();
 
         $listener = new AddHeadersListener(true);
         $listener->onKernelResponse($event->reveal());

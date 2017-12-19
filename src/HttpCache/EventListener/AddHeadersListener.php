@@ -13,7 +13,6 @@ declare(strict_types=1);
 
 namespace ApiPlatform\Core\HttpCache\EventListener;
 
-use ApiPlatform\Core\Util\RequestAttributesExtractor;
 use Symfony\Component\HttpKernel\Event\FilterResponseEvent;
 
 /**
@@ -43,7 +42,7 @@ final class AddHeadersListener
     public function onKernelResponse(FilterResponseEvent $event)
     {
         $request = $event->getRequest();
-        if (!$request->isMethodCacheable() || !RequestAttributesExtractor::extractAttributes($request)) {
+        if (!$request->isMethodCacheable()) {
             return;
         }
 
