@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace ApiPlatform\Core\GraphQl\Type;
 
+use ApiPlatform\Core\Api\EnumInterface;
 use ApiPlatform\Core\Exception\ResourceClassNotFoundException;
 use ApiPlatform\Core\GraphQl\Resolver\Factory\ResolverFactoryInterface;
 use ApiPlatform\Core\GraphQl\Serializer\ItemNormalizer;
@@ -24,6 +25,7 @@ use ApiPlatform\Core\Metadata\Resource\Factory\ResourceNameCollectionFactoryInte
 use ApiPlatform\Core\Metadata\Resource\ResourceMetadata;
 use ApiPlatform\Core\Util\ClassInfoTrait;
 use Doctrine\Common\Util\Inflector;
+use GraphQL\Type\Definition\EnumType;
 use GraphQL\Type\Definition\InputObjectType;
 use GraphQL\Type\Definition\InterfaceType;
 use GraphQL\Type\Definition\ObjectType;
@@ -353,6 +355,21 @@ final class SchemaBuilder implements SchemaBuilderInterface
             case Type::BUILTIN_TYPE_OBJECT:
                 if (($input && $depth > 0) || is_a($type->getClassName(), \DateTimeInterface::class, true)) {
                     $graphqlType = GraphQLType::string();
+                    break;
+                }
+
+                if (is_a($typeClass = $type->getClassName(), EnumInterface::class, true)) {
+                    /** @var EnumInterface $typeClass */
+                    $typeName = $typeClass::getName();
+                    $graphqlTypeName = '#'.$typeName;
+                    if (!isset($this->graphqlTypes[$graphqlTypeName])) {
+                        $this->graphqlTypes[$graphqlTypeName] = new EnumType([
+                            'name' => $typeName,
+                            'values' => $typeClass::getValues(),
+                        ]);
+                    }
+
+                    $graphqlType = $this->graphqlTypes[$graphqlTypeName];
                     break;
                 }
 

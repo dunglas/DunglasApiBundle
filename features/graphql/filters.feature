@@ -4,6 +4,24 @@ Feature: Collections filtering
   I need to be able to set filters
 
   @createSchema
+  Scenario: Retrieve a collection ordered using the order filter
+    Given there are 3 dummy objects with dummyDate
+    When I send the following GraphQL request:
+    """
+    {
+      dummies(order: {id: DESC}) {
+        edges {
+          node {
+            id
+          }
+        }
+      }
+    }
+    """
+    Then the JSON node "data.dummies.edges" should have 3 elements
+    And the JSON node "data.dummies.edges[0].node.id" should be equal to "/dummies/3"
+
+  @createSchema
   Scenario: Retrieve a collection filtered using the boolean filter
     Given there is 1 dummy object with dummyBoolean true
     And there is 1 dummy object with dummyBoolean false

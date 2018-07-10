@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace ApiPlatform\Core\Bridge\Doctrine\Orm\Filter;
 
+use ApiPlatform\Core\Api\OrderDirection;
 use ApiPlatform\Core\Bridge\Doctrine\Orm\Util\QueryNameGeneratorInterface;
 use Doctrine\Common\Persistence\ManagerRegistry;
 use Doctrine\ORM\QueryBuilder;
@@ -39,12 +40,12 @@ class OrderFilter extends AbstractContextAwareFilter
     const NULLS_LARGEST = 'nulls_largest';
     const NULLS_DIRECTION_MAP = [
         self::NULLS_SMALLEST => [
-            'ASC' => 'ASC',
-            'DESC' => 'DESC',
+            OrderDirection::ASC => OrderDirection::ASC,
+            OrderDirection::DESC => OrderDirection::DESC,
         ],
         self::NULLS_LARGEST => [
-            'ASC' => 'DESC',
-            'DESC' => 'ASC',
+            OrderDirection::ASC => OrderDirection::DESC,
+            OrderDirection::DESC => OrderDirection::ASC,
         ],
     ];
 
@@ -115,7 +116,7 @@ class OrderFilter extends AbstractContextAwareFilter
 
             $description[sprintf('%s[%s]', $this->orderParameterName, $property)] = [
                 'property' => $property,
-                'type' => 'string',
+                'type' => OrderDirection::class,
                 'required' => false,
             ];
         }
@@ -138,7 +139,7 @@ class OrderFilter extends AbstractContextAwareFilter
         }
 
         $direction = strtoupper($direction);
-        if (!\in_array($direction, ['ASC', 'DESC'], true)) {
+        if (!\in_array($direction, [OrderDirection::ASC, OrderDirection::DESC], true)) {
             return;
         }
 

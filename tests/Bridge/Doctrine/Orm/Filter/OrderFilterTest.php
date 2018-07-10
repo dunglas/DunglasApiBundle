@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace ApiPlatform\Core\Tests\Bridge\Doctrine\Orm\Filter;
 
+use ApiPlatform\Core\Api\OrderDirection;
 use ApiPlatform\Core\Bridge\Doctrine\Orm\Filter\OrderFilter;
 use ApiPlatform\Core\Test\DoctrineOrmFilterTestCase;
 use ApiPlatform\Core\Tests\Fixtures\TestBundle\Entity\Dummy;
@@ -33,12 +34,12 @@ class OrderFilterTest extends DoctrineOrmFilterTestCase
         $this->assertEquals([
             'order[id]' => [
                 'property' => 'id',
-                'type' => 'string',
+                'type' => OrderDirection::class,
                 'required' => false,
             ],
             'order[name]' => [
                 'property' => 'name',
-                'type' => 'string',
+                'type' => OrderDirection::class,
                 'required' => false,
             ],
         ], $filter->getDescription($this->resourceClass));
@@ -51,62 +52,62 @@ class OrderFilterTest extends DoctrineOrmFilterTestCase
         $this->assertEquals([
             'order[id]' => [
                 'property' => 'id',
-                'type' => 'string',
+                'type' => OrderDirection::class,
                 'required' => false,
             ],
             'order[name]' => [
                 'property' => 'name',
-                'type' => 'string',
+                'type' => OrderDirection::class,
                 'required' => false,
             ],
             'order[alias]' => [
                 'property' => 'alias',
-                'type' => 'string',
+                'type' => OrderDirection::class,
                 'required' => false,
             ],
             'order[description]' => [
                 'property' => 'description',
-                'type' => 'string',
+                'type' => OrderDirection::class,
                 'required' => false,
             ],
             'order[dummy]' => [
                 'property' => 'dummy',
-                'type' => 'string',
+                'type' => OrderDirection::class,
                 'required' => false,
             ],
             'order[dummyDate]' => [
                 'property' => 'dummyDate',
-                'type' => 'string',
+                'type' => OrderDirection::class,
                 'required' => false,
             ],
             'order[dummyFloat]' => [
                 'property' => 'dummyFloat',
-                'type' => 'string',
+                'type' => OrderDirection::class,
                 'required' => false,
             ],
             'order[dummyPrice]' => [
                 'property' => 'dummyPrice',
-                'type' => 'string',
+                'type' => OrderDirection::class,
                 'required' => false,
             ],
             'order[jsonData]' => [
                 'property' => 'jsonData',
-                'type' => 'string',
+                'type' => OrderDirection::class,
                 'required' => false,
             ],
             'order[arrayData]' => [
                 'property' => 'arrayData',
-                'type' => 'string',
+                'type' => OrderDirection::class,
                 'required' => false,
             ],
             'order[nameConverted]' => [
                 'property' => 'nameConverted',
-                'type' => 'string',
+                'type' => OrderDirection::class,
                 'required' => false,
             ],
             'order[dummyBoolean]' => [
                 'property' => 'dummyBoolean',
-                'type' => 'string',
+                'type' => OrderDirection::class,
                 'required' => false,
             ],
         ], $filter->getDescription($this->resourceClass));
