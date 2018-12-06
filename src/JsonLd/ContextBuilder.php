@@ -90,7 +90,7 @@ final class ContextBuilder implements ContextBuilderInterface
         $context = $this->getBaseContext($referenceType);
         $resourceMetadata = $this->resourceMetadataFactory->create($resourceClass);
         $shortName = $resourceMetadata->getShortName();
-
+        $context += $resourceMetadata->getAttributes()['jsonld_context'] ?? [];
         foreach ($this->propertyNameCollectionFactory->create($resourceClass) as $propertyName) {
             $propertyMetadata = $this->propertyMetadataFactory->create($resourceClass, $propertyName);
 
@@ -99,23 +99,23 @@ final class ContextBuilder implements ContextBuilderInterface
             }
 
             $convertedName = $this->nameConverter ? $this->nameConverter->normalize($propertyName) : $propertyName;
-            $jsonldContext = $propertyMetadata->getAttributes()['jsonld_context'] ?? [];
+            $propertyJsonldContext = $propertyMetadata->getAttributes()['jsonld_context'] ?? [];
 
             if (!$id = $propertyMetadata->getIri()) {
                 $id = sprintf('%s/%s', $shortName, $convertedName);
             }
 
             if (true !== $propertyMetadata->isReadableLink()) {
-                $jsonldContext += [
+                $propertyJsonldContext += [
                     '@id' => $id,
                     '@type' => '@id',
                 ];
             }
 
-            if (empty($jsonldContext)) {
+            if (empty($propertyJsonldContext)) {
                 $context[$convertedName] = $id;
             } else {
-                $context[$convertedName] = $jsonldContext + [
+                $context[$convertedName] = $propertyJsonldContext + [
                     '@id' => $id,
                 ];
             }

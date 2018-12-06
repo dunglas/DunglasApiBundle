@@ -20,8 +20,11 @@ use Doctrine\ORM\Mapping as ORM;
 /**
  * Jsonld Context Dummy.
  *
- *
- * @ApiResource
+ * @ApiResource(
+ *  attributes={
+ *     "jsonld_context"={
+ *         "dct":"http://purl.org/dc/terms/"
+ * }})
  * @ORM\Entity
  */
 class JsonldContextDummy
@@ -44,12 +47,19 @@ class JsonldContextDummy
      *         "jsonld_context"={
      *             "@id"="http://example.com/id",
      *             "@type"="@id",
-     *             "foo"="bar"
+     *             "foo"="bar",
      *         }
      *     },
      * )
      */
     private $person;
+
+    /**
+     * @var string The name
+     *
+     * @ApiProperty(iri="dct:title")
+     */
+    private $title;
 
     public function getId()
     {
@@ -64,5 +74,15 @@ class JsonldContextDummy
     public function getPerson()
     {
         return $this->person;
+    }
+
+    public function getTitle(): string
+    {
+        return $this->title;
+    }
+
+    public function setTitle(string $title)
+    {
+        $this->title = $title;
     }
 }
