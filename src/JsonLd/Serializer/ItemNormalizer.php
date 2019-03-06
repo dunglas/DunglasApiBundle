@@ -118,6 +118,12 @@ final class ItemNormalizer extends AbstractItemNormalizer
             $context[self::OBJECT_TO_POPULATE] = $this->iriConverter->getItemFromIri($data['@id'], $context + ['fetch_data' => true]);
         }
 
+        foreach ($data as $i => $a) {
+            if (0===\strpos($i,'@')){
+                unset($data[$i]);
+            }
+        }
+
         return parent::denormalize($data, $class, $format, $context);
     }
 }

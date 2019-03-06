@@ -11,7 +11,7 @@ Feature: Cache invalidation through HTTP Cache tags
     """
     {
       "anotherRelated": {
-        "name": "Related",
+        "symfony": "Related",
         "thirdLevel": {}
       }
     }
@@ -31,7 +31,7 @@ Feature: Cache invalidation through HTTP Cache tags
     """
     {
       "anotherRelated": {
-        "name": "Another Related",
+        "symfony": "Another Related",
         "thirdLevel": {}
       }
     }
