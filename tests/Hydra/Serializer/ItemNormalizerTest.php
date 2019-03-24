@@ -23,6 +23,7 @@ use ApiPlatform\Core\Metadata\Property\PropertyMetadata;
 use ApiPlatform\Core\Metadata\Property\PropertyNameCollection;
 use ApiPlatform\Core\Metadata\Resource\Factory\ResourceMetadataFactoryInterface;
 use ApiPlatform\Core\Metadata\Resource\ResourceMetadata;
+use ApiPlatform\Core\Serializer\ApiItemNormalizer;
 use ApiPlatform\Core\Tests\Fixtures\TestBundle\Entity\Dummy;
 use PHPUnit\Framework\TestCase;
 use Prophecy\Argument;
@@ -45,12 +46,13 @@ class ItemNormalizerTest extends TestCase
         $iriConverterProphecy = $this->prophesize(IriConverterInterface::class);
         $resourceClassResolverProphecy = $this->prophesize(ResourceClassResolverInterface::class);
         $contextBuilderProphecy = $this->prophesize(ContextBuilderInterface::class);
+        $resourceClassResolverProphecy->isResourceClass(Dummy::class)->willReturn(false);
         $resourceClassResolverProphecy->getResourceClass(['dummy'], 'Dummy')->willReturn(Dummy::class);
         $propertyNameCollectionFactoryProphecy->create(Dummy::class, [])->willReturn(new PropertyNameCollection(['name' => 'name']));
 
         $normalizer = new ItemNormalizer($resourceMetadataFactoryProphecy->reveal(), $propertyNameCollectionFactoryProphecy->reveal(), $propertyMetadataFactoryProphecy->reveal(), $iriConverterProphecy->reveal(), $resourceClassResolverProphecy->reveal(), $contextBuilderProphecy->reveal());
 
-        $this->assertFalse($normalizer->supportsDenormalization('foo', ItemNormalizer::FORMAT));
+        $this->assertFalse($normalizer->supportsDenormalization('foo',  Dummy::class, ItemNormalizer::FORMAT));
         $this->assertTrue($normalizer->hasCacheableSupportsMethod());
     }
 
