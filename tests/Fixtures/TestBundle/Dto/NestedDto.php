@@ -13,10 +13,10 @@ declare(strict_types=1);
 
 namespace ApiPlatform\Core\Tests\Fixtures\TestBundle\Dto;
 
-class RecoverPasswordInput
+class NestedDto
 {
     /**
-     * @var \ApiPlatform\Core\Tests\Fixtures\TestBundle\Entity\User
+     * @var string
      */
-    public $user;
+    public $baz;
 }

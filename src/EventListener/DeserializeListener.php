@@ -97,7 +97,7 @@ final class DeserializeListener
         $request->attributes->set(
             'data',
             $this->serializer->deserialize(
-                $requestContent, $context['resource_class'], $format, $context
+                $requestContent, $context['input']['class'] ?? $context['resource_class'], $format, $context + ['api_denormalize' => true]
             )
         );
     }

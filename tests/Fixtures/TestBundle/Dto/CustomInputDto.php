@@ -24,4 +24,9 @@ class CustomInputDto
      * @var int
      */
     public $bar;
+
+    /**
+     * @var NestedDto|null
+     */
+    public $nested;
 }

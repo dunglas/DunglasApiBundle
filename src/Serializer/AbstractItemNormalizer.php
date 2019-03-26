@@ -170,13 +170,12 @@ abstract class AbstractItemNormalizer extends AbstractObjectNormalizer implement
      */
     public function denormalize($data, $class, $format = null, array $context = [])
     {
-        $context['api_denormalize'] = true;
-        $context['resource_class'] = $class;
+        $context['input_class'] = $class;
         $inputClass = $this->getInputClass($class, $context);
 
-        if (null !== $inputClass && null !== $dataTransformer = $this->getDataTransformer($data, $class, $context)) {
+        if (null !== $inputClass && null !== $dataTransformer = $this->getDataTransformer($data, $context['resource_class'], $context)) {
             $data = $dataTransformer->transform(
-                parent::denormalize($data, $inputClass, $format, ['resource_class' => $inputClass] + $context),
+                parent::denormalize($data, $inputClass, $format, ['input' => null] + $context), // ensure we don't transformData for nested relations
                 $class,
                 $context
             );
@@ -290,11 +289,11 @@ abstract class AbstractItemNormalizer extends AbstractObjectNormalizer implement
     protected function getAllowedAttributes($classOrObject, array $context, $attributesAsString = false)
     {
         $options = $this->getFactoryOptions($context);
-        $propertyNames = $this->propertyNameCollectionFactory->create($context['resource_class'], $options);
+        $propertyNames = $this->propertyNameCollectionFactory->create($context['input_class'] ?? $context['resource_class'], $options);
 
         $allowedAttributes = [];
         foreach ($propertyNames as $propertyName) {
-            $propertyMetadata = $this->propertyMetadataFactory->create($context['resource_class'], $propertyName, $options);
+            $propertyMetadata = $this->propertyMetadataFactory->create($context['input_class'] ?? $context['resource_class'], $propertyName, $options);
 
             if (
                 $this->isAllowedAttribute($classOrObject, $propertyName, null, $context) &&
@@ -324,7 +323,7 @@ abstract class AbstractItemNormalizer extends AbstractObjectNormalizer implement
             throw new InvalidValueException('Invalid value provided (invalid IRI?).');
         }
 
-        $propertyMetadata = $this->propertyMetadataFactory->create($context['resource_class'], $attribute, $this->getFactoryOptions($context));
+        $propertyMetadata = $this->propertyMetadataFactory->create($context['input_class'] ?? $context['resource_class'], $attribute, $this->getFactoryOptions($context));
         $type = $propertyMetadata->getType();
 
         if (null === $type) {
@@ -429,11 +428,13 @@ abstract class AbstractItemNormalizer extends AbstractObjectNormalizer implement
             }
         }
 
-        if (
-            !$this->resourceClassResolver->isResourceClass($className) ||
-            $propertyMetadata->isWritableLink()
-        ) {
-            $context['resource_class'] = $className;
+        $isResourceClass = $this->resourceClassResolver->isResourceClass($className);
+        if (!$isResourceClass || $propertyMetadata->isWritableLink()) {
+            $context['input_class'] = $className;
+            if ($isResourceClass) {
+                $context['resource_class'] = $className;
+            }
+
             $context['api_allow_update'] = true;
 
             try {

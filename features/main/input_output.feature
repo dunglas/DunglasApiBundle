@@ -148,6 +148,34 @@ Feature: DTO input and output
     }
     """
 
+  @createSchema
+  Scenario: Create a resource with custom input with nested dto
+    When I add "Content-Type" header equal to "application/ld+json"
+    And I send a "POST" request to "/dummy_dto_customs" with body:
+    """
+    {
+      "foo": "test",
+      "bar": 1,
+      "nested": {
+        "baz": "baz-nested"
+      }
+    }
+    """
+    Then the response status code should be 201
+    And the response should be in JSON
+    And the header "Content-Type" should be equal to "application/ld+json; charset=utf-8"
+    And the JSON should be equal to:
+    """
+    {
+      "@context": "/contexts/DummyDtoCustom",
+      "@id": "/dummy_dto_customs/1",
+      "@type": "DummyDtoCustom",
+      "lorem": "test",
+      "ipsum": "1",
+      "id": 1
+    }
+    """
+
   @!mongodb
   @createSchema
   Scenario: Use DTO with relations on User
