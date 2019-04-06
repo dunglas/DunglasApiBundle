@@ -1791,7 +1791,7 @@ class DocumentationNormalizerV2Test extends TestCase
         $propertyNameCollectionFactoryProphecy->create(Answer::class, Argument::any())->shouldBeCalled()->willReturn(new PropertyNameCollection(['content']));
 
         $questionMetadata = new ResourceMetadata('Question', 'This is a question.', 'http://schema.example.com/Question', ['get' => ['method' => 'GET']]);
-        $answerMetadata = new ResourceMetadata('Answer', 'This is an answer.', 'http://schema.example.com/Answer', [], ['get' => ['method' => 'GET']]);
+        $answerMetadata = new ResourceMetadata('Answer', 'This is an answer.', 'http://schema.example.com/Answer', ['get' => ['method' => 'GET']], []);
         $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
         $resourceMetadataFactoryProphecy->create(Question::class)->shouldBeCalled()->willReturn($questionMetadata);
         $resourceMetadataFactoryProphecy->create(Answer::class)->shouldBeCalled()->willReturn($answerMetadata);
@@ -1809,7 +1809,7 @@ class DocumentationNormalizerV2Test extends TestCase
         $operationMethodResolverProphecy->getItemOperationMethod(Question::class, 'get')->shouldBeCalled()->willReturn('GET');
 
         $routeCollection = new RouteCollection();
-        $routeCollection->add('api_questions_answer_get_subresource', new Route('/api/questions/{id}/answer.{_format}'));
+        $routeCollection->add('api_questions_answer_item_get_subresource', new Route('/api/questions/{id}/answer.{_format}'));
         $routeCollection->add('api_questions_get_item', new Route('/api/questions/{id}.{_format}'));
 
         $routerProphecy = $this->prophesize(RouterInterface::class);
@@ -1886,8 +1886,8 @@ class DocumentationNormalizerV2Test extends TestCase
                 ],
                 '/api/questions/{id}/answer' => new \ArrayObject([
                     'get' => new \ArrayObject([
-                        'tags' => ['Answer', 'Question'],
-                        'operationId' => 'api_questions_answer_get_subresource',
+                        'tags' => ['Question', 'Answer'],
+                        'operationId' => 'api_questions_answer_item_get_subresource',
                         'produces' => ['text/xml'],
                         'summary' => 'Retrieves a Answer resource.',
                         'responses' => [

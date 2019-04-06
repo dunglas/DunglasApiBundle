@@ -73,12 +73,12 @@ final class SerializerContextBuilder implements SerializerContextBuilderInterfac
         if (isset($attributes['subresource_context'])) {
             $context['subresource_identifiers'] = [];
 
-            foreach ($attributes['subresource_context']['identifiers'] as $key => [$id, $resourceClass]) {
+            foreach ($attributes['subresource_context']['identifiers'] as $key => [$property, $resourceClass, , $id]) {
                 if (!isset($context['subresource_resources'][$resourceClass])) {
                     $context['subresource_resources'][$resourceClass] = [];
                 }
 
-                $context['subresource_identifiers'][$id] = $context['subresource_resources'][$resourceClass][$id] = $request->attributes->get($id);
+                $context['subresource_identifiers'][$property] = $context['subresource_resources'][$resourceClass][$property] = $request->attributes->get($id);
             }
         }
 

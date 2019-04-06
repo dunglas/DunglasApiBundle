@@ -195,7 +195,13 @@ final class SubresourceDataProvider implements SubresourceDataProviderInterface
                     $qb->select("IDENTITY($alias.$previousAssociationProperty)")
                         ->from($identifierResourceClass, $alias);
             }
-        } elseif ($classMetadata->isIdentifier($previousAssociationProperty)) {
+        } elseif (
+            // TODO: next major: remove support of item subresource workaround which enabled by id property as a subresource
+            $classMetadata->isIdentifier($previousAssociationProperty)
+        ) {
+            $qb->select($alias)
+                ->from($identifierResourceClass, $alias);
+        } else {
             $qb->select($alias)
                 ->from($identifierResourceClass, $alias);
         }

@@ -109,13 +109,9 @@ final class ApiLoader extends Loader
             }
 
             foreach ($this->subresourceOperationFactory->create($resourceClass) as $operationId => $operation) {
-                if (null === $controller = $operation['controller'] ?? null) {
-                    $controller = self::DEFAULT_ACTION_PATTERN.'get_subresource';
+                $this->assertOperationMethod($resourceClass, $operationId, $operation);
 
-                    if (!$this->container->has($controller)) {
-                        throw new RuntimeException(sprintf('There is no builtin action for the %s %s operation. You need to define the controller yourself.', OperationType::SUBRESOURCE, 'GET'));
-                    }
-                }
+                $controller = $this->resolveOperationController($operation, OperationType::SUBRESOURCE);
 
                 $routeCollection->add($operation['route_name'], new Route(
                     $operation['path'],
@@ -135,7 +131,7 @@ final class ApiLoader extends Loader
                     $operation['options'] ?? [],
                     $operation['host'] ?? '',
                     $operation['schemes'] ?? [],
-                    ['GET'],
+                    [$operation['method']],
                     $operation['condition'] ?? ''
                 ));
             }
@@ -189,17 +185,9 @@ final class ApiLoader extends Loader
             return;
         }
 
-        if (!isset($operation['method'])) {
-            throw new RuntimeException(sprintf('Either a "route_name" or a "method" operation attribute must exist for the operation "%s" of the resource "%s".', $operationName, $resourceClass));
-        }
+        $this->assertOperationMethod($resourceClass, $operationName, $operation);
 
-        if (null === $controller = $operation['controller'] ?? null) {
-            $controller = sprintf('%s%s_%s', self::DEFAULT_ACTION_PATTERN, strtolower($operation['method']), $operationType);
-
-            if (!$this->container->has($controller)) {
-                throw new RuntimeException(sprintf('There is no builtin action for the %s %s operation. You need to define the controller yourself.', $operationType, $operation['method']));
-            }
-        }
+        $controller = $this->resolveOperationController($operation, $operationType);
 
         $path = trim(trim($resourceMetadata->getAttribute('route_prefix', '')), '/');
         $path .= $this->operationPathResolver->resolveOperationPath($resourceShortName, $operation, $operationType, $operationName);
@@ -221,5 +209,25 @@ final class ApiLoader extends Loader
         );
 
         $routeCollection->add(RouteNameGenerator::generate($operationName, $resourceShortName, $operationType), $route);
+    }
+
+    private function assertOperationMethod(string $resourceClass, string $operationName, array $operation)
+    {
+        if (!isset($operation['method'])) {
+            throw new RuntimeException(sprintf('Either a "route_name" or a "method" operation attribute must exist for the operation "%s" of the resource "%s".', $operationName, $resourceClass));
+        }
+    }
+
+    private function resolveOperationController(array $operation, string $operationType): string
+    {
+        if (null === $controller = $operation['controller'] ?? null) {
+            $controller = sprintf('%s%s_%s', self::DEFAULT_ACTION_PATTERN, strtolower($operation['method']), $operationType);
+
+            if (!$this->container->has($controller)) {
+                throw new RuntimeException(sprintf('There is no builtin action for the %s %s operation. You need to define the controller yourself.', $operationType, $operation['method']));
+            }
+        }
+
+        return $controller;
     }
 }

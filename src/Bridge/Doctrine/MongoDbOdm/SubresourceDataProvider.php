@@ -145,7 +145,10 @@ final class SubresourceDataProvider implements SubresourceDataProviderInterface
             foreach ($normalizedIdentifiers as $key => $value) {
                 $aggregation->match()->field($key)->equals($value);
             }
-        } elseif ($classMetadata->isIdentifier($previousAssociationProperty)) {
+        } elseif (
+            // TODO: next major: remove support of identifier being subresource
+            $classMetadata->isIdentifier($previousAssociationProperty)
+        ) {
             foreach ($normalizedIdentifiers as $key => $value) {
                 $aggregation->match()->field($key)->equals($value);
             }

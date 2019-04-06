@@ -97,6 +97,16 @@ final class ReadListener
                 }
 
                 $data = $this->getSubresourceData($identifiers, $attributes, $context);
+
+                if ($request->isMethod('POST') || $request->isMethod('PUT')) {
+                    $resourceClass = \array_slice(array_keys($context['subresource_resources']), -1, 1)[0] ?? null;
+                    if (null === $resourceClass) {
+                        throw new RuntimeException('No subresource resource class.');
+                    }
+
+                    // Load parent resource to set relationship between it and the subresource
+                    $resourceData = $this->itemDataProvider->getItem((string) $resourceClass, $context['subresource_resources'][$resourceClass], $attributes['subresource_operation_name'], $context);
+                }
             }
         } catch (InvalidIdentifierException $e) {
             throw new NotFoundHttpException('Not found, because of an invalid identifier configuration', $e);
@@ -107,5 +117,9 @@ final class ReadListener
         }
 
         $request->attributes->set('data', $data);
+
+        if (isset($resourceData)) {
+            $request->attributes->set('resource_data', $resourceData);
+        }
     }
 }

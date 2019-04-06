@@ -24,6 +24,38 @@ Feature: Subresource support
     }
     """
 
+  Scenario: Put subresource one to one relation
+    Given there is an answer "42" to the question "What's the answer to the Ultimate Question of Life, the Universe and Everything?"
+    When I add "Content-Type" header equal to "application/ld+json"
+    And I send a "PUT" request to "/questions/1/answer" with body:
+    """
+    {
+      "@id": "/answers/1",
+      "content": "43",
+      "question": "/questions/1",
+      "relatedQuestions": [
+        "/questions/1"
+      ]
+    }
+    """
+    Then the response status code should be 200
+    And the response should be in JSON
+    And the JSON should be equal to:
+    """
+    {
+      "@context": "/contexts/Answer",
+      "@id": "/answers/1",
+      "@type": "Answer",
+      "id": 1,
+      "content": "43",
+      "question": "/questions/1",
+      "relatedQuestions": [
+        "/questions/1"
+      ]
+    }
+    """
+    And the expression "object.getContent()" on the object of the entity "Answer" with id "1" should return "43"
+
   Scenario: Get a non existant subresource
     Given there is an answer "42" to the question "What's the answer to the Ultimate Question of Life, the Universe and Everything?"
     When I send a "GET" request to "/questions/999999/answer"
@@ -193,6 +225,58 @@ Feature: Subresource support
     }
     """
 
+  Scenario: Post the subresource relation item
+    When I add "Content-Type" header equal to "application/ld+json"
+    And I send a "POST" request to "/dummies/1/related_dummies" with body:
+    """
+    {
+      "@context": "/contexts/RelatedDummy",
+      "@type": "https://schema.org/Product",
+      "name": null,
+      "symfony": "symfony",
+      "dummyDate": "2019-01-01",
+      "thirdLevel": "/third_levels/1",
+      "relatedToDummyFriend": [],
+      "dummyBoolean": null,
+      "embeddedDummy": [],
+      "age": null
+    }
+    """
+    Then the response status code should be 201
+    And the response should be in JSON
+    And the header "Content-Type" should be equal to "application/ld+json; charset=utf-8"
+    And the JSON should be equal to:
+    """
+    {
+      "@context": "/contexts/RelatedDummy",
+      "@id": "/related_dummies/3",
+      "@type": "https://schema.org/Product",
+      "id": 3,
+      "name": null,
+      "symfony": "symfony",
+      "dummyDate": "2019-01-01T00:00:00+00:00",
+      "thirdLevel": {
+        "@id": "/third_levels/1",
+        "@type": "ThirdLevel",
+        "fourthLevel": "/fourth_levels/1"
+      },
+      "relatedToDummyFriend": [],
+      "dummyBoolean": null,
+      "embeddedDummy": [],
+      "age": null
+    }
+    """
+    And the count of entity "RelatedDummy" with attribute "id" equal to "3" should be equal to "1"
+    And the expression "object.getRelatedDummies().count()" on the object of the entity "Dummy" with id "1" should return "3"
+    And the expression "object.getRelatedDummies()[2].getId()" on the object of the entity "Dummy" with id "1" should return "3"
+
+  Scenario: Delete the subresource relation item
+    Given the count of entity "RelatedDummy" with attribute "id" equal to "3" should be equal to "1"
+    When I add "Content-Type" header equal to "application/ld+json"
+    And I send a "DELETE" request to "/dummies/1/related_dummies/3"
+    Then the response status code should be 204
+    And the count of entity "RelatedDummy" with attribute "id" equal to "3" should be equal to "0"
+
   Scenario: Get the subresource relation item
     When I send a "GET" request to "/dummies/1/related_dummies/2"
     And the response status code should be 200
@@ -266,6 +350,24 @@ Feature: Subresource support
       "badThirdLevel": [],
       "id": 1,
       "level": 4
+    }
+    """
+
+  Scenario: Get single offer subresource from aggregate offers subresource
+    Given I have a product with offers
+    When I send a "GET" request to "/dummy_products/2/offers/1/offers/1"
+    And the response status code should be 200
+    And the response should be in JSON
+    And the header "Content-Type" should be equal to "application/ld+json; charset=utf-8"
+    And the JSON should be equal to:
+    """
+    {
+      "@context": "/contexts/DummyOffer",
+      "@id": "/dummy_offers/1",
+      "@type": "DummyOffer",
+      "id": 1,
+      "value": 2,
+      "aggregate": "/dummy_aggregate_offers/1"
     }
     """
 

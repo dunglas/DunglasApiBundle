@@ -49,20 +49,19 @@ final class OperationResourceMetadataFactory implements ResourceMetadataFactoryI
     }
 
     /**
-     * {@inheritdoc}
+     * @internal
      */
-    public function create(string $resourceClass): ResourceMetadata
+    public static function populateOperations(string $resourceClass, ResourceMetadata $resourceMetadata, array $formats): ResourceMetadata
     {
-        $resourceMetadata = $this->decorated->create($resourceClass);
         $isAbstract = (new \ReflectionClass($resourceClass))->isAbstract();
 
         $collectionOperations = $resourceMetadata->getCollectionOperations();
         if (null === $collectionOperations) {
-            $resourceMetadata = $resourceMetadata->withCollectionOperations($this->createOperations(
+            $resourceMetadata = $resourceMetadata->withCollectionOperations(static::createOperations(
                 $isAbstract ? ['GET'] : ['GET', 'POST']
             ));
         } else {
-            $resourceMetadata = $this->normalize(true, $resourceMetadata, $collectionOperations);
+            $resourceMetadata = static::normalize(true, $resourceMetadata, $collectionOperations, $formats);
         }
 
         $itemOperations = $resourceMetadata->getItemOperations();
@@ -72,15 +71,27 @@ final class OperationResourceMetadataFactory implements ResourceMetadataFactoryI
             if (!$isAbstract) {
                 $methods[] = 'PUT';
 
-                if (isset($this->formats['jsonapi'])) {
+                if (isset($formats['jsonapi'])) {
                     $methods[] = 'PATCH';
                 }
             }
 
-            $resourceMetadata = $resourceMetadata->withItemOperations($this->createOperations($methods));
+            $resourceMetadata = $resourceMetadata->withItemOperations(static::createOperations($methods));
         } else {
-            $resourceMetadata = $this->normalize(false, $resourceMetadata, $itemOperations);
+            $resourceMetadata = static::normalize(false, $resourceMetadata, $itemOperations, $formats);
         }
+
+        return $resourceMetadata;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function create(string $resourceClass): ResourceMetadata
+    {
+        $resourceMetadata = $this->decorated->create($resourceClass);
+        $formats = $this->formats;
+        $resourceMetadata = self::populateOperations($resourceClass, $resourceMetadata, $formats);
 
         $graphql = $resourceMetadata->getGraphql();
         if (null === $graphql) {
@@ -92,7 +103,7 @@ final class OperationResourceMetadataFactory implements ResourceMetadataFactoryI
         return $resourceMetadata;
     }
 
-    private function createOperations(array $methods): array
+    private static function createOperations(array $methods): array
     {
         $operations = [];
         foreach ($methods as $method) {
@@ -102,7 +113,7 @@ final class OperationResourceMetadataFactory implements ResourceMetadataFactoryI
         return $operations;
     }
 
-    private function normalize(bool $collection, ResourceMetadata $resourceMetadata, array $operations): ResourceMetadata
+    private static function normalize(bool $collection, ResourceMetadata $resourceMetadata, array $operations, array $formats): ResourceMetadata
     {
         $newOperations = [];
         foreach ($operations as $operationName => $operation) {
@@ -116,7 +127,7 @@ final class OperationResourceMetadataFactory implements ResourceMetadataFactoryI
             if ($collection) {
                 $supported = isset(self::SUPPORTED_COLLECTION_OPERATION_METHODS[$upperOperationName]);
             } else {
-                $supported = isset(self::SUPPORTED_ITEM_OPERATION_METHODS[$upperOperationName]) || (isset($this->formats['jsonapi']) && 'PATCH' === $upperOperationName);
+                $supported = isset(self::SUPPORTED_ITEM_OPERATION_METHODS[$upperOperationName]) || (isset($formats['jsonapi']) && 'PATCH' === $upperOperationName);
             }
 
             if (!isset($operation['method']) && !isset($operation['route_name'])) {

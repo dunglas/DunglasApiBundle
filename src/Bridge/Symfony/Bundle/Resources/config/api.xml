@@ -191,6 +191,12 @@
             <tag name="kernel.event_listener" event="kernel.view" method="onKernelView" priority="32" />
         </service>
 
+        <service id="api_platform.listener.request.associate" class="ApiPlatform\Core\EventListener\AssociateListener">
+            <argument type="service" id="api_platform.property_accessor" />
+
+            <tag name="kernel.event_listener" event="kernel.request" method="onKernelRequest" priority="1" />
+        </service>
+
         <service id="api_platform.listener.request.deserialize" class="ApiPlatform\Core\EventListener\DeserializeListener">
             <argument type="service" id="api_platform.serializer" />
             <argument type="service" id="api_platform.serializer.context_builder" />
@@ -236,6 +242,10 @@
         <service id="api_platform.action.put_item" alias="api_platform.action.placeholder" public="true" />
         <service id="api_platform.action.delete_item" alias="api_platform.action.placeholder" public="true" />
         <service id="api_platform.action.get_subresource" alias="api_platform.action.placeholder" public="true" />
+        <service id="api_platform.action.post_subresource" alias="api_platform.action.placeholder" public="true" />
+        <service id="api_platform.action.put_subresource" alias="api_platform.action.placeholder" public="true" />
+        <service id="api_platform.action.delete_subresource" alias="api_platform.action.placeholder" public="true" />
+        <service id="api_platform.action.patch_subresource" alias="api_platform.action.placeholder" public="true" />
 
         <service id="api_platform.action.entrypoint" class="ApiPlatform\Core\Action\EntrypointAction" public="true">
             <argument type="service" id="api_platform.metadata.resource.name_collection_factory" />
@@ -292,6 +302,7 @@
             <argument type="service" id="api_platform.metadata.property.name_collection_factory" />
             <argument type="service" id="api_platform.metadata.property.metadata_factory" />
             <argument type="service" id="api_platform.path_segment_name_generator" />
+            <argument>%api_platform.formats%</argument>
         </service>
 
         <service id="api_platform.subresource_operation_factory.cached" class="ApiPlatform\Core\Operation\Factory\CachedSubresourceOperationFactory" decorates="api_platform.subresource_operation_factory" decoration-priority="-10" public="false">

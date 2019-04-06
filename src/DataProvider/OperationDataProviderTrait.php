@@ -105,15 +105,19 @@ trait OperationDataProviderTrait
 
         $identifiers = [];
 
-        foreach ($attributes['subresource_context']['identifiers'] as $key => [$id, $resourceClass, $hasIdentifier]) {
+        /**
+         * Subresource can potentially result in $property collision. An $id is in place as a route id to avoid collision.
+         * On data resolution, a genuine $property is used.
+         */
+        foreach ($attributes['subresource_context']['identifiers'] as $key => [$property, $resourceClass, $hasIdentifier, $id]) {
             if (false === $hasIdentifier) {
                 continue;
             }
 
-            $identifiers[$id] = $parameters[$id];
+            $identifiers[$property] = $parameters[$id];
 
             if (null !== $this->identifierConverter) {
-                $identifiers[$id] = $this->identifierConverter->convert((string) $identifiers[$id], $resourceClass);
+                $identifiers[$property] = $this->identifierConverter->convert((string) $identifiers[$property], $resourceClass);
             }
         }
 

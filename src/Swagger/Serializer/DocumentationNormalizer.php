@@ -173,7 +173,7 @@ final class DocumentationNormalizer implements NormalizerInterface, CacheableSup
                 }
 
                 if ($subresourceOperation['collection']) {
-                    $baseSuccessResponse = ['description' => sprintf('%s collection response', $subresourceOperation['shortNames'][0])];
+                    $baseSuccessResponse = ['description' => sprintf('%s collection response', end($subresourceOperation['shortNames']))];
 
                     if ($responseDefinitionKey) {
                         if ($v3) {
@@ -183,7 +183,7 @@ final class DocumentationNormalizer implements NormalizerInterface, CacheableSup
                         }
                     }
                 } else {
-                    $baseSuccessResponse = ['description' => sprintf('%s resource response', $subresourceOperation['shortNames'][0])];
+                    $baseSuccessResponse = ['description' => sprintf('%s resource response', end($subresourceOperation['shortNames']))];
 
                     if ($responseDefinitionKey) {
                         if ($v3) {
@@ -194,7 +194,7 @@ final class DocumentationNormalizer implements NormalizerInterface, CacheableSup
                     }
                 }
 
-                $pathOperation['summary'] = sprintf('Retrieves %s%s resource%s.', $subresourceOperation['collection'] ? 'the collection of ' : 'a ', $subresourceOperation['shortNames'][0], $subresourceOperation['collection'] ? 's' : '');
+                $pathOperation['summary'] = sprintf('Retrieves %s%s resource%s.', $subresourceOperation['collection'] ? 'the collection of ' : 'a ', end($subresourceOperation['shortNames']), $subresourceOperation['collection'] ? 's' : '');
                 $pathOperation['responses'] = [
                     (string) $resourceMetadata->getSubresourceOperationAttribute($operationName, 'status', '200') => $baseSuccessResponse,
                     '404' => ['description' => 'Resource not found'],
@@ -226,7 +226,7 @@ final class DocumentationNormalizer implements NormalizerInterface, CacheableSup
                     }
                 }
 
-                $paths[$this->getPath($subresourceOperation['shortNames'][0], $subresourceOperation['route_name'], $subresourceOperation, OperationType::SUBRESOURCE)] = new \ArrayObject(['get' => $pathOperation]);
+                $paths[$this->getPath(end($subresourceOperation['shortNames']), $subresourceOperation['route_name'], $subresourceOperation, OperationType::SUBRESOURCE)] = new \ArrayObject(['get' => $pathOperation]);
             }
         }
 

@@ -235,7 +235,7 @@ class IriConverterTest extends TestCase
     public function testGetItemFromIriWithSubresourceDataProvider()
     {
         $item = new \stdClass();
-        $subresourceContext = ['identifiers' => [['id', Dummy::class, true]]];
+        $subresourceContext = ['identifiers' => [['id', Dummy::class, true, 'id']]];
         $routeNameResolverProphecy = $this->prophesize(RouteNameResolverInterface::class);
         $routerProphecy = $this->prophesize(RouterInterface::class);
         $routerProphecy->match('/users/3/adresses')->willReturn([
@@ -255,7 +255,7 @@ class IriConverterTest extends TestCase
         $this->expectException(ItemNotFoundException::class);
         $this->expectExceptionMessage('Item not found for "/users/3/adresses".');
 
-        $subresourceContext = ['identifiers' => [['id', Dummy::class, true]]];
+        $subresourceContext = ['identifiers' => [['id', Dummy::class, true, 'id']]];
         $routeNameResolverProphecy = $this->prophesize(RouteNameResolverInterface::class);
         $routerProphecy = $this->prophesize(RouterInterface::class);
         $routerProphecy->match('/users/3/adresses')->willReturn([

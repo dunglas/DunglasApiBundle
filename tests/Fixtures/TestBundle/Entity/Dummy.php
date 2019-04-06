@@ -289,6 +289,11 @@ class Dummy
         $this->relatedDummies->add($relatedDummy);
     }
 
+    public function removeRelatedDummy(RelatedDummy $relatedDummy)
+    {
+        $this->relatedDummies->removeElement($relatedDummy);
+    }
+
     public function getRelatedOwnedDummy()
     {
         return $this->relatedOwnedDummy;

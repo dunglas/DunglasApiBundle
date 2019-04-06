@@ -21,9 +21,12 @@ use ApiPlatform\Core\Metadata\Property\SubresourceMetadata;
 use ApiPlatform\Core\Metadata\Resource\Factory\ResourceMetadataFactoryInterface;
 use ApiPlatform\Core\Metadata\Resource\ResourceMetadata;
 use ApiPlatform\Core\Operation\Factory\SubresourceOperationFactory;
-use ApiPlatform\Core\Operation\PathSegmentNameGeneratorInterface;
+use ApiPlatform\Core\Operation\UnderscorePathSegmentNameGenerator;
 use ApiPlatform\Core\Tests\Fixtures\DummyEntity;
 use ApiPlatform\Core\Tests\Fixtures\DummyValidatedEntity;
+use ApiPlatform\Core\Tests\Fixtures\Metadata\Property\MappingPropertyMetadataFactory;
+use ApiPlatform\Core\Tests\Fixtures\Metadata\Property\MappingPropertyNameCollectionMetadataFactory;
+use ApiPlatform\Core\Tests\Fixtures\Metadata\Resource\MappingResourceMetadataFactory;
 use ApiPlatform\Core\Tests\Fixtures\RelatedDummyEntity;
 use PHPUnit\Framework\TestCase;
 
@@ -34,274 +37,839 @@ class SubresourceOperationFactoryTest extends TestCase
 {
     public function testCreate()
     {
-        $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
-        $resourceMetadataFactoryProphecy->create(RelatedDummyEntity::class)->shouldBeCalled()->willReturn(new ResourceMetadata('relatedDummyEntity'));
-        $resourceMetadataFactoryProphecy->create(DummyEntity::class)->shouldBeCalled()->willReturn(new ResourceMetadata('dummyEntity'));
+        $resourceMetadataFactory = new MappingResourceMetadataFactory([
+            DummyEntity::class => new ResourceMetadata('dummyEntity'),
+            RelatedDummyEntity::class => new ResourceMetadata('relatedDummyEntity'),
+        ]);
 
-        $propertyNameCollectionFactoryProphecy = $this->prophesize(PropertyNameCollectionFactoryInterface::class);
-        $propertyNameCollectionFactoryProphecy->create(DummyEntity::class)->shouldBeCalled()->willReturn(new PropertyNameCollection(['foo', 'subresource', 'subcollection']));
-        $propertyNameCollectionFactoryProphecy->create(RelatedDummyEntity::class)->shouldBeCalled()->willReturn(new PropertyNameCollection(['bar', 'anotherSubresource']));
+        $propertyNameCollectionMetadataFactory = MappingPropertyNameCollectionMetadataFactory::from()
+            ->withMetadata(
+                new PropertyNameCollection(['foo', 'subresource', 'subcollection']),
+                $resourceClass = DummyEntity::class
+            )
+            ->withMetadata(
+                new PropertyNameCollection(['bar', 'anotherSubresource']),
+                $resourceClass = RelatedDummyEntity::class
+            );
 
-        $subresourceMetadata = (new PropertyMetadata())->withSubresource(new SubresourceMetadata(RelatedDummyEntity::class));
-        $subresourceMetadataCollection = (new PropertyMetadata())->withSubresource(new SubresourceMetadata(RelatedDummyEntity::class, true));
-        $anotherSubresourceMetadata = (new PropertyMetadata())->withSubresource(new SubresourceMetadata(DummyEntity::class, false));
+        $propertyMetadataFactory = MappingPropertyMetadataFactory::from()
+            ->withMetadata(
+                new PropertyMetadata(),
+                $resourceClass = DummyEntity::class,
+                $property = 'foo'
+            )
+            ->withMetadata(
+                (new PropertyMetadata())->withSubresource(new SubresourceMetadata($resourceClass = RelatedDummyEntity::class)),
+                $resourceClass = DummyEntity::class,
+                $property = 'subresource'
+            )
+            ->withMetadata(
+                (new PropertyMetadata())->withSubresource(new SubresourceMetadata($resourceClass = RelatedDummyEntity::class, $collection = true)),
+                $resourceClass = DummyEntity::class,
+                $property = 'subcollection'
+            )
+            ->withMetadata(
+                new PropertyMetadata(),
+                $resourceClass = RelatedDummyEntity::class,
+                $property = 'bar'
+            )
+            ->withMetadata(
+                (new PropertyMetadata())->withSubresource(new SubresourceMetadata($resourceClass = DummyEntity::class, $collection = false)),
+                $resourceClass = RelatedDummyEntity::class,
+                $property = 'anotherSubresource'
+            );
 
-        $propertyMetadataFactoryProphecy = $this->prophesize(PropertyMetadataFactoryInterface::class);
-        $propertyMetadataFactoryProphecy->create(DummyEntity::class, 'foo')->shouldBeCalled()->willReturn(new PropertyMetadata());
-        $propertyMetadataFactoryProphecy->create(DummyEntity::class, 'subresource')->shouldBeCalled()->willReturn($subresourceMetadata);
-        $propertyMetadataFactoryProphecy->create(DummyEntity::class, 'subcollection')->shouldBeCalled()->willReturn($subresourceMetadataCollection);
-        $propertyMetadataFactoryProphecy->create(RelatedDummyEntity::class, 'bar')->shouldBeCalled()->willReturn(new PropertyMetadata());
-        $propertyMetadataFactoryProphecy->create(RelatedDummyEntity::class, 'anotherSubresource')->shouldBeCalled()->willReturn($anotherSubresourceMetadata);
-
-        $pathSegmentNameGeneratorProphecy = $this->prophesize(PathSegmentNameGeneratorInterface::class);
-        $pathSegmentNameGeneratorProphecy->getSegmentName('subresource', false)->shouldBeCalled()->willReturn('subresource');
-        $pathSegmentNameGeneratorProphecy->getSegmentName('subcollection', true)->shouldBeCalled()->willReturn('subcollections');
-        $pathSegmentNameGeneratorProphecy->getSegmentName('dummyEntity')->shouldBeCalled()->willReturn('dummy_entities');
-        $pathSegmentNameGeneratorProphecy->getSegmentName('anotherSubresource', false)->shouldBeCalled()->willReturn('another_subresource');
-
-        $subresourceOperationFactory = new SubresourceOperationFactory($resourceMetadataFactoryProphecy->reveal(), $propertyNameCollectionFactoryProphecy->reveal(), $propertyMetadataFactoryProphecy->reveal(), $pathSegmentNameGeneratorProphecy->reveal());
+        $subresourceOperationFactory = new SubresourceOperationFactory($resourceMetadataFactory, $propertyNameCollectionMetadataFactory, $propertyMetadataFactory, new UnderscorePathSegmentNameGenerator());
 
         $this->assertEquals([
-            'api_dummy_entities_subresource_get_subresource' => [
+            'api_dummy_entities_subresource_item_get_subresource' => [
                 'property' => 'subresource',
                 'collection' => false,
                 'resource_class' => RelatedDummyEntity::class,
-                'shortNames' => ['relatedDummyEntity', 'dummyEntity'],
+                'shortNames' => ['dummyEntity', 'relatedDummyEntity'],
                 'identifiers' => [
-                    ['id', DummyEntity::class, true],
+                    ['id', DummyEntity::class, true, 'id'],
                 ],
-                'route_name' => 'api_dummy_entities_subresource_get_subresource',
+                'route_name' => 'api_dummy_entities_subresource_item_get_subresource',
                 'path' => '/dummy_entities/{id}/subresource.{_format}',
-                'operation_name' => 'subresource_get_subresource',
+                'operation_name' => 'subresource_item_get_subresource',
+                'method' => 'GET',
             ] + SubresourceOperationFactory::ROUTE_OPTIONS,
-            'api_dummy_entities_subresource_another_subresource_get_subresource' => [
+            'api_dummy_entities_subresource_item_delete_subresource' => [
+                'property' => 'subresource',
+                'collection' => false,
+                'resource_class' => RelatedDummyEntity::class,
+                'shortNames' => ['dummyEntity', 'relatedDummyEntity'],
+                'identifiers' => [
+                    ['id', DummyEntity::class, true, 'id'],
+                ],
+                'route_name' => 'api_dummy_entities_subresource_item_delete_subresource',
+                'path' => '/dummy_entities/{id}/subresource.{_format}',
+                'operation_name' => 'subresource_item_delete_subresource',
+                'method' => 'DELETE',
+            ] + SubresourceOperationFactory::ROUTE_OPTIONS,
+            'api_dummy_entities_subresource_item_put_subresource' => [
+                'property' => 'subresource',
+                'collection' => false,
+                'resource_class' => RelatedDummyEntity::class,
+                'shortNames' => ['dummyEntity', 'relatedDummyEntity'],
+                'identifiers' => [
+                    ['id', DummyEntity::class, true, 'id'],
+                ],
+                'route_name' => 'api_dummy_entities_subresource_item_put_subresource',
+                'path' => '/dummy_entities/{id}/subresource.{_format}',
+                'operation_name' => 'subresource_item_put_subresource',
+                'method' => 'PUT',
+            ] + SubresourceOperationFactory::ROUTE_OPTIONS,
+            'api_dummy_entities_subresource_another_subresource_item_get_subresource' => [
                 'property' => 'anotherSubresource',
                 'collection' => false,
                 'resource_class' => DummyEntity::class,
                 'shortNames' => ['dummyEntity', 'relatedDummyEntity'],
                 'identifiers' => [
-                    ['id', DummyEntity::class, true],
-                    ['subresource', RelatedDummyEntity::class, false],
+                    ['id', DummyEntity::class, true, 'id'],
+                    ['subresource', RelatedDummyEntity::class, false, 'subresource'],
                 ],
-                'route_name' => 'api_dummy_entities_subresource_another_subresource_get_subresource',
+                'route_name' => 'api_dummy_entities_subresource_another_subresource_item_get_subresource',
                 'path' => '/dummy_entities/{id}/subresource/another_subresource.{_format}',
-                'operation_name' => 'subresource_another_subresource_get_subresource',
+                'operation_name' => 'subresource_another_subresource_item_get_subresource',
+                'method' => 'GET',
+            ] + SubresourceOperationFactory::ROUTE_OPTIONS,
+            'api_dummy_entities_subresource_another_subresource_item_delete_subresource' => [
+                'property' => 'anotherSubresource',
+                'collection' => false,
+                'resource_class' => DummyEntity::class,
+                'shortNames' => ['dummyEntity', 'relatedDummyEntity'],
+                'identifiers' => [
+                    ['id', DummyEntity::class, true, 'id'],
+                    ['subresource', RelatedDummyEntity::class, false, 'subresource'],
+                ],
+                'route_name' => 'api_dummy_entities_subresource_another_subresource_item_delete_subresource',
+                'path' => '/dummy_entities/{id}/subresource/another_subresource.{_format}',
+                'operation_name' => 'subresource_another_subresource_item_delete_subresource',
+                'method' => 'DELETE',
+            ] + SubresourceOperationFactory::ROUTE_OPTIONS,
+            'api_dummy_entities_subresource_another_subresource_item_put_subresource' => [
+                'property' => 'anotherSubresource',
+                'collection' => false,
+                'resource_class' => DummyEntity::class,
+                'shortNames' => ['dummyEntity', 'relatedDummyEntity'],
+                'identifiers' => [
+                    ['id', DummyEntity::class, true, 'id'],
+                    ['subresource', RelatedDummyEntity::class, false, 'subresource'],
+                ],
+                'route_name' => 'api_dummy_entities_subresource_another_subresource_item_put_subresource',
+                'path' => '/dummy_entities/{id}/subresource/another_subresource.{_format}',
+                'operation_name' => 'subresource_another_subresource_item_put_subresource',
+                'method' => 'PUT',
             ] + SubresourceOperationFactory::ROUTE_OPTIONS,
             'api_dummy_entities_subresource_another_subresource_subcollections_get_subresource' => [
                 'property' => 'subcollection',
                 'collection' => true,
                 'resource_class' => RelatedDummyEntity::class,
-                'shortNames' => ['relatedDummyEntity', 'dummyEntity'],
+                'shortNames' => ['dummyEntity', 'relatedDummyEntity'],
                 'identifiers' => [
-                    ['id', DummyEntity::class, true],
-                    ['subresource', RelatedDummyEntity::class, false],
-                    ['anotherSubresource', DummyEntity::class, false],
+                    ['id', DummyEntity::class, true, 'id'],
+                    ['subresource', RelatedDummyEntity::class, false, 'subresource'],
+                    ['anotherSubresource', DummyEntity::class, false, 'anotherSubresource'],
                 ],
                 'route_name' => 'api_dummy_entities_subresource_another_subresource_subcollections_get_subresource',
                 'path' => '/dummy_entities/{id}/subresource/another_subresource/subcollections.{_format}',
                 'operation_name' => 'subresource_another_subresource_subcollections_get_subresource',
+                'method' => 'GET',
+            ] + SubresourceOperationFactory::ROUTE_OPTIONS,
+            'api_dummy_entities_subresource_another_subresource_subcollections_post_subresource' => [
+                'property' => 'subcollection',
+                'collection' => true,
+                'resource_class' => RelatedDummyEntity::class,
+                'shortNames' => ['dummyEntity', 'relatedDummyEntity'],
+                'identifiers' => [
+                    ['id', DummyEntity::class, true, 'id'],
+                    ['subresource', RelatedDummyEntity::class, false, 'subresource'],
+                    ['anotherSubresource', DummyEntity::class, false, 'anotherSubresource'],
+                ],
+                'route_name' => 'api_dummy_entities_subresource_another_subresource_subcollections_post_subresource',
+                'path' => '/dummy_entities/{id}/subresource/another_subresource/subcollections.{_format}',
+                'operation_name' => 'subresource_another_subresource_subcollections_post_subresource',
+                'method' => 'POST',
+            ] + SubresourceOperationFactory::ROUTE_OPTIONS,
+            'api_dummy_entities_subresource_another_subresource_subcollections_item_get_subresource' => [
+                'property' => 'subcollection',
+                'collection' => false,
+                'resource_class' => RelatedDummyEntity::class,
+                'shortNames' => ['dummyEntity', 'relatedDummyEntity'],
+                'identifiers' => [
+                    ['id', DummyEntity::class, true, 'id'],
+                    ['subresource', RelatedDummyEntity::class, false, 'subresource'],
+                    ['anotherSubresource', DummyEntity::class, false, 'anotherSubresource'],
+                    ['subcollection', RelatedDummyEntity::class, true, 'subcollection'],
+                ],
+                'route_name' => 'api_dummy_entities_subresource_another_subresource_subcollections_item_get_subresource',
+                'path' => '/dummy_entities/{id}/subresource/another_subresource/subcollections/{subcollection}.{_format}',
+                'operation_name' => 'subresource_another_subresource_subcollections_item_get_subresource',
+                'method' => 'GET',
+            ] + SubresourceOperationFactory::ROUTE_OPTIONS,
+            'api_dummy_entities_subresource_another_subresource_subcollections_item_delete_subresource' => [
+                'property' => 'subcollection',
+                'collection' => false,
+                'resource_class' => RelatedDummyEntity::class,
+                'shortNames' => ['dummyEntity', 'relatedDummyEntity'],
+                'identifiers' => [
+                    ['id', DummyEntity::class, true, 'id'],
+                    ['subresource', RelatedDummyEntity::class, false, 'subresource'],
+                    ['anotherSubresource', DummyEntity::class, false, 'anotherSubresource'],
+                    ['subcollection', RelatedDummyEntity::class, true, 'subcollection'],
+                ],
+                'route_name' => 'api_dummy_entities_subresource_another_subresource_subcollections_item_delete_subresource',
+                'path' => '/dummy_entities/{id}/subresource/another_subresource/subcollections/{subcollection}.{_format}',
+                'operation_name' => 'subresource_another_subresource_subcollections_item_delete_subresource',
+                'method' => 'DELETE',
+            ] + SubresourceOperationFactory::ROUTE_OPTIONS,
+            'api_dummy_entities_subresource_another_subresource_subcollections_item_put_subresource' => [
+                'property' => 'subcollection',
+                'collection' => false,
+                'resource_class' => RelatedDummyEntity::class,
+                'shortNames' => ['dummyEntity', 'relatedDummyEntity'],
+                'identifiers' => [
+                    ['id', DummyEntity::class, true, 'id'],
+                    ['subresource', RelatedDummyEntity::class, false, 'subresource'],
+                    ['anotherSubresource', DummyEntity::class, false, 'anotherSubresource'],
+                    ['subcollection', RelatedDummyEntity::class, true, 'subcollection'],
+                ],
+                'route_name' => 'api_dummy_entities_subresource_another_subresource_subcollections_item_put_subresource',
+                'path' => '/dummy_entities/{id}/subresource/another_subresource/subcollections/{subcollection}.{_format}',
+                'operation_name' => 'subresource_another_subresource_subcollections_item_put_subresource',
+                'method' => 'PUT',
             ] + SubresourceOperationFactory::ROUTE_OPTIONS,
             'api_dummy_entities_subcollections_get_subresource' => [
                 'property' => 'subcollection',
                 'collection' => true,
                 'resource_class' => RelatedDummyEntity::class,
-                'shortNames' => ['relatedDummyEntity', 'dummyEntity'],
+                'shortNames' => ['dummyEntity', 'relatedDummyEntity'],
                 'identifiers' => [
-                    ['id', DummyEntity::class, true],
+                    ['id', DummyEntity::class, true, 'id'],
                 ],
                 'route_name' => 'api_dummy_entities_subcollections_get_subresource',
                 'path' => '/dummy_entities/{id}/subcollections.{_format}',
                 'operation_name' => 'subcollections_get_subresource',
+                'method' => 'GET',
             ] + SubresourceOperationFactory::ROUTE_OPTIONS,
-            'api_dummy_entities_subcollections_another_subresource_get_subresource' => [
+            'api_dummy_entities_subcollections_post_subresource' => [
+                'property' => 'subcollection',
+                'collection' => true,
+                'resource_class' => RelatedDummyEntity::class,
+                'shortNames' => ['dummyEntity', 'relatedDummyEntity'],
+                'identifiers' => [
+                    ['id', DummyEntity::class, true, 'id'],
+                ],
+                'route_name' => 'api_dummy_entities_subcollections_post_subresource',
+                'path' => '/dummy_entities/{id}/subcollections.{_format}',
+                'operation_name' => 'subcollections_post_subresource',
+                'method' => 'POST',
+            ] + SubresourceOperationFactory::ROUTE_OPTIONS,
+            'api_dummy_entities_subcollections_item_get_subresource' => [
+                'property' => 'subcollection',
+                'collection' => false,
+                'resource_class' => RelatedDummyEntity::class,
+                'shortNames' => ['dummyEntity', 'relatedDummyEntity'],
+                'identifiers' => [
+                    ['id', DummyEntity::class, true, 'id'],
+                    ['subcollection', RelatedDummyEntity::class, true, 'subcollection'],
+                ],
+                'route_name' => 'api_dummy_entities_subcollections_item_get_subresource',
+                'path' => '/dummy_entities/{id}/subcollections/{subcollection}.{_format}',
+                'operation_name' => 'subcollections_item_get_subresource',
+                'method' => 'GET',
+            ] + SubresourceOperationFactory::ROUTE_OPTIONS,
+            'api_dummy_entities_subcollections_item_delete_subresource' => [
+                'property' => 'subcollection',
+                'collection' => false,
+                'resource_class' => RelatedDummyEntity::class,
+                'shortNames' => ['dummyEntity', 'relatedDummyEntity'],
+                'identifiers' => [
+                    ['id', DummyEntity::class, true, 'id'],
+                    ['subcollection', RelatedDummyEntity::class, true, 'subcollection'],
+                ],
+                'route_name' => 'api_dummy_entities_subcollections_item_delete_subresource',
+                'path' => '/dummy_entities/{id}/subcollections/{subcollection}.{_format}',
+                'operation_name' => 'subcollections_item_delete_subresource',
+                'method' => 'DELETE',
+            ] + SubresourceOperationFactory::ROUTE_OPTIONS,
+            'api_dummy_entities_subcollections_item_put_subresource' => [
+                'property' => 'subcollection',
+                'collection' => false,
+                'resource_class' => RelatedDummyEntity::class,
+                'shortNames' => ['dummyEntity', 'relatedDummyEntity'],
+                'identifiers' => [
+                    ['id', DummyEntity::class, true, 'id'],
+                    ['subcollection', RelatedDummyEntity::class, true, 'subcollection'],
+                ],
+                'route_name' => 'api_dummy_entities_subcollections_item_put_subresource',
+                'path' => '/dummy_entities/{id}/subcollections/{subcollection}.{_format}',
+                'operation_name' => 'subcollections_item_put_subresource',
+                'method' => 'PUT',
+            ] + SubresourceOperationFactory::ROUTE_OPTIONS,
+            'api_dummy_entities_subcollections_another_subresource_item_get_subresource' => [
                 'property' => 'anotherSubresource',
                 'collection' => false,
                 'resource_class' => DummyEntity::class,
                 'shortNames' => ['dummyEntity', 'relatedDummyEntity'],
                 'identifiers' => [
-                    ['id', DummyEntity::class, true],
-                    ['subcollection', RelatedDummyEntity::class, true],
+                    ['id', DummyEntity::class, true, 'id'],
+                    ['subcollection', RelatedDummyEntity::class, true, 'subcollection'],
                 ],
-                'route_name' => 'api_dummy_entities_subcollections_another_subresource_get_subresource',
+                'route_name' => 'api_dummy_entities_subcollections_another_subresource_item_get_subresource',
                 'path' => '/dummy_entities/{id}/subcollections/{subcollection}/another_subresource.{_format}',
-                'operation_name' => 'subcollections_another_subresource_get_subresource',
+                'operation_name' => 'subcollections_another_subresource_item_get_subresource',
+                'method' => 'GET',
             ] + SubresourceOperationFactory::ROUTE_OPTIONS,
-            'api_dummy_entities_subcollections_another_subresource_subresource_get_subresource' => [
+            'api_dummy_entities_subcollections_another_subresource_item_delete_subresource' => [
+                'property' => 'anotherSubresource',
+                'collection' => false,
+                'resource_class' => DummyEntity::class,
+                'shortNames' => ['dummyEntity', 'relatedDummyEntity'],
+                'identifiers' => [
+                    ['id', DummyEntity::class, true, 'id'],
+                    ['subcollection', RelatedDummyEntity::class, true, 'subcollection'],
+                ],
+                'route_name' => 'api_dummy_entities_subcollections_another_subresource_item_delete_subresource',
+                'path' => '/dummy_entities/{id}/subcollections/{subcollection}/another_subresource.{_format}',
+                'operation_name' => 'subcollections_another_subresource_item_delete_subresource',
+                'method' => 'DELETE',
+            ] + SubresourceOperationFactory::ROUTE_OPTIONS,
+            'api_dummy_entities_subcollections_another_subresource_item_put_subresource' => [
+                'property' => 'anotherSubresource',
+                'collection' => false,
+                'resource_class' => DummyEntity::class,
+                'shortNames' => ['dummyEntity', 'relatedDummyEntity'],
+                'identifiers' => [
+                    ['id', DummyEntity::class, true, 'id'],
+                    ['subcollection', RelatedDummyEntity::class, true, 'subcollection'],
+                ],
+                'route_name' => 'api_dummy_entities_subcollections_another_subresource_item_put_subresource',
+                'path' => '/dummy_entities/{id}/subcollections/{subcollection}/another_subresource.{_format}',
+                'operation_name' => 'subcollections_another_subresource_item_put_subresource',
+                'method' => 'PUT',
+            ] + SubresourceOperationFactory::ROUTE_OPTIONS,
+            'api_dummy_entities_subcollections_another_subresource_subresource_item_get_subresource' => [
                 'property' => 'subresource',
                 'collection' => false,
                 'resource_class' => RelatedDummyEntity::class,
-                'shortNames' => ['relatedDummyEntity', 'dummyEntity'],
+                'shortNames' => ['dummyEntity', 'relatedDummyEntity'],
                 'identifiers' => [
-                    ['id', DummyEntity::class, true],
-                    ['subcollection', RelatedDummyEntity::class, true],
-                    ['anotherSubresource', DummyEntity::class, false],
+                    ['id', DummyEntity::class, true, 'id'],
+                    ['subcollection', RelatedDummyEntity::class, true, 'subcollection'],
+                    ['anotherSubresource', DummyEntity::class, false, 'anotherSubresource'],
                 ],
-                'route_name' => 'api_dummy_entities_subcollections_another_subresource_subresource_get_subresource',
+                'route_name' => 'api_dummy_entities_subcollections_another_subresource_subresource_item_get_subresource',
                 'path' => '/dummy_entities/{id}/subcollections/{subcollection}/another_subresource/subresource.{_format}',
-                'operation_name' => 'subcollections_another_subresource_subresource_get_subresource',
+                'operation_name' => 'subcollections_another_subresource_subresource_item_get_subresource',
+                'method' => 'GET',
+            ] + SubresourceOperationFactory::ROUTE_OPTIONS,
+            'api_dummy_entities_subcollections_another_subresource_subresource_item_delete_subresource' => [
+                'property' => 'subresource',
+                'collection' => false,
+                'resource_class' => RelatedDummyEntity::class,
+                'shortNames' => ['dummyEntity', 'relatedDummyEntity'],
+                'identifiers' => [
+                    ['id', DummyEntity::class, true, 'id'],
+                    ['subcollection', RelatedDummyEntity::class, true, 'subcollection'],
+                    ['anotherSubresource', DummyEntity::class, false, 'anotherSubresource'],
+                ],
+                'route_name' => 'api_dummy_entities_subcollections_another_subresource_subresource_item_delete_subresource',
+                'path' => '/dummy_entities/{id}/subcollections/{subcollection}/another_subresource/subresource.{_format}',
+                'operation_name' => 'subcollections_another_subresource_subresource_item_delete_subresource',
+                'method' => 'DELETE',
+            ] + SubresourceOperationFactory::ROUTE_OPTIONS,
+            'api_dummy_entities_subcollections_another_subresource_subresource_item_put_subresource' => [
+                'property' => 'subresource',
+                'collection' => false,
+                'resource_class' => RelatedDummyEntity::class,
+                'shortNames' => ['dummyEntity', 'relatedDummyEntity'],
+                'identifiers' => [
+                    ['id', DummyEntity::class, true, 'id'],
+                    ['subcollection', RelatedDummyEntity::class, true, 'subcollection'],
+                    ['anotherSubresource', DummyEntity::class, false, 'anotherSubresource'],
+                ],
+                'route_name' => 'api_dummy_entities_subcollections_another_subresource_subresource_item_put_subresource',
+                'path' => '/dummy_entities/{id}/subcollections/{subcollection}/another_subresource/subresource.{_format}',
+                'operation_name' => 'subcollections_another_subresource_subresource_item_put_subresource',
+                'method' => 'PUT',
             ] + SubresourceOperationFactory::ROUTE_OPTIONS,
         ], $subresourceOperationFactory->create(DummyEntity::class));
     }
 
     public function testCreateByOverriding()
     {
-        $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
-        $resourceMetadataFactoryProphecy->create(RelatedDummyEntity::class)->shouldBeCalled()->willReturn(new ResourceMetadata('relatedDummyEntity'));
-        $resourceMetadataFactoryProphecy->create(DummyEntity::class)->shouldBeCalled()->willReturn((new ResourceMetadata('dummyEntity'))->withSubresourceOperations([
-            'subcollections_get_subresource' => [
-                'path' => '/dummy_entities/{id}/foobars',
-            ],
-            'subcollections_another_subresource_get_subresource' => [
-                'path' => '/dummy_entities/{id}/foobars/{subcollection}/another_foobar.{_format}',
-            ],
-        ]));
+        $resourceMetadataFactory = new MappingResourceMetadataFactory([
+            DummyEntity::class => (new ResourceMetadata('dummyEntity'))
+                ->withSubresourceOperations([
+                    'subcollections_get_subresource' => [
+                        'path' => '/dummy_entities/{id}/foobars',
+                    ],
+                    'subcollections_post_subresource' => [
+                        'path' => '/dummy_entities/{id}/foobars',
+                    ],
+                    'subcollections_item_get_subresource' => [
+                        'path' => '/dummy_entities/{id}/foobars/{subcollection}',
+                    ],
+                    'subcollections_item_delete_subresource' => [
+                        'path' => '/dummy_entities/{id}/foobars/{subcollection}',
+                    ],
+                    'subcollections_item_put_subresource' => [
+                        'path' => '/dummy_entities/{id}/foobars/{subcollection}',
+                    ],
+                    'subcollections_another_subresource_get_subresource' => [
+                        'path' => '/dummy_entities/{id}/foobars/{subcollection}/another_foobar.{_format}',
+                    ],
+                    'subcollections_another_subresource_post_subresource' => [
+                        'path' => '/dummy_entities/{id}/foobars/{subcollection}/another_foobar.{_format}',
+                    ],
+                    'subcollections_another_subresource_item_get_subresource' => [
+                        'path' => '/dummy_entities/{id}/foobars/{subcollection}/another_foobar.{_format}',
+                    ],
+                    'subcollections_another_subresource_item_delete_subresource' => [
+                        'path' => '/dummy_entities/{id}/foobars/{subcollection}/another_foobar.{_format}',
+                    ],
+                    'subcollections_another_subresource_item_put_subresource' => [
+                        'path' => '/dummy_entities/{id}/foobars/{subcollection}/another_foobar.{_format}',
+                    ],
+                ]),
+            RelatedDummyEntity::class => new ResourceMetadata('relatedDummyEntity'),
+        ]);
 
-        $propertyNameCollectionFactoryProphecy = $this->prophesize(PropertyNameCollectionFactoryInterface::class);
-        $propertyNameCollectionFactoryProphecy->create(DummyEntity::class)->shouldBeCalled()->willReturn(new PropertyNameCollection(['foo', 'subresource', 'subcollection']));
-        $propertyNameCollectionFactoryProphecy->create(RelatedDummyEntity::class)->shouldBeCalled()->willReturn(new PropertyNameCollection(['bar', 'anotherSubresource']));
+        $propertyNameCollectionMetadataFactory = MappingPropertyNameCollectionMetadataFactory::from()
+            ->withMetadata(
+                new PropertyNameCollection(['foo', 'subresource', 'subcollection']),
+                $resourceClass = DummyEntity::class
+            )
+            ->withMetadata(
+                new PropertyNameCollection(['bar', 'anotherSubresource']),
+                $resourceClass = RelatedDummyEntity::class
+            );
 
-        $subresourceMetadata = (new PropertyMetadata())->withSubresource(new SubresourceMetadata(RelatedDummyEntity::class));
-        $subresourceMetadataCollection = (new PropertyMetadata())->withSubresource(new SubresourceMetadata(RelatedDummyEntity::class, true));
-        $anotherSubresourceMetadata = (new PropertyMetadata())->withSubresource(new SubresourceMetadata(DummyEntity::class, false));
+        $propertyMetadataFactory = MappingPropertyMetadataFactory::from()
+            ->withMetadata(
+                new PropertyMetadata(),
+                $resourceClass = DummyEntity::class,
+                $property = 'foo'
+            )
+            ->withMetadata(
+                (new PropertyMetadata())->withSubresource(new SubresourceMetadata($resourceClass = RelatedDummyEntity::class)),
+                $resourceClass = DummyEntity::class,
+                $property = 'subresource'
+            )
+            ->withMetadata(
+                (new PropertyMetadata())->withSubresource(new SubresourceMetadata($resourceClass = RelatedDummyEntity::class, $collection = true)),
+                $resourceClass = DummyEntity::class,
+                $property = 'subcollection'
+            )
+            ->withMetadata(
+                new PropertyMetadata(),
+                $resourceClass = RelatedDummyEntity::class,
+                $property = 'bar'
+            )
+            ->withMetadata(
+                (new PropertyMetadata())->withSubresource(new SubresourceMetadata($resourceClass = DummyEntity::class, $collection = false)),
+                $resourceClass = RelatedDummyEntity::class,
+                $property = 'anotherSubresource'
+            );
 
-        $propertyMetadataFactoryProphecy = $this->prophesize(PropertyMetadataFactoryInterface::class);
-        $propertyMetadataFactoryProphecy->create(DummyEntity::class, 'foo')->shouldBeCalled()->willReturn(new PropertyMetadata());
-        $propertyMetadataFactoryProphecy->create(DummyEntity::class, 'subresource')->shouldBeCalled()->willReturn($subresourceMetadata);
-        $propertyMetadataFactoryProphecy->create(DummyEntity::class, 'subcollection')->shouldBeCalled()->willReturn($subresourceMetadataCollection);
-        $propertyMetadataFactoryProphecy->create(RelatedDummyEntity::class, 'bar')->shouldBeCalled()->willReturn(new PropertyMetadata());
-        $propertyMetadataFactoryProphecy->create(RelatedDummyEntity::class, 'anotherSubresource')->shouldBeCalled()->willReturn($anotherSubresourceMetadata);
-
-        $pathSegmentNameGeneratorProphecy = $this->prophesize(PathSegmentNameGeneratorInterface::class);
-        $pathSegmentNameGeneratorProphecy->getSegmentName('subresource', false)->shouldBeCalled()->willReturn('subresource');
-        $pathSegmentNameGeneratorProphecy->getSegmentName('subcollection', true)->shouldBeCalled()->willReturn('subcollections');
-        $pathSegmentNameGeneratorProphecy->getSegmentName('dummyEntity')->shouldBeCalled()->willReturn('dummy_entities');
-        $pathSegmentNameGeneratorProphecy->getSegmentName('anotherSubresource', false)->shouldBeCalled()->willReturn('another_subresource');
-
-        $subresourceOperationFactory = new SubresourceOperationFactory($resourceMetadataFactoryProphecy->reveal(), $propertyNameCollectionFactoryProphecy->reveal(), $propertyMetadataFactoryProphecy->reveal(), $pathSegmentNameGeneratorProphecy->reveal());
+        $subresourceOperationFactory = new SubresourceOperationFactory($resourceMetadataFactory, $propertyNameCollectionMetadataFactory, $propertyMetadataFactory, new UnderscorePathSegmentNameGenerator());
 
         $this->assertEquals([
-            'api_dummy_entities_subresource_get_subresource' => [
+            'api_dummy_entities_subresource_item_get_subresource' => [
                 'property' => 'subresource',
                 'collection' => false,
                 'resource_class' => RelatedDummyEntity::class,
-                'shortNames' => ['relatedDummyEntity', 'dummyEntity'],
+                'shortNames' => ['dummyEntity', 'relatedDummyEntity'],
                 'identifiers' => [
-                    ['id', DummyEntity::class, true],
+                    ['id', DummyEntity::class, true, 'id'],
                 ],
-                'route_name' => 'api_dummy_entities_subresource_get_subresource',
+                'route_name' => 'api_dummy_entities_subresource_item_get_subresource',
                 'path' => '/dummy_entities/{id}/subresource.{_format}',
-                'operation_name' => 'subresource_get_subresource',
+                'operation_name' => 'subresource_item_get_subresource',
+                'method' => 'GET',
             ] + SubresourceOperationFactory::ROUTE_OPTIONS,
-            'api_dummy_entities_subresource_another_subresource_get_subresource' => [
+            'api_dummy_entities_subresource_item_delete_subresource' => [
+                'property' => 'subresource',
+                'collection' => false,
+                'resource_class' => RelatedDummyEntity::class,
+                'shortNames' => ['dummyEntity', 'relatedDummyEntity'],
+                'identifiers' => [
+                    ['id', DummyEntity::class, true, 'id'],
+                ],
+                'route_name' => 'api_dummy_entities_subresource_item_delete_subresource',
+                'path' => '/dummy_entities/{id}/subresource.{_format}',
+                'operation_name' => 'subresource_item_delete_subresource',
+                'method' => 'DELETE',
+            ] + SubresourceOperationFactory::ROUTE_OPTIONS,
+            'api_dummy_entities_subresource_item_put_subresource' => [
+                'property' => 'subresource',
+                'collection' => false,
+                'resource_class' => RelatedDummyEntity::class,
+                'shortNames' => ['dummyEntity', 'relatedDummyEntity'],
+                'identifiers' => [
+                    ['id', DummyEntity::class, true, 'id'],
+                ],
+                'route_name' => 'api_dummy_entities_subresource_item_put_subresource',
+                'path' => '/dummy_entities/{id}/subresource.{_format}',
+                'operation_name' => 'subresource_item_put_subresource',
+                'method' => 'PUT',
+            ] + SubresourceOperationFactory::ROUTE_OPTIONS,
+            'api_dummy_entities_subresource_another_subresource_item_get_subresource' => [
                 'property' => 'anotherSubresource',
                 'collection' => false,
                 'resource_class' => DummyEntity::class,
                 'shortNames' => ['dummyEntity', 'relatedDummyEntity'],
                 'identifiers' => [
-                    ['id', DummyEntity::class, true],
-                    ['subresource', RelatedDummyEntity::class, false],
+                    ['id', DummyEntity::class, true, 'id'],
+                    ['subresource', RelatedDummyEntity::class, false, 'subresource'],
                 ],
-                'route_name' => 'api_dummy_entities_subresource_another_subresource_get_subresource',
+                'route_name' => 'api_dummy_entities_subresource_another_subresource_item_get_subresource',
                 'path' => '/dummy_entities/{id}/subresource/another_subresource.{_format}',
-                'operation_name' => 'subresource_another_subresource_get_subresource',
+                'operation_name' => 'subresource_another_subresource_item_get_subresource',
+                'method' => 'GET',
+            ] + SubresourceOperationFactory::ROUTE_OPTIONS,
+            'api_dummy_entities_subresource_another_subresource_item_delete_subresource' => [
+                'property' => 'anotherSubresource',
+                'collection' => false,
+                'resource_class' => DummyEntity::class,
+                'shortNames' => ['dummyEntity', 'relatedDummyEntity'],
+                'identifiers' => [
+                    ['id', DummyEntity::class, true, 'id'],
+                    ['subresource', RelatedDummyEntity::class, false, 'subresource'],
+                ],
+                'route_name' => 'api_dummy_entities_subresource_another_subresource_item_delete_subresource',
+                'path' => '/dummy_entities/{id}/subresource/another_subresource.{_format}',
+                'operation_name' => 'subresource_another_subresource_item_delete_subresource',
+                'method' => 'DELETE',
+            ] + SubresourceOperationFactory::ROUTE_OPTIONS,
+            'api_dummy_entities_subresource_another_subresource_item_put_subresource' => [
+                'property' => 'anotherSubresource',
+                'collection' => false,
+                'resource_class' => DummyEntity::class,
+                'shortNames' => ['dummyEntity', 'relatedDummyEntity'],
+                'identifiers' => [
+                    ['id', DummyEntity::class, true, 'id'],
+                    ['subresource', RelatedDummyEntity::class, false, 'subresource'],
+                ],
+                'route_name' => 'api_dummy_entities_subresource_another_subresource_item_put_subresource',
+                'path' => '/dummy_entities/{id}/subresource/another_subresource.{_format}',
+                'operation_name' => 'subresource_another_subresource_item_put_subresource',
+                'method' => 'PUT',
             ] + SubresourceOperationFactory::ROUTE_OPTIONS,
             'api_dummy_entities_subresource_another_subresource_subcollections_get_subresource' => [
                 'property' => 'subcollection',
                 'collection' => true,
                 'resource_class' => RelatedDummyEntity::class,
-                'shortNames' => ['relatedDummyEntity', 'dummyEntity'],
+                'shortNames' => ['dummyEntity', 'relatedDummyEntity'],
                 'identifiers' => [
-                    ['id', DummyEntity::class, true],
-                    ['subresource', RelatedDummyEntity::class, false],
-                    ['anotherSubresource', DummyEntity::class, false],
+                    ['id', DummyEntity::class, true, 'id'],
+                    ['subresource', RelatedDummyEntity::class, false, 'subresource'],
+                    ['anotherSubresource', DummyEntity::class, false, 'anotherSubresource'],
                 ],
                 'route_name' => 'api_dummy_entities_subresource_another_subresource_subcollections_get_subresource',
                 'path' => '/dummy_entities/{id}/subresource/another_subresource/subcollections.{_format}',
                 'operation_name' => 'subresource_another_subresource_subcollections_get_subresource',
+                'method' => 'GET',
+            ] + SubresourceOperationFactory::ROUTE_OPTIONS,
+            'api_dummy_entities_subresource_another_subresource_subcollections_post_subresource' => [
+                'property' => 'subcollection',
+                'collection' => true,
+                'resource_class' => RelatedDummyEntity::class,
+                'shortNames' => ['dummyEntity', 'relatedDummyEntity'],
+                'identifiers' => [
+                    ['id', DummyEntity::class, true, 'id'],
+                    ['subresource', RelatedDummyEntity::class, false, 'subresource'],
+                    ['anotherSubresource', DummyEntity::class, false, 'anotherSubresource'],
+                ],
+                'route_name' => 'api_dummy_entities_subresource_another_subresource_subcollections_post_subresource',
+                'path' => '/dummy_entities/{id}/subresource/another_subresource/subcollections.{_format}',
+                'operation_name' => 'subresource_another_subresource_subcollections_post_subresource',
+                'method' => 'POST',
+            ] + SubresourceOperationFactory::ROUTE_OPTIONS,
+            'api_dummy_entities_subresource_another_subresource_subcollections_item_get_subresource' => [
+                'property' => 'subcollection',
+                'collection' => false,
+                'resource_class' => RelatedDummyEntity::class,
+                'shortNames' => ['dummyEntity', 'relatedDummyEntity'],
+                'identifiers' => [
+                    ['id', DummyEntity::class, true, 'id'],
+                    ['subresource', RelatedDummyEntity::class, false, 'subresource'],
+                    ['anotherSubresource', DummyEntity::class, false, 'anotherSubresource'],
+                    ['subcollection', RelatedDummyEntity::class, true, 'subcollection'],
+                ],
+                'route_name' => 'api_dummy_entities_subresource_another_subresource_subcollections_item_get_subresource',
+                'path' => '/dummy_entities/{id}/subresource/another_subresource/subcollections/{subcollection}.{_format}',
+                'operation_name' => 'subresource_another_subresource_subcollections_item_get_subresource',
+                'method' => 'GET',
+            ] + SubresourceOperationFactory::ROUTE_OPTIONS,
+            'api_dummy_entities_subresource_another_subresource_subcollections_item_delete_subresource' => [
+                'property' => 'subcollection',
+                'collection' => false,
+                'resource_class' => RelatedDummyEntity::class,
+                'shortNames' => ['dummyEntity', 'relatedDummyEntity'],
+                'identifiers' => [
+                    ['id', DummyEntity::class, true, 'id'],
+                    ['subresource', RelatedDummyEntity::class, false, 'subresource'],
+                    ['anotherSubresource', DummyEntity::class, false, 'anotherSubresource'],
+                    ['subcollection', RelatedDummyEntity::class, true, 'subcollection'],
+                ],
+                'route_name' => 'api_dummy_entities_subresource_another_subresource_subcollections_item_delete_subresource',
+                'path' => '/dummy_entities/{id}/subresource/another_subresource/subcollections/{subcollection}.{_format}',
+                'operation_name' => 'subresource_another_subresource_subcollections_item_delete_subresource',
+                'method' => 'DELETE',
+            ] + SubresourceOperationFactory::ROUTE_OPTIONS,
+            'api_dummy_entities_subresource_another_subresource_subcollections_item_put_subresource' => [
+                'property' => 'subcollection',
+                'collection' => false,
+                'resource_class' => RelatedDummyEntity::class,
+                'shortNames' => ['dummyEntity', 'relatedDummyEntity'],
+                'identifiers' => [
+                    ['id', DummyEntity::class, true, 'id'],
+                    ['subresource', RelatedDummyEntity::class, false, 'subresource'],
+                    ['anotherSubresource', DummyEntity::class, false, 'anotherSubresource'],
+                    ['subcollection', RelatedDummyEntity::class, true, 'subcollection'],
+                ],
+                'route_name' => 'api_dummy_entities_subresource_another_subresource_subcollections_item_put_subresource',
+                'path' => '/dummy_entities/{id}/subresource/another_subresource/subcollections/{subcollection}.{_format}',
+                'operation_name' => 'subresource_another_subresource_subcollections_item_put_subresource',
+                'method' => 'PUT',
             ] + SubresourceOperationFactory::ROUTE_OPTIONS,
             'api_dummy_entities_subcollections_get_subresource' => [
                 'property' => 'subcollection',
                 'collection' => true,
                 'resource_class' => RelatedDummyEntity::class,
-                'shortNames' => ['relatedDummyEntity', 'dummyEntity'],
+                'shortNames' => ['dummyEntity', 'relatedDummyEntity'],
                 'identifiers' => [
-                    ['id', DummyEntity::class, true],
+                    ['id', DummyEntity::class, true, 'id'],
                 ],
                 'route_name' => 'api_dummy_entities_subcollections_get_subresource',
                 'path' => '/dummy_entities/{id}/foobars',
                 'operation_name' => 'subcollections_get_subresource',
+                'method' => 'GET',
             ] + SubresourceOperationFactory::ROUTE_OPTIONS,
-            'api_dummy_entities_subcollections_another_subresource_get_subresource' => [
+            'api_dummy_entities_subcollections_post_subresource' => [
+                'property' => 'subcollection',
+                'collection' => true,
+                'resource_class' => RelatedDummyEntity::class,
+                'shortNames' => ['dummyEntity', 'relatedDummyEntity'],
+                'identifiers' => [
+                    ['id', DummyEntity::class, true, 'id'],
+                ],
+                'route_name' => 'api_dummy_entities_subcollections_post_subresource',
+                'path' => '/dummy_entities/{id}/foobars',
+                'operation_name' => 'subcollections_post_subresource',
+                'method' => 'POST',
+            ] + SubresourceOperationFactory::ROUTE_OPTIONS,
+            'api_dummy_entities_subcollections_item_get_subresource' => [
+                'property' => 'subcollection',
+                'collection' => false,
+                'resource_class' => RelatedDummyEntity::class,
+                'shortNames' => ['dummyEntity', 'relatedDummyEntity'],
+                'identifiers' => [
+                    ['id', DummyEntity::class, true, 'id'],
+                    ['subcollection', RelatedDummyEntity::class, true, 'subcollection'],
+                ],
+                'route_name' => 'api_dummy_entities_subcollections_item_get_subresource',
+                'path' => '/dummy_entities/{id}/foobars/{subcollection}',
+                'operation_name' => 'subcollections_item_get_subresource',
+                'method' => 'GET',
+            ] + SubresourceOperationFactory::ROUTE_OPTIONS,
+            'api_dummy_entities_subcollections_item_delete_subresource' => [
+                'property' => 'subcollection',
+                'collection' => false,
+                'resource_class' => RelatedDummyEntity::class,
+                'shortNames' => ['dummyEntity', 'relatedDummyEntity'],
+                'identifiers' => [
+                    ['id', DummyEntity::class, true, 'id'],
+                    ['subcollection', RelatedDummyEntity::class, true, 'subcollection'],
+                ],
+                'route_name' => 'api_dummy_entities_subcollections_item_delete_subresource',
+                'path' => '/dummy_entities/{id}/foobars/{subcollection}',
+                'operation_name' => 'subcollections_item_delete_subresource',
+                'method' => 'DELETE',
+            ] + SubresourceOperationFactory::ROUTE_OPTIONS,
+            'api_dummy_entities_subcollections_item_put_subresource' => [
+                'property' => 'subcollection',
+                'collection' => false,
+                'resource_class' => RelatedDummyEntity::class,
+                'shortNames' => ['dummyEntity', 'relatedDummyEntity'],
+                'identifiers' => [
+                    ['id', DummyEntity::class, true, 'id'],
+                    ['subcollection', RelatedDummyEntity::class, true, 'subcollection'],
+                ],
+                'route_name' => 'api_dummy_entities_subcollections_item_put_subresource',
+                'path' => '/dummy_entities/{id}/foobars/{subcollection}',
+                'operation_name' => 'subcollections_item_put_subresource',
+                'method' => 'PUT',
+            ] + SubresourceOperationFactory::ROUTE_OPTIONS,
+            'api_dummy_entities_subcollections_another_subresource_item_get_subresource' => [
                 'property' => 'anotherSubresource',
                 'collection' => false,
                 'resource_class' => DummyEntity::class,
                 'shortNames' => ['dummyEntity', 'relatedDummyEntity'],
                 'identifiers' => [
-                    ['id', DummyEntity::class, true],
-                    ['subcollection', RelatedDummyEntity::class, true],
+                    ['id', DummyEntity::class, true, 'id'],
+                    ['subcollection', RelatedDummyEntity::class, true, 'subcollection'],
                 ],
-                'route_name' => 'api_dummy_entities_subcollections_another_subresource_get_subresource',
+                'route_name' => 'api_dummy_entities_subcollections_another_subresource_item_get_subresource',
                 'path' => '/dummy_entities/{id}/foobars/{subcollection}/another_foobar.{_format}',
-                'operation_name' => 'subcollections_another_subresource_get_subresource',
+                'operation_name' => 'subcollections_another_subresource_item_get_subresource',
+                'method' => 'GET',
             ] + SubresourceOperationFactory::ROUTE_OPTIONS,
-            'api_dummy_entities_subcollections_another_subresource_subresource_get_subresource' => [
+            'api_dummy_entities_subcollections_another_subresource_item_delete_subresource' => [
+                'property' => 'anotherSubresource',
+                'collection' => false,
+                'resource_class' => DummyEntity::class,
+                'shortNames' => ['dummyEntity', 'relatedDummyEntity'],
+                'identifiers' => [
+                    ['id', DummyEntity::class, true, 'id'],
+                    ['subcollection', RelatedDummyEntity::class, true, 'subcollection'],
+                ],
+                'route_name' => 'api_dummy_entities_subcollections_another_subresource_item_delete_subresource',
+                'path' => '/dummy_entities/{id}/foobars/{subcollection}/another_foobar.{_format}',
+                'operation_name' => 'subcollections_another_subresource_item_delete_subresource',
+                'method' => 'DELETE',
+            ] + SubresourceOperationFactory::ROUTE_OPTIONS,
+            'api_dummy_entities_subcollections_another_subresource_item_put_subresource' => [
+                'property' => 'anotherSubresource',
+                'collection' => false,
+                'resource_class' => DummyEntity::class,
+                'shortNames' => ['dummyEntity', 'relatedDummyEntity'],
+                'identifiers' => [
+                    ['id', DummyEntity::class, true, 'id'],
+                    ['subcollection', RelatedDummyEntity::class, true, 'subcollection'],
+                ],
+                'route_name' => 'api_dummy_entities_subcollections_another_subresource_item_put_subresource',
+                'path' => '/dummy_entities/{id}/foobars/{subcollection}/another_foobar.{_format}',
+                'operation_name' => 'subcollections_another_subresource_item_put_subresource',
+                'method' => 'PUT',
+            ] + SubresourceOperationFactory::ROUTE_OPTIONS,
+            'api_dummy_entities_subcollections_another_subresource_subresource_item_get_subresource' => [
                 'property' => 'subresource',
                 'collection' => false,
                 'resource_class' => RelatedDummyEntity::class,
-                'shortNames' => ['relatedDummyEntity', 'dummyEntity'],
+                'shortNames' => ['dummyEntity', 'relatedDummyEntity'],
                 'identifiers' => [
-                    ['id', DummyEntity::class, true],
-                    ['subcollection', RelatedDummyEntity::class, true],
-                    ['anotherSubresource', DummyEntity::class, false],
+                    ['id', DummyEntity::class, true, 'id'],
+                    ['subcollection', RelatedDummyEntity::class, true, 'subcollection'],
+                    ['anotherSubresource', DummyEntity::class, false, 'anotherSubresource'],
                 ],
-                'route_name' => 'api_dummy_entities_subcollections_another_subresource_subresource_get_subresource',
+                'route_name' => 'api_dummy_entities_subcollections_another_subresource_subresource_item_get_subresource',
                 'path' => '/dummy_entities/{id}/foobars/{subcollection}/another_foobar/subresource.{_format}',
-                'operation_name' => 'subcollections_another_subresource_subresource_get_subresource',
+                'operation_name' => 'subcollections_another_subresource_subresource_item_get_subresource',
+                'method' => 'GET',
+            ] + SubresourceOperationFactory::ROUTE_OPTIONS,
+            'api_dummy_entities_subcollections_another_subresource_subresource_item_delete_subresource' => [
+                'property' => 'subresource',
+                'collection' => false,
+                'resource_class' => RelatedDummyEntity::class,
+                'shortNames' => ['dummyEntity', 'relatedDummyEntity'],
+                'identifiers' => [
+                    ['id', DummyEntity::class, true, 'id'],
+                    ['subcollection', RelatedDummyEntity::class, true, 'subcollection'],
+                    ['anotherSubresource', DummyEntity::class, false, 'anotherSubresource'],
+                ],
+                'route_name' => 'api_dummy_entities_subcollections_another_subresource_subresource_item_delete_subresource',
+                'path' => '/dummy_entities/{id}/foobars/{subcollection}/another_foobar/subresource.{_format}',
+                'operation_name' => 'subcollections_another_subresource_subresource_item_delete_subresource',
+                'method' => 'DELETE',
+            ] + SubresourceOperationFactory::ROUTE_OPTIONS,
+            'api_dummy_entities_subcollections_another_subresource_subresource_item_put_subresource' => [
+                'property' => 'subresource',
+                'collection' => false,
+                'resource_class' => RelatedDummyEntity::class,
+                'shortNames' => ['dummyEntity', 'relatedDummyEntity'],
+                'identifiers' => [
+                    ['id', DummyEntity::class, true, 'id'],
+                    ['subcollection', RelatedDummyEntity::class, true, 'subcollection'],
+                    ['anotherSubresource', DummyEntity::class, false, 'anotherSubresource'],
+                ],
+                'route_name' => 'api_dummy_entities_subcollections_another_subresource_subresource_item_put_subresource',
+                'path' => '/dummy_entities/{id}/foobars/{subcollection}/another_foobar/subresource.{_format}',
+                'operation_name' => 'subcollections_another_subresource_subresource_item_put_subresource',
+                'method' => 'PUT',
             ] + SubresourceOperationFactory::ROUTE_OPTIONS,
         ], $subresourceOperationFactory->create(DummyEntity::class));
     }
 
     public function testCreateWithMaxDepth()
     {
-        $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
-        $resourceMetadataFactoryProphecy->create(RelatedDummyEntity::class)->shouldBeCalled()->willReturn(new ResourceMetadata('relatedDummyEntity'));
-        $resourceMetadataFactoryProphecy->create(DummyEntity::class)->shouldBeCalled()->willReturn(new ResourceMetadata('dummyEntity'));
+        $resourceMetadataFactory = new MappingResourceMetadataFactory([
+            DummyEntity::class => (new ResourceMetadata('dummyEntity')),
+            RelatedDummyEntity::class => new ResourceMetadata('relatedDummyEntity'),
+        ]);
 
-        $propertyNameCollectionFactoryProphecy = $this->prophesize(PropertyNameCollectionFactoryInterface::class);
-        $propertyNameCollectionFactoryProphecy->create(DummyEntity::class)->shouldBeCalled()->willReturn(new PropertyNameCollection(['subresource']));
-        $propertyNameCollectionFactoryProphecy->create(RelatedDummyEntity::class)->shouldBeCalled()->willReturn(new PropertyNameCollection(['bar', 'anotherSubresource']));
+        $propertyNameCollectionMetadataFactory = MappingPropertyNameCollectionMetadataFactory::from()
+            ->withMetadata(
+                new PropertyNameCollection(['subresource']),
+                $resourceClass = DummyEntity::class
+            )
+            ->withMetadata(
+                new PropertyNameCollection(['bar', 'anotherSubresource']),
+                $resourceClass = RelatedDummyEntity::class
+            );
 
-        $subresourceMetadataCollectionWithMaxDepth = (new PropertyMetadata())->withSubresource(new SubresourceMetadata(RelatedDummyEntity::class, false, 1));
-        $anotherSubresourceMetadata = (new PropertyMetadata())->withSubresource(new SubresourceMetadata(DummyEntity::class, false));
+        $propertyMetadataFactory = MappingPropertyMetadataFactory::from()
+            ->withMetadata(
+                (new PropertyMetadata())->withSubresource(new SubresourceMetadata($resourceClass = RelatedDummyEntity::class, $collection = false, $maxDepth = 1)),
+                $resourceClass = DummyEntity::class,
+                $property = 'subresource'
+            )
+            ->withMetadata(
+                new PropertyMetadata(),
+                $resourceClass = RelatedDummyEntity::class,
+                $property = 'bar'
+            )
+            ->withMetadata(
+                (new PropertyMetadata())->withSubresource(new SubresourceMetadata($resourceClass = DummyEntity::class, $collection = false)),
+                $resourceClass = RelatedDummyEntity::class,
+                $property = 'anotherSubresource'
+            );
 
-        $propertyMetadataFactoryProphecy = $this->prophesize(PropertyMetadataFactoryInterface::class);
-        $propertyMetadataFactoryProphecy->create(DummyEntity::class, 'subresource')->shouldBeCalled()->willReturn($subresourceMetadataCollectionWithMaxDepth);
-        $propertyMetadataFactoryProphecy->create(RelatedDummyEntity::class, 'bar')->shouldBeCalled()->willReturn(new PropertyMetadata());
-        $propertyMetadataFactoryProphecy->create(RelatedDummyEntity::class, 'anotherSubresource')->shouldBeCalled()->willReturn($anotherSubresourceMetadata);
-
-        $pathSegmentNameGeneratorProphecy = $this->prophesize(PathSegmentNameGeneratorInterface::class);
-        $pathSegmentNameGeneratorProphecy->getSegmentName('dummyEntity')->shouldBeCalled()->willReturn('dummy_entities');
-        $pathSegmentNameGeneratorProphecy->getSegmentName('subresource', false)->shouldBeCalled()->willReturn('subresource');
-
-        $subresourceOperationFactory = new SubresourceOperationFactory(
-                $resourceMetadataFactoryProphecy->reveal(),
-                $propertyNameCollectionFactoryProphecy->reveal(),
-                $propertyMetadataFactoryProphecy->reveal(),
-                $pathSegmentNameGeneratorProphecy->reveal()
-        );
+        $subresourceOperationFactory = new SubresourceOperationFactory($resourceMetadataFactory, $propertyNameCollectionMetadataFactory, $propertyMetadataFactory, new UnderscorePathSegmentNameGenerator());
 
         $this->assertEquals([
-            'api_dummy_entities_subresource_get_subresource' => [
+            'api_dummy_entities_subresource_item_get_subresource' => [
                 'property' => 'subresource',
                 'collection' => false,
                 'resource_class' => RelatedDummyEntity::class,
-                'shortNames' => ['relatedDummyEntity', 'dummyEntity'],
+                'shortNames' => ['dummyEntity', 'relatedDummyEntity'],
                 'identifiers' => [
-                    ['id', DummyEntity::class, true],
+                    ['id', DummyEntity::class, true, 'id'],
                 ],
-                'route_name' => 'api_dummy_entities_subresource_get_subresource',
+                'route_name' => 'api_dummy_entities_subresource_item_get_subresource',
                 'path' => '/dummy_entities/{id}/subresource.{_format}',
-                'operation_name' => 'subresource_get_subresource',
+                'operation_name' => 'subresource_item_get_subresource',
+                'method' => 'GET',
+            ] + SubresourceOperationFactory::ROUTE_OPTIONS,
+            'api_dummy_entities_subresource_item_delete_subresource' => [
+                'property' => 'subresource',
+                'collection' => false,
+                'resource_class' => RelatedDummyEntity::class,
+                'shortNames' => ['dummyEntity', 'relatedDummyEntity'],
+                'identifiers' => [
+                    ['id', DummyEntity::class, true, 'id'],
+                ],
+                'route_name' => 'api_dummy_entities_subresource_item_delete_subresource',
+                'path' => '/dummy_entities/{id}/subresource.{_format}',
+                'operation_name' => 'subresource_item_delete_subresource',
+                'method' => 'DELETE',
+            ] + SubresourceOperationFactory::ROUTE_OPTIONS,
+            'api_dummy_entities_subresource_item_put_subresource' => [
+                'property' => 'subresource',
+                'collection' => false,
+                'resource_class' => RelatedDummyEntity::class,
+                'shortNames' => ['dummyEntity', 'relatedDummyEntity'],
+                'identifiers' => [
+                    ['id', DummyEntity::class, true, 'id'],
+                ],
+                'route_name' => 'api_dummy_entities_subresource_item_put_subresource',
+                'path' => '/dummy_entities/{id}/subresource.{_format}',
+                'operation_name' => 'subresource_item_put_subresource',
+                'method' => 'PUT',
             ] + SubresourceOperationFactory::ROUTE_OPTIONS,
         ], $subresourceOperationFactory->create(DummyEntity::class));
     }
@@ -315,78 +883,175 @@ class SubresourceOperationFactoryTest extends TestCase
          * DummyEntity -subresource-> RelatedDummyEntity -anotherSubresource-> DummyEntity
          * DummyEntity -secondSubresource-> dummyValidatedEntity -moreSubresource-> RelatedDummyEntity.
          */
-        $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
-        $resourceMetadataFactoryProphecy->create(RelatedDummyEntity::class)->shouldBeCalled()->willReturn(new ResourceMetadata('relatedDummyEntity'));
-        $resourceMetadataFactoryProphecy->create(DummyEntity::class)->shouldBeCalled()->willReturn(new ResourceMetadata('dummyEntity'));
-        $resourceMetadataFactoryProphecy->create(DummyValidatedEntity::class)->shouldBeCalled()->willReturn(new ResourceMetadata('dummyValidatedEntity'));
+        $resourceMetadataFactory = new MappingResourceMetadataFactory([
+            DummyEntity::class => (new ResourceMetadata('dummyEntity')),
+            RelatedDummyEntity::class => new ResourceMetadata('relatedDummyEntity'),
+            DummyValidatedEntity::class => new ResourceMetadata('dummyValidatedEntity'),
+        ]);
 
-        $propertyNameCollectionFactoryProphecy = $this->prophesize(PropertyNameCollectionFactoryInterface::class);
-        $propertyNameCollectionFactoryProphecy->create(DummyEntity::class)->shouldBeCalled()->willReturn(new PropertyNameCollection(['subresource', 'secondSubresource']));
-        $propertyNameCollectionFactoryProphecy->create(RelatedDummyEntity::class)->shouldBeCalled()->willReturn(new PropertyNameCollection(['bar', 'anotherSubresource']));
-        $propertyNameCollectionFactoryProphecy->create(DummyValidatedEntity::class)->shouldBeCalled()->willReturn(new PropertyNameCollection(['moreSubresource']));
+        $propertyNameCollectionMetadataFactory = MappingPropertyNameCollectionMetadataFactory::from()
+            ->withMetadata(
+                new PropertyNameCollection(['subresource', 'secondSubresource']),
+                $resourceClass = DummyEntity::class
+            )
+            ->withMetadata(
+                new PropertyNameCollection(['bar', 'anotherSubresource']),
+                $resourceClass = RelatedDummyEntity::class
+            )
+            ->withMetadata(
+                new PropertyNameCollection(['moreSubresource']),
+                $resourceClass = DummyValidatedEntity::class
+            );
 
-        $subresourceMetadataCollectionWithMaxDepth = (new PropertyMetadata())->withSubresource(new SubresourceMetadata(RelatedDummyEntity::class, false, 1));
-        $anotherSubresourceMetadata = (new PropertyMetadata())->withSubresource(new SubresourceMetadata(DummyEntity::class, false));
-        $secondSubresourceMetadata = (new PropertyMetadata())->withSubresource(new SubresourceMetadata(DummyValidatedEntity::class, false, 2));
-        $moreSubresourceMetadata = (new PropertyMetadata())->withSubresource(new SubresourceMetadata(RelatedDummyEntity::class, false));
+        $propertyMetadataFactory = MappingPropertyMetadataFactory::from()
+            ->withMetadata(
+                (new PropertyMetadata())->withSubresource(new SubresourceMetadata($resourceClass = RelatedDummyEntity::class, $collection = false, $maxDepth = 1)),
+                $resourceClass = DummyEntity::class,
+                $property = 'subresource'
+            )
+            ->withMetadata(
+                (new PropertyMetadata())->withSubresource(new SubresourceMetadata($resourceClass = DummyValidatedEntity::class, $collection = false, $maxDepth = 2)),
+                $resourceClass = DummyEntity::class,
+                $property = 'secondSubresource'
+            )
+            ->withMetadata(
+                new PropertyMetadata(),
+                $resourceClass = RelatedDummyEntity::class,
+                $property = 'bar'
+            )
+            ->withMetadata(
+                (new PropertyMetadata())->withSubresource(new SubresourceMetadata($resourceClass = DummyEntity::class, $collection = false)),
+                $resourceClass = RelatedDummyEntity::class,
+                $property = 'anotherSubresource'
+            )
+            ->withMetadata(
+                (new PropertyMetadata())->withSubresource(new SubresourceMetadata($resourceClass = RelatedDummyEntity::class, $collection = false)),
+                $resourceClass = DummyValidatedEntity::class,
+                $property = 'moreSubresource'
+            );
 
-        $propertyMetadataFactoryProphecy = $this->prophesize(PropertyMetadataFactoryInterface::class);
-        $propertyMetadataFactoryProphecy->create(DummyEntity::class, 'subresource')->shouldBeCalled()->willReturn($subresourceMetadataCollectionWithMaxDepth);
-        $propertyMetadataFactoryProphecy->create(DummyEntity::class, 'secondSubresource')->shouldBeCalled()->willReturn($secondSubresourceMetadata);
-        $propertyMetadataFactoryProphecy->create(RelatedDummyEntity::class, 'bar')->shouldBeCalled()->willReturn(new PropertyMetadata());
-        $propertyMetadataFactoryProphecy->create(RelatedDummyEntity::class, 'anotherSubresource')->shouldBeCalled()->willReturn($anotherSubresourceMetadata);
-        $propertyMetadataFactoryProphecy->create(DummyValidatedEntity::class, 'moreSubresource')->shouldBeCalled()->willReturn($moreSubresourceMetadata);
-
-        $pathSegmentNameGeneratorProphecy = $this->prophesize(PathSegmentNameGeneratorInterface::class);
-        $pathSegmentNameGeneratorProphecy->getSegmentName('dummyEntity')->shouldBeCalled()->willReturn('dummy_entities');
-        $pathSegmentNameGeneratorProphecy->getSegmentName('subresource', false)->shouldBeCalled()->willReturn('subresources');
-        $pathSegmentNameGeneratorProphecy->getSegmentName('secondSubresource', false)->shouldBeCalled()->willReturn('second_subresources');
-        $pathSegmentNameGeneratorProphecy->getSegmentName('moreSubresource', false)->shouldBeCalled()->willReturn('mode_subresources');
-
-        $subresourceOperationFactory = new SubresourceOperationFactory(
-            $resourceMetadataFactoryProphecy->reveal(),
-            $propertyNameCollectionFactoryProphecy->reveal(),
-            $propertyMetadataFactoryProphecy->reveal(),
-            $pathSegmentNameGeneratorProphecy->reveal()
-        );
+        $subresourceOperationFactory = new SubresourceOperationFactory($resourceMetadataFactory, $propertyNameCollectionMetadataFactory, $propertyMetadataFactory, new UnderscorePathSegmentNameGenerator());
 
         $this->assertEquals([
-            'api_dummy_entities_subresource_get_subresource' => [
+            'api_dummy_entities_subresource_item_get_subresource' => [
                 'property' => 'subresource',
                 'collection' => false,
                 'resource_class' => RelatedDummyEntity::class,
-                'shortNames' => ['relatedDummyEntity', 'dummyEntity'],
+                'shortNames' => ['dummyEntity', 'relatedDummyEntity'],
                 'identifiers' => [
-                    ['id', DummyEntity::class, true],
+                    ['id', DummyEntity::class, true, 'id'],
                 ],
-                'route_name' => 'api_dummy_entities_subresource_get_subresource',
-                'path' => '/dummy_entities/{id}/subresources.{_format}',
-                'operation_name' => 'subresource_get_subresource',
+                'route_name' => 'api_dummy_entities_subresource_item_get_subresource',
+                'path' => '/dummy_entities/{id}/subresource.{_format}',
+                'operation_name' => 'subresource_item_get_subresource',
+                'method' => 'GET',
             ] + SubresourceOperationFactory::ROUTE_OPTIONS,
-            'api_dummy_entities_second_subresource_get_subresource' => [
+            'api_dummy_entities_subresource_item_delete_subresource' => [
+                'property' => 'subresource',
+                'collection' => false,
+                'resource_class' => RelatedDummyEntity::class,
+                'shortNames' => ['dummyEntity', 'relatedDummyEntity'],
+                'identifiers' => [
+                    ['id', DummyEntity::class, true, 'id'],
+                ],
+                'route_name' => 'api_dummy_entities_subresource_item_delete_subresource',
+                'path' => '/dummy_entities/{id}/subresource.{_format}',
+                'operation_name' => 'subresource_item_delete_subresource',
+                'method' => 'DELETE',
+            ] + SubresourceOperationFactory::ROUTE_OPTIONS,
+            'api_dummy_entities_subresource_item_put_subresource' => [
+                'property' => 'subresource',
+                'collection' => false,
+                'resource_class' => RelatedDummyEntity::class,
+                'shortNames' => ['dummyEntity', 'relatedDummyEntity'],
+                'identifiers' => [
+                    ['id', DummyEntity::class, true, 'id'],
+                ],
+                'route_name' => 'api_dummy_entities_subresource_item_put_subresource',
+                'path' => '/dummy_entities/{id}/subresource.{_format}',
+                'operation_name' => 'subresource_item_put_subresource',
+                'method' => 'PUT',
+            ] + SubresourceOperationFactory::ROUTE_OPTIONS,
+            'api_dummy_entities_second_subresource_item_get_subresource' => [
                 'property' => 'secondSubresource',
                 'collection' => false,
                 'resource_class' => DummyValidatedEntity::class,
-                'shortNames' => ['dummyValidatedEntity', 'dummyEntity'],
+                'shortNames' => ['dummyEntity', 'dummyValidatedEntity'],
                 'identifiers' => [
-                    ['id', DummyEntity::class, true],
+                    ['id', DummyEntity::class, true, 'id'],
                 ],
-                'route_name' => 'api_dummy_entities_second_subresource_get_subresource',
-                'path' => '/dummy_entities/{id}/second_subresources.{_format}',
-                'operation_name' => 'second_subresource_get_subresource',
+                'route_name' => 'api_dummy_entities_second_subresource_item_get_subresource',
+                'path' => '/dummy_entities/{id}/second_subresource.{_format}',
+                'operation_name' => 'second_subresource_item_get_subresource',
+                'method' => 'GET',
             ] + SubresourceOperationFactory::ROUTE_OPTIONS,
-            'api_dummy_entities_second_subresource_more_subresource_get_subresource' => [
+            'api_dummy_entities_second_subresource_item_delete_subresource' => [
+                'property' => 'secondSubresource',
+                'collection' => false,
+                'resource_class' => DummyValidatedEntity::class,
+                'shortNames' => ['dummyEntity', 'dummyValidatedEntity'],
+                'identifiers' => [
+                    ['id', DummyEntity::class, true, 'id'],
+                ],
+                'route_name' => 'api_dummy_entities_second_subresource_item_delete_subresource',
+                'path' => '/dummy_entities/{id}/second_subresource.{_format}',
+                'operation_name' => 'second_subresource_item_delete_subresource',
+                'method' => 'DELETE',
+            ] + SubresourceOperationFactory::ROUTE_OPTIONS,
+            'api_dummy_entities_second_subresource_item_put_subresource' => [
+                'property' => 'secondSubresource',
+                'collection' => false,
+                'resource_class' => DummyValidatedEntity::class,
+                'shortNames' => ['dummyEntity', 'dummyValidatedEntity'],
+                'identifiers' => [
+                    ['id', DummyEntity::class, true, 'id'],
+                ],
+                'route_name' => 'api_dummy_entities_second_subresource_item_put_subresource',
+                'path' => '/dummy_entities/{id}/second_subresource.{_format}',
+                'operation_name' => 'second_subresource_item_put_subresource',
+                'method' => 'PUT',
+            ] + SubresourceOperationFactory::ROUTE_OPTIONS,
+            'api_dummy_entities_second_subresource_more_subresource_item_get_subresource' => [
                 'property' => 'moreSubresource',
                 'collection' => false,
                 'resource_class' => RelatedDummyEntity::class,
-                'shortNames' => ['relatedDummyEntity', 'dummyValidatedEntity'],
+                'shortNames' => ['dummyEntity', 'dummyValidatedEntity', 'relatedDummyEntity'],
                 'identifiers' => [
-                    ['id', DummyEntity::class, true],
-                    ['secondSubresource', DummyValidatedEntity::class, false],
+                    ['id', DummyEntity::class, true, 'id'],
+                    ['secondSubresource', DummyValidatedEntity::class, false, 'secondSubresource'],
                 ],
-                'route_name' => 'api_dummy_entities_second_subresource_more_subresource_get_subresource',
-                'path' => '/dummy_entities/{id}/second_subresources/mode_subresources.{_format}',
-                'operation_name' => 'second_subresource_more_subresource_get_subresource',
+                'route_name' => 'api_dummy_entities_second_subresource_more_subresource_item_get_subresource',
+                'path' => '/dummy_entities/{id}/second_subresource/more_subresource.{_format}',
+                'operation_name' => 'second_subresource_more_subresource_item_get_subresource',
+                'method' => 'GET',
+            ] + SubresourceOperationFactory::ROUTE_OPTIONS,
+            'api_dummy_entities_second_subresource_more_subresource_item_delete_subresource' => [
+                'property' => 'moreSubresource',
+                'collection' => false,
+                'resource_class' => RelatedDummyEntity::class,
+                'shortNames' => ['dummyEntity', 'dummyValidatedEntity', 'relatedDummyEntity'],
+                'identifiers' => [
+                    ['id', DummyEntity::class, true, 'id'],
+                    ['secondSubresource', DummyValidatedEntity::class, false, 'secondSubresource'],
+                ],
+                'route_name' => 'api_dummy_entities_second_subresource_more_subresource_item_delete_subresource',
+                'path' => '/dummy_entities/{id}/second_subresource/more_subresource.{_format}',
+                'operation_name' => 'second_subresource_more_subresource_item_delete_subresource',
+                'method' => 'DELETE',
+            ] + SubresourceOperationFactory::ROUTE_OPTIONS,
+            'api_dummy_entities_second_subresource_more_subresource_item_put_subresource' => [
+                'property' => 'moreSubresource',
+                'collection' => false,
+                'resource_class' => RelatedDummyEntity::class,
+                'shortNames' => ['dummyEntity', 'dummyValidatedEntity', 'relatedDummyEntity'],
+                'identifiers' => [
+                    ['id', DummyEntity::class, true, 'id'],
+                    ['secondSubresource', DummyValidatedEntity::class, false, 'secondSubresource'],
+                ],
+                'route_name' => 'api_dummy_entities_second_subresource_more_subresource_item_put_subresource',
+                'path' => '/dummy_entities/{id}/second_subresource/more_subresource.{_format}',
+                'operation_name' => 'second_subresource_more_subresource_item_put_subresource',
+                'method' => 'PUT',
             ] + SubresourceOperationFactory::ROUTE_OPTIONS,
         ], $subresourceOperationFactory->create(DummyEntity::class));
     }
@@ -400,64 +1065,133 @@ class SubresourceOperationFactoryTest extends TestCase
          * DummyEntity -subresource (maxDepth=1)-> RelatedDummyEntity -anotherSubresource-> DummyEntity
          * DummyEntity -secondSubresource (maxDepth=1)-> dummyValidatedEntity -moreSubresource-> RelatedDummyEntity.
          */
-        $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
-        $resourceMetadataFactoryProphecy->create(DummyEntity::class)->shouldBeCalled()->willReturn(new ResourceMetadata('dummyEntity'));
-        $resourceMetadataFactoryProphecy->create(RelatedDummyEntity::class)->shouldBeCalled()->willReturn(new ResourceMetadata('relatedDummyEntity'));
-        $resourceMetadataFactoryProphecy->create(DummyValidatedEntity::class)->shouldBeCalled()->willReturn(new ResourceMetadata('dummyValidatedEntity'));
+        $resourceMetadataFactory = new MappingResourceMetadataFactory([
+            DummyEntity::class => (new ResourceMetadata('dummyEntity')),
+            RelatedDummyEntity::class => new ResourceMetadata('relatedDummyEntity'),
+            DummyValidatedEntity::class => new ResourceMetadata('dummyValidatedEntity'),
+        ]);
 
-        $propertyNameCollectionFactoryProphecy = $this->prophesize(PropertyNameCollectionFactoryInterface::class);
-        $propertyNameCollectionFactoryProphecy->create(DummyEntity::class)->shouldBeCalled()->willReturn(new PropertyNameCollection(['subresource', 'secondSubresource']));
-        $propertyNameCollectionFactoryProphecy->create(RelatedDummyEntity::class)->shouldBeCalled()->willReturn(new PropertyNameCollection(['bar', 'anotherSubresource']));
-        $propertyNameCollectionFactoryProphecy->create(DummyValidatedEntity::class)->shouldBeCalled()->willReturn(new PropertyNameCollection(['moreSubresource']));
+        $propertyNameCollectionMetadataFactory = MappingPropertyNameCollectionMetadataFactory::from()
+            ->withMetadata(
+                new PropertyNameCollection(['subresource', 'secondSubresource']),
+                $resourceClass = DummyEntity::class
+            )
+            ->withMetadata(
+                new PropertyNameCollection(['bar', 'anotherSubresource']),
+                $resourceClass = RelatedDummyEntity::class
+            )
+            ->withMetadata(
+                new PropertyNameCollection(['moreSubresource']),
+                $resourceClass = DummyValidatedEntity::class
+            );
 
-        $subresourceMetadataCollectionWithMaxDepth = (new PropertyMetadata())->withSubresource(new SubresourceMetadata(RelatedDummyEntity::class, false, 1));
-        $secondSubresourceMetadata = (new PropertyMetadata())->withSubresource(new SubresourceMetadata(DummyValidatedEntity::class, false, 1));
-        $anotherSubresourceMetadata = (new PropertyMetadata())->withSubresource(new SubresourceMetadata(DummyEntity::class, false));
-        $moreSubresourceMetadata = (new PropertyMetadata())->withSubresource(new SubresourceMetadata(RelatedDummyEntity::class, false));
+        $propertyMetadataFactory = MappingPropertyMetadataFactory::from()
+            ->withMetadata(
+                (new PropertyMetadata())->withSubresource(new SubresourceMetadata($resourceClass = RelatedDummyEntity::class, $collection = false, $maxDepth = 1)),
+                $resourceClass = DummyEntity::class,
+                $property = 'subresource'
+            )
+            ->withMetadata(
+                (new PropertyMetadata())->withSubresource(new SubresourceMetadata($resourceClass = DummyValidatedEntity::class, $collection = false, $maxDepth = 1)),
+                $resourceClass = DummyEntity::class,
+                $property = 'secondSubresource'
+            )
+            ->withMetadata(
+                new PropertyMetadata(),
+                $resourceClass = RelatedDummyEntity::class,
+                $property = 'bar'
+            )
+            ->withMetadata(
+                (new PropertyMetadata())->withSubresource(new SubresourceMetadata($resourceClass = DummyEntity::class, $collection = false)),
+                $resourceClass = RelatedDummyEntity::class,
+                $property = 'anotherSubresource'
+            )
+            ->withMetadata(
+                (new PropertyMetadata())->withSubresource(new SubresourceMetadata($resourceClass = RelatedDummyEntity::class, $collection = false)),
+                $resourceClass = DummyValidatedEntity::class,
+                $property = 'moreSubresource'
+            );
 
-        $propertyMetadataFactoryProphecy = $this->prophesize(PropertyMetadataFactoryInterface::class);
-        $propertyMetadataFactoryProphecy->create(DummyEntity::class, 'subresource')->shouldBeCalled()->willReturn($subresourceMetadataCollectionWithMaxDepth);
-        $propertyMetadataFactoryProphecy->create(DummyEntity::class, 'secondSubresource')->shouldBeCalled()->willReturn($secondSubresourceMetadata);
-        $propertyMetadataFactoryProphecy->create(RelatedDummyEntity::class, 'bar')->shouldBeCalled()->willReturn(new PropertyMetadata());
-        $propertyMetadataFactoryProphecy->create(RelatedDummyEntity::class, 'anotherSubresource')->shouldBeCalled()->willReturn($anotherSubresourceMetadata);
-        $propertyMetadataFactoryProphecy->create(DummyValidatedEntity::class, 'moreSubresource')->shouldBeCalled()->willReturn($moreSubresourceMetadata);
-
-        $pathSegmentNameGeneratorProphecy = $this->prophesize(PathSegmentNameGeneratorInterface::class);
-        $pathSegmentNameGeneratorProphecy->getSegmentName('dummyEntity')->shouldBeCalled()->willReturn('dummy_entities');
-        $pathSegmentNameGeneratorProphecy->getSegmentName('subresource', false)->shouldBeCalled()->willReturn('subresources');
-        $pathSegmentNameGeneratorProphecy->getSegmentName('secondSubresource', false)->shouldBeCalled()->willReturn('second_subresources');
-
-        $subresourceOperationFactory = new SubresourceOperationFactory(
-            $resourceMetadataFactoryProphecy->reveal(),
-            $propertyNameCollectionFactoryProphecy->reveal(),
-            $propertyMetadataFactoryProphecy->reveal(),
-            $pathSegmentNameGeneratorProphecy->reveal()
-        );
+        $subresourceOperationFactory = new SubresourceOperationFactory($resourceMetadataFactory, $propertyNameCollectionMetadataFactory, $propertyMetadataFactory, new UnderscorePathSegmentNameGenerator());
 
         $this->assertEquals([
-            'api_dummy_entities_subresource_get_subresource' => [
+            'api_dummy_entities_subresource_item_get_subresource' => [
                 'property' => 'subresource',
                 'collection' => false,
                 'resource_class' => RelatedDummyEntity::class,
-                'shortNames' => ['relatedDummyEntity', 'dummyEntity'],
+                'shortNames' => ['dummyEntity', 'relatedDummyEntity'],
                 'identifiers' => [
-                    ['id', DummyEntity::class, true],
+                    ['id', DummyEntity::class, true, 'id'],
                 ],
-                'route_name' => 'api_dummy_entities_subresource_get_subresource',
-                'path' => '/dummy_entities/{id}/subresources.{_format}',
-                'operation_name' => 'subresource_get_subresource',
+                'route_name' => 'api_dummy_entities_subresource_item_get_subresource',
+                'path' => '/dummy_entities/{id}/subresource.{_format}',
+                'operation_name' => 'subresource_item_get_subresource',
+                'method' => 'GET',
             ] + SubresourceOperationFactory::ROUTE_OPTIONS,
-            'api_dummy_entities_second_subresource_get_subresource' => [
+            'api_dummy_entities_subresource_item_delete_subresource' => [
+                'property' => 'subresource',
+                'collection' => false,
+                'resource_class' => RelatedDummyEntity::class,
+                'shortNames' => ['dummyEntity', 'relatedDummyEntity'],
+                'identifiers' => [
+                    ['id', DummyEntity::class, true, 'id'],
+                ],
+                'route_name' => 'api_dummy_entities_subresource_item_delete_subresource',
+                'path' => '/dummy_entities/{id}/subresource.{_format}',
+                'operation_name' => 'subresource_item_delete_subresource',
+                'method' => 'DELETE',
+            ] + SubresourceOperationFactory::ROUTE_OPTIONS,
+            'api_dummy_entities_subresource_item_put_subresource' => [
+                'property' => 'subresource',
+                'collection' => false,
+                'resource_class' => RelatedDummyEntity::class,
+                'shortNames' => ['dummyEntity', 'relatedDummyEntity'],
+                'identifiers' => [
+                    ['id', DummyEntity::class, true, 'id'],
+                ],
+                'route_name' => 'api_dummy_entities_subresource_item_put_subresource',
+                'path' => '/dummy_entities/{id}/subresource.{_format}',
+                'operation_name' => 'subresource_item_put_subresource',
+                'method' => 'PUT',
+            ] + SubresourceOperationFactory::ROUTE_OPTIONS,
+            'api_dummy_entities_second_subresource_item_get_subresource' => [
                 'property' => 'secondSubresource',
                 'collection' => false,
                 'resource_class' => DummyValidatedEntity::class,
-                'shortNames' => ['dummyValidatedEntity', 'dummyEntity'],
+                'shortNames' => ['dummyEntity', 'dummyValidatedEntity'],
                 'identifiers' => [
-                    ['id', DummyEntity::class, true],
+                    ['id', DummyEntity::class, true, 'id'],
                 ],
-                'route_name' => 'api_dummy_entities_second_subresource_get_subresource',
-                'path' => '/dummy_entities/{id}/second_subresources.{_format}',
-                'operation_name' => 'second_subresource_get_subresource',
+                'route_name' => 'api_dummy_entities_second_subresource_item_get_subresource',
+                'path' => '/dummy_entities/{id}/second_subresource.{_format}',
+                'operation_name' => 'second_subresource_item_get_subresource',
+                'method' => 'GET',
+            ] + SubresourceOperationFactory::ROUTE_OPTIONS,
+            'api_dummy_entities_second_subresource_item_delete_subresource' => [
+                'property' => 'secondSubresource',
+                'collection' => false,
+                'resource_class' => DummyValidatedEntity::class,
+                'shortNames' => ['dummyEntity', 'dummyValidatedEntity'],
+                'identifiers' => [
+                    ['id', DummyEntity::class, true, 'id'],
+                ],
+                'route_name' => 'api_dummy_entities_second_subresource_item_delete_subresource',
+                'path' => '/dummy_entities/{id}/second_subresource.{_format}',
+                'operation_name' => 'second_subresource_item_delete_subresource',
+                'method' => 'DELETE',
+            ] + SubresourceOperationFactory::ROUTE_OPTIONS,
+            'api_dummy_entities_second_subresource_item_put_subresource' => [
+                'property' => 'secondSubresource',
+                'collection' => false,
+                'resource_class' => DummyValidatedEntity::class,
+                'shortNames' => ['dummyEntity', 'dummyValidatedEntity'],
+                'identifiers' => [
+                    ['id', DummyEntity::class, true, 'id'],
+                ],
+                'route_name' => 'api_dummy_entities_second_subresource_item_put_subresource',
+                'path' => '/dummy_entities/{id}/second_subresource.{_format}',
+                'operation_name' => 'second_subresource_item_put_subresource',
+                'method' => 'PUT',
             ] + SubresourceOperationFactory::ROUTE_OPTIONS,
         ], $subresourceOperationFactory->create(DummyEntity::class));
     }
@@ -467,71 +1201,112 @@ class SubresourceOperationFactoryTest extends TestCase
         /**
          * DummyEntity -subresource-> DummyEntity -subresource-> DummyEntity ...
          */
-        $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
-        $resourceMetadataFactoryProphecy->create(DummyEntity::class)->shouldBeCalled()->willReturn(new ResourceMetadata('dummyEntity'));
+        $resourceMetadataFactory = new MappingResourceMetadataFactory([
+            DummyEntity::class => (new ResourceMetadata('dummyEntity')),
+        ]);
 
-        $propertyNameCollectionFactoryProphecy = $this->prophesize(PropertyNameCollectionFactoryInterface::class);
-        $propertyNameCollectionFactoryProphecy->create(DummyEntity::class)->shouldBeCalled()->willReturn(new PropertyNameCollection(['subresource']));
+        $propertyNameCollectionMetadataFactory = MappingPropertyNameCollectionMetadataFactory::from()
+            ->withMetadata(
+                new PropertyNameCollection(['subresource']),
+                $resourceClass = DummyEntity::class
+            );
 
-        $subresource = (new PropertyMetadata())->withSubresource(new SubresourceMetadata(DummyEntity::class, false));
+        $propertyMetadataFactory = MappingPropertyMetadataFactory::from()
+            ->withMetadata(
+                (new PropertyMetadata())->withSubresource(new SubresourceMetadata($resourceClass = DummyEntity::class, $collection = false)),
+                $resourceClass = DummyEntity::class,
+                $property = 'subresource'
+            );
 
-        $propertyMetadataFactoryProphecy = $this->prophesize(PropertyMetadataFactoryInterface::class);
-        $propertyMetadataFactoryProphecy->create(DummyEntity::class, 'subresource')->shouldBeCalled()->willReturn($subresource);
-
-        $pathSegmentNameGeneratorProphecy = $this->prophesize(PathSegmentNameGeneratorInterface::class);
-        $pathSegmentNameGeneratorProphecy->getSegmentName('dummyEntity')->shouldBeCalled()->willReturn('dummy_entities');
-        $pathSegmentNameGeneratorProphecy->getSegmentName('subresource', false)->shouldBeCalled()->willReturn('subresources');
-
-        $subresourceOperationFactory = new SubresourceOperationFactory(
-            $resourceMetadataFactoryProphecy->reveal(),
-            $propertyNameCollectionFactoryProphecy->reveal(),
-            $propertyMetadataFactoryProphecy->reveal(),
-            $pathSegmentNameGeneratorProphecy->reveal()
-        );
+        $subresourceOperationFactory = new SubresourceOperationFactory($resourceMetadataFactory, $propertyNameCollectionMetadataFactory, $propertyMetadataFactory, new UnderscorePathSegmentNameGenerator());
 
         $this->assertEquals([
-            'api_dummy_entities_subresource_get_subresource' => [
+            'api_dummy_entities_subresource_item_get_subresource' => [
                 'property' => 'subresource',
                 'collection' => false,
                 'resource_class' => DummyEntity::class,
                 'shortNames' => ['dummyEntity'],
                 'identifiers' => [
-                    ['id', DummyEntity::class, true],
+                    ['id', DummyEntity::class, true, 'id'],
                 ],
-                'route_name' => 'api_dummy_entities_subresource_get_subresource',
-                'path' => '/dummy_entities/{id}/subresources.{_format}',
-                'operation_name' => 'subresource_get_subresource',
+                'route_name' => 'api_dummy_entities_subresource_item_get_subresource',
+                'path' => '/dummy_entities/{id}/subresource.{_format}',
+                'operation_name' => 'subresource_item_get_subresource',
+                'method' => 'GET',
+            ] + SubresourceOperationFactory::ROUTE_OPTIONS,
+            'api_dummy_entities_subresource_item_delete_subresource' => [
+                'property' => 'subresource',
+                'collection' => false,
+                'resource_class' => DummyEntity::class,
+                'shortNames' => ['dummyEntity'],
+                'identifiers' => [
+                    ['id', DummyEntity::class, true, 'id'],
+                ],
+                'route_name' => 'api_dummy_entities_subresource_item_delete_subresource',
+                'path' => '/dummy_entities/{id}/subresource.{_format}',
+                'operation_name' => 'subresource_item_delete_subresource',
+                'method' => 'DELETE',
+            ] + SubresourceOperationFactory::ROUTE_OPTIONS,
+            'api_dummy_entities_subresource_item_put_subresource' => [
+                'property' => 'subresource',
+                'collection' => false,
+                'resource_class' => DummyEntity::class,
+                'shortNames' => ['dummyEntity'],
+                'identifiers' => [
+                    ['id', DummyEntity::class, true, 'id'],
+                ],
+                'route_name' => 'api_dummy_entities_subresource_item_put_subresource',
+                'path' => '/dummy_entities/{id}/subresource.{_format}',
+                'operation_name' => 'subresource_item_put_subresource',
+                'method' => 'PUT',
             ] + SubresourceOperationFactory::ROUTE_OPTIONS,
         ], $subresourceOperationFactory->create(DummyEntity::class));
     }
 
+    /**
+     * @group legacy
+     * @expectedDeprecation Declaring identifier property "id" (in class ApiPlatform\Core\Tests\Fixtures\RelatedDummyEntity) with @ApiSubresource as a workaround (https://github.com/api-platform/core/pull/1875) to enable subresource GET item operation is deprecated and will cause an error in Api-Platform 3.0. The operation(s) is now offered by default. Please remove the @ApiSubresource declaration in the "id" property.
+     */
     public function testCreateWithEnd()
     {
-        $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
-        $resourceMetadataFactoryProphecy->create(RelatedDummyEntity::class)->shouldBeCalled()->willReturn(new ResourceMetadata('relatedDummyEntity'));
-        $resourceMetadataFactoryProphecy->create(DummyEntity::class)->shouldBeCalled()->willReturn(new ResourceMetadata('dummyEntity'));
+        /**
+         * TODO: next major: remove the workaround.
+         *
+         * https://github.com/api-platform/core/pull/1875
+         *
+         * DummyEntity                        RelatedDummyEntity
+         * -subresource:RelatedDummyEntity    - id:int(@ApiSubresource)
+         *
+         * /dummies/{id}/subresources/{subresource}/id/{id} becomes /dummies/{id}/subresources/{subresource}
+         */
+        $resourceMetadataFactory = new MappingResourceMetadataFactory([
+            DummyEntity::class => (new ResourceMetadata('dummyEntity')),
+            RelatedDummyEntity::class => new ResourceMetadata('relatedDummyEntity'),
+        ]);
 
-        $propertyNameCollectionFactoryProphecy = $this->prophesize(PropertyNameCollectionFactoryInterface::class);
-        $propertyNameCollectionFactoryProphecy->create(DummyEntity::class)->shouldBeCalled()->willReturn(new PropertyNameCollection(['subresource']));
-        $propertyNameCollectionFactoryProphecy->create(RelatedDummyEntity::class)->shouldBeCalled()->willReturn(new PropertyNameCollection(['id']));
+        $propertyNameCollectionMetadataFactory = MappingPropertyNameCollectionMetadataFactory::from()
+            ->withMetadata(
+                new PropertyNameCollection(['subresource']),
+                $resourceClass = DummyEntity::class
+            )
+            ->withMetadata(
+                new PropertyNameCollection(['id']),
+                $resourceClass = RelatedDummyEntity::class
+            );
 
-        $subresourceMetadataCollection = (new PropertyMetadata())->withSubresource(new SubresourceMetadata(RelatedDummyEntity::class, true));
-        $identifierSubresourceMetadata = (new PropertyMetadata())->withSubresource(new SubresourceMetadata(DummyEntity::class, false))->withIdentifier(true);
+        $propertyMetadataFactory = MappingPropertyMetadataFactory::from()
+            ->withMetadata(
+                (new PropertyMetadata())->withSubresource(new SubresourceMetadata($resourceClass = RelatedDummyEntity::class, $collection = true)),
+                $resourceClass = DummyEntity::class,
+                $property = 'subresource'
+            )
+            ->withMetadata(
+                (new PropertyMetadata())->withSubresource(new SubresourceMetadata($resourceClass = DummyEntity::class, $collection = false))->withIdentifier(true),
+                $resourceClass = RelatedDummyEntity::class,
+                $property = 'id'
+            );
 
-        $propertyMetadataFactoryProphecy = $this->prophesize(PropertyMetadataFactoryInterface::class);
-        $propertyMetadataFactoryProphecy->create(DummyEntity::class, 'subresource')->shouldBeCalled()->willReturn($subresourceMetadataCollection);
-        $propertyMetadataFactoryProphecy->create(RelatedDummyEntity::class, 'id')->shouldBeCalled()->willReturn($identifierSubresourceMetadata);
-
-        $pathSegmentNameGeneratorProphecy = $this->prophesize(PathSegmentNameGeneratorInterface::class);
-        $pathSegmentNameGeneratorProphecy->getSegmentName('dummyEntity')->shouldBeCalled()->willReturn('dummy_entities');
-        $pathSegmentNameGeneratorProphecy->getSegmentName('subresource', true)->shouldBeCalled()->willReturn('subresource');
-
-        $subresourceOperationFactory = new SubresourceOperationFactory(
-                $resourceMetadataFactoryProphecy->reveal(),
-                $propertyNameCollectionFactoryProphecy->reveal(),
-                $propertyMetadataFactoryProphecy->reveal(),
-                $pathSegmentNameGeneratorProphecy->reveal()
-        );
+        $subresourceOperationFactory = new SubresourceOperationFactory($resourceMetadataFactory, $propertyNameCollectionMetadataFactory, $propertyMetadataFactory, new UnderscorePathSegmentNameGenerator());
 
         $result = $subresourceOperationFactory->create(DummyEntity::class);
         $this->assertEquals([
@@ -539,13 +1314,55 @@ class SubresourceOperationFactoryTest extends TestCase
                 'property' => 'subresource',
                 'collection' => true,
                 'resource_class' => RelatedDummyEntity::class,
-                'shortNames' => ['relatedDummyEntity', 'dummyEntity'],
+                'shortNames' => ['dummyEntity', 'relatedDummyEntity'],
                 'identifiers' => [
-                    ['id', DummyEntity::class, true],
+                    ['id', DummyEntity::class, true, 'id'],
                 ],
                 'route_name' => 'api_dummy_entities_subresources_get_subresource',
-                'path' => '/dummy_entities/{id}/subresource.{_format}',
+                'path' => '/dummy_entities/{id}/subresources.{_format}',
                 'operation_name' => 'subresources_get_subresource',
+                'method' => 'GET',
+            ] + SubresourceOperationFactory::ROUTE_OPTIONS,
+            'api_dummy_entities_subresources_post_subresource' => [
+                'property' => 'subresource',
+                'collection' => true,
+                'resource_class' => RelatedDummyEntity::class,
+                'shortNames' => ['dummyEntity', 'relatedDummyEntity'],
+                'identifiers' => [
+                    ['id', DummyEntity::class, true, 'id'],
+                ],
+                'route_name' => 'api_dummy_entities_subresources_post_subresource',
+                'path' => '/dummy_entities/{id}/subresources.{_format}',
+                'operation_name' => 'subresources_post_subresource',
+                'method' => 'POST',
+            ] + SubresourceOperationFactory::ROUTE_OPTIONS,
+            'api_dummy_entities_subresources_item_delete_subresource' => [
+                'property' => 'id',
+                'collection' => false,
+                'resource_class' => DummyEntity::class,
+                'shortNames' => ['dummyEntity', 'relatedDummyEntity'],
+                'identifiers' => [
+                    ['id', DummyEntity::class, true, 'id'],
+                    ['subresource', RelatedDummyEntity::class, true, 'subresource'],
+                ],
+                'route_name' => 'api_dummy_entities_subresources_item_delete_subresource',
+                'path' => '/dummy_entities/{id}/subresources/{subresource}.{_format}',
+                'operation_name' => 'subresources_item_delete_subresource',
+                'method' => 'DELETE',
+            ] + SubresourceOperationFactory::ROUTE_OPTIONS,
+            'api_dummy_entities_subresources_item_put_subresource' => [
+                'property' => 'id',
+                'collection' => false,
+                'resource_class' => DummyEntity::class,
+                'shortNames' => ['dummyEntity', 'relatedDummyEntity'],
+                'identifiers' => [
+                    ['id', DummyEntity::class, true, 'id'],
+                    ['subresource', RelatedDummyEntity::class, true, 'subresource'],
+                ],
+                'route_name' => 'api_dummy_entities_subresources_item_put_subresource',
+                'path' => '/dummy_entities/{id}/subresources/{subresource}.{_format}',
+                'operation_name' => 'subresources_item_put_subresource',
+                'method' => 'PUT',
             ] + SubresourceOperationFactory::ROUTE_OPTIONS,
             'api_dummy_entities_subresources_item_get_subresource' => [
                 'property' => 'id',
@@ -553,102 +1370,724 @@ class SubresourceOperationFactoryTest extends TestCase
                 'resource_class' => DummyEntity::class,
                 'shortNames' => ['dummyEntity', 'relatedDummyEntity'],
                 'identifiers' => [
-                    ['id', DummyEntity::class, true],
-                    ['subresource', RelatedDummyEntity::class, true],
+                    ['id', DummyEntity::class, true, 'id'],
+                    ['subresource', RelatedDummyEntity::class, true, 'subresource'],
                 ],
                 'route_name' => 'api_dummy_entities_subresources_item_get_subresource',
-                'path' => '/dummy_entities/{id}/subresource/{subresource}.{_format}',
+                'path' => '/dummy_entities/{id}/subresources/{subresource}.{_format}',
                 'operation_name' => 'subresources_item_get_subresource',
+                'method' => 'GET',
             ] + SubresourceOperationFactory::ROUTE_OPTIONS,
         ], $result);
     }
 
+    /**
+     * @dataProvider provideCreateAll
+     */
+    public function testCreateAll(
+        ResourceMetadataFactoryInterface $resourceMetadataFactory,
+        PropertyNameCollectionFactoryInterface $propertyNameCollectionFactory,
+        PropertyMetadataFactoryInterface $propertyMetadataFactory,
+        string $rootResourceClass,
+        array $expectedSubresourceOperations,
+        array $expectedDeprecations
+    ) {
+        $subresourceOperationFactory = new SubresourceOperationFactory(
+            $resourceMetadataFactory,
+            $propertyNameCollectionFactory,
+            $propertyMetadataFactory,
+            new UnderscorePathSegmentNameGenerator()
+        );
+
+        $actualDeprecations = [];
+        set_error_handler(function ($type, $msg) use (&$actualDeprecations) { $actualDeprecations[] = $msg; });
+        $e = error_reporting(E_USER_DEPRECATED);
+
+        $actualSubresourceOperations = $subresourceOperationFactory->create($rootResourceClass);
+
+        error_reporting($e);
+        restore_error_handler();
+
+        $sort = function (&$array) use (&$sort) {
+            foreach ($array as &$value) {
+                if (\is_array($value)) {
+                    $sort($value);
+                }
+            }
+
+            return ksort($array);
+        };
+
+        $sort($expectedSubresourceOperations);
+        $sort($actualSubresourceOperations);
+        $this->assertEquals(json_encode($expectedSubresourceOperations, JSON_PRETTY_PRINT), json_encode($actualSubresourceOperations, JSON_PRETTY_PRINT));
+
+        $this->assertSame($expectedDeprecations, $actualDeprecations);
+    }
+
+    public function provideCreateAll()
+    {
+        return [
+            'Subresource (collection = false) should result in item operations (GET, PUT, DELETE)' => [
+                $resourceMetadataFactory = new MappingResourceMetadataFactory([
+                    DummyEntity::class => (new ResourceMetadata('dummyEntity')),
+                ]),
+                $propertyNameCollectionFactory = MappingPropertyNameCollectionMetadataFactory::from()
+                    ->withMetadata(
+                        new PropertyNameCollection(['anotherSubresource']),
+                        $resourceClass = DummyEntity::class
+                    ),
+                $propertyMetadataFactory = MappingPropertyMetadataFactory::from()
+                    ->withMetadata(
+                        (new PropertyMetadata())->withSubresource(new SubresourceMetadata($resourceClass = DummyEntity::class, $collection = false)),
+                        $resourceClass = DummyEntity::class,
+                        $property = 'anotherSubresource'
+                    ),
+                $rootResourceClass = DummyEntity::class,
+                $expectedSubresourceOperations = [
+                    'api_dummy_entities_another_subresource_item_delete_subresource' => [
+                        'property' => 'anotherSubresource',
+                        'collection' => false,
+                        'resource_class' => DummyEntity::class,
+                        'shortNames' => ['dummyEntity'],
+                        'identifiers' => [
+                            ['id', DummyEntity::class, true, 'id'],
+                        ],
+                        'route_name' => 'api_dummy_entities_another_subresource_item_delete_subresource',
+                        'path' => '/dummy_entities/{id}/another_subresource.{_format}',
+                        'operation_name' => 'another_subresource_item_delete_subresource',
+                        'method' => 'DELETE',
+                    ] + SubresourceOperationFactory::ROUTE_OPTIONS,
+                    'api_dummy_entities_another_subresource_item_put_subresource' => [
+                        'property' => 'anotherSubresource',
+                        'collection' => false,
+                        'resource_class' => DummyEntity::class,
+                        'shortNames' => ['dummyEntity'],
+                        'identifiers' => [
+                            ['id', DummyEntity::class, true, 'id'],
+                        ],
+                        'route_name' => 'api_dummy_entities_another_subresource_item_put_subresource',
+                        'path' => '/dummy_entities/{id}/another_subresource.{_format}',
+                        'operation_name' => 'another_subresource_item_put_subresource',
+                        'method' => 'PUT',
+                    ] + SubresourceOperationFactory::ROUTE_OPTIONS,
+                    'api_dummy_entities_another_subresource_item_get_subresource' => [
+                        'property' => 'anotherSubresource',
+                        'collection' => false,
+                        'resource_class' => DummyEntity::class,
+                        'shortNames' => ['dummyEntity'],
+                        'identifiers' => [
+                            ['id', DummyEntity::class, true, 'id'],
+                        ],
+                        'route_name' => 'api_dummy_entities_another_subresource_item_get_subresource',
+                        'path' => '/dummy_entities/{id}/another_subresource.{_format}',
+                        'operation_name' => 'another_subresource_item_get_subresource',
+                        'method' => 'GET',
+                    ] + SubresourceOperationFactory::ROUTE_OPTIONS,
+                ],
+                $expectedDeprecations = [],
+            ],
+            'The later identifier of the same identifier name in the subresource chain should be renamed to a concatenated name' => [
+                $resourceMetadataFactory = new MappingResourceMetadataFactory([
+                    DummyEntity::class => (new ResourceMetadata('dummyEntity')),
+                    RelatedDummyEntity::class => (new ResourceMetadata('relatedDummyEntity')),
+                    DummyValidatedEntity::class => (new ResourceMetadata('dummyValidatedEntity')),
+                ]),
+                $propertyNameCollectionFactory = MappingPropertyNameCollectionMetadataFactory::from()
+                    ->withMetadata(
+                        new PropertyNameCollection(['anotherSubresource']),
+                        $resourceClass = DummyEntity::class
+                    )
+                    ->withMetadata(
+                        new PropertyNameCollection(['anotherSubresource']),
+                        $resourceClass = RelatedDummyEntity::class
+                    )
+                    ->withMetadata(
+                        new PropertyNameCollection(['anotherSubresource']),
+                        $resourceClass = DummyValidatedEntity::class
+                    ),
+                $propertyMetadataFactory = MappingPropertyMetadataFactory::from()
+                    ->withMetadata(
+                        (new PropertyMetadata())->withSubresource(new SubresourceMetadata($resourceClass = RelatedDummyEntity::class, $collection = true)),
+                        $resourceClass = DummyEntity::class,
+                        $property = 'anotherSubresource'
+                    )
+                    ->withMetadata(
+                        (new PropertyMetadata())->withSubresource(new SubresourceMetadata($resourceClass = DummyValidatedEntity::class, $collection = true)),
+                        $resourceClass = RelatedDummyEntity::class,
+                        $property = 'anotherSubresource'
+                    )
+                    ->withMetadata(
+                        (new PropertyMetadata())->withSubresource(new SubresourceMetadata($resourceClass = DummyEntity::class, $collection = true)),
+                        $resourceClass = DummyValidatedEntity::class,
+                        $property = 'anotherSubresource'
+                    ),
+                $rootResourceClass = DummyEntity::class,
+                $expectedSubresourceOperations = [
+                    'api_dummy_entities_another_subresources_get_subresource' => [
+                        'property' => 'anotherSubresource',
+                        'collection' => true,
+                        'resource_class' => RelatedDummyEntity::class,
+                        'shortNames' => ['dummyEntity', 'relatedDummyEntity'],
+                        'identifiers' => [
+                            ['id', DummyEntity::class, true, 'id'],
+                        ],
+                        'route_name' => 'api_dummy_entities_another_subresources_get_subresource',
+                        'path' => '/dummy_entities/{id}/another_subresources.{_format}',
+                        'operation_name' => 'another_subresources_get_subresource',
+                        'method' => 'GET',
+                    ] + SubresourceOperationFactory::ROUTE_OPTIONS,
+                    'api_dummy_entities_another_subresources_post_subresource' => [
+                        'property' => 'anotherSubresource',
+                        'collection' => true,
+                        'resource_class' => RelatedDummyEntity::class,
+                        'shortNames' => ['dummyEntity', 'relatedDummyEntity'],
+                        'identifiers' => [
+                            ['id', DummyEntity::class, true, 'id'],
+                        ],
+                        'route_name' => 'api_dummy_entities_another_subresources_post_subresource',
+                        'path' => '/dummy_entities/{id}/another_subresources.{_format}',
+                        'operation_name' => 'another_subresources_post_subresource',
+                        'method' => 'POST',
+                    ] + SubresourceOperationFactory::ROUTE_OPTIONS,
+                    'api_dummy_entities_another_subresources_item_delete_subresource' => [
+                        'property' => 'anotherSubresource',
+                        'collection' => false,
+                        'resource_class' => RelatedDummyEntity::class,
+                        'shortNames' => ['dummyEntity', 'relatedDummyEntity'],
+                        'identifiers' => [
+                            ['id', DummyEntity::class, true, 'id'],
+                            ['anotherSubresource', RelatedDummyEntity::class, true, 'anotherSubresource'],
+                        ],
+                        'route_name' => 'api_dummy_entities_another_subresources_item_delete_subresource',
+                        'path' => '/dummy_entities/{id}/another_subresources/{anotherSubresource}.{_format}',
+                        'operation_name' => 'another_subresources_item_delete_subresource',
+                        'method' => 'DELETE',
+                    ] + SubresourceOperationFactory::ROUTE_OPTIONS,
+                    'api_dummy_entities_another_subresources_item_put_subresource' => [
+                        'property' => 'anotherSubresource',
+                        'collection' => false,
+                        'resource_class' => RelatedDummyEntity::class,
+                        'shortNames' => ['dummyEntity', 'relatedDummyEntity'],
+                        'identifiers' => [
+                            ['id', DummyEntity::class, true, 'id'],
+                            ['anotherSubresource', RelatedDummyEntity::class, true, 'anotherSubresource'],
+                        ],
+                        'route_name' => 'api_dummy_entities_another_subresources_item_put_subresource',
+                        'path' => '/dummy_entities/{id}/another_subresources/{anotherSubresource}.{_format}',
+                        'operation_name' => 'another_subresources_item_put_subresource',
+                        'method' => 'PUT',
+                    ] + SubresourceOperationFactory::ROUTE_OPTIONS,
+                    'api_dummy_entities_another_subresources_item_get_subresource' => [
+                        'property' => 'anotherSubresource',
+                        'collection' => false,
+                        'resource_class' => RelatedDummyEntity::class,
+                        'shortNames' => ['dummyEntity', 'relatedDummyEntity'],
+                        'identifiers' => [
+                            ['id', DummyEntity::class, true, 'id'],
+                            ['anotherSubresource', RelatedDummyEntity::class, true, 'anotherSubresource'],
+                        ],
+                        'route_name' => 'api_dummy_entities_another_subresources_item_get_subresource',
+                        'path' => '/dummy_entities/{id}/another_subresources/{anotherSubresource}.{_format}',
+                        'operation_name' => 'another_subresources_item_get_subresource',
+                        'method' => 'GET',
+                    ] + SubresourceOperationFactory::ROUTE_OPTIONS,
+                    'api_dummy_entities_another_subresources_another_subresources_get_subresource' => [
+                        'property' => 'anotherSubresource',
+                        'collection' => true,
+                        'resource_class' => DummyValidatedEntity::class,
+                        'shortNames' => ['dummyEntity', 'relatedDummyEntity', 'dummyValidatedEntity'],
+                        'identifiers' => [
+                            ['id', DummyEntity::class, true, 'id'],
+                            ['anotherSubresource', RelatedDummyEntity::class, true, 'anotherSubresource'],
+                        ],
+                        'route_name' => 'api_dummy_entities_another_subresources_another_subresources_get_subresource',
+                        'path' => '/dummy_entities/{id}/another_subresources/{anotherSubresource}/another_subresources.{_format}',
+                        'operation_name' => 'another_subresources_another_subresources_get_subresource',
+                        'method' => 'GET',
+                    ] + SubresourceOperationFactory::ROUTE_OPTIONS,
+                    'api_dummy_entities_another_subresources_another_subresources_post_subresource' => [
+                        'property' => 'anotherSubresource',
+                        'collection' => true,
+                        'resource_class' => DummyValidatedEntity::class,
+                        'shortNames' => ['dummyEntity', 'relatedDummyEntity', 'dummyValidatedEntity'],
+                        'identifiers' => [
+                            ['id', DummyEntity::class, true, 'id'],
+                            ['anotherSubresource', RelatedDummyEntity::class, true, 'anotherSubresource'],
+                        ],
+                        'route_name' => 'api_dummy_entities_another_subresources_another_subresources_post_subresource',
+                        'path' => '/dummy_entities/{id}/another_subresources/{anotherSubresource}/another_subresources.{_format}',
+                        'operation_name' => 'another_subresources_another_subresources_post_subresource',
+                        'method' => 'POST',
+                    ] + SubresourceOperationFactory::ROUTE_OPTIONS,
+                    'api_dummy_entities_another_subresources_another_subresources_item_delete_subresource' => [
+                        'property' => 'anotherSubresource',
+                        'collection' => false,
+                        'resource_class' => DummyValidatedEntity::class,
+                        'shortNames' => ['dummyEntity', 'relatedDummyEntity', 'dummyValidatedEntity'],
+                        'identifiers' => [
+                            ['id', DummyEntity::class, true, 'id'],
+                            ['anotherSubresource', RelatedDummyEntity::class, true, 'anotherSubresource'],
+                            ['anotherSubresource', DummyValidatedEntity::class, true, 'anotherSubresourceAnotherSubresource'],
+                        ],
+                        'route_name' => 'api_dummy_entities_another_subresources_another_subresources_item_delete_subresource',
+                        'path' => '/dummy_entities/{id}/another_subresources/{anotherSubresource}/another_subresources/{anotherSubresourceAnotherSubresource}.{_format}',
+                        'operation_name' => 'another_subresources_another_subresources_item_delete_subresource',
+                        'method' => 'DELETE',
+                    ] + SubresourceOperationFactory::ROUTE_OPTIONS,
+                    'api_dummy_entities_another_subresources_another_subresources_item_put_subresource' => [
+                        'property' => 'anotherSubresource',
+                        'collection' => false,
+                        'resource_class' => DummyValidatedEntity::class,
+                        'shortNames' => ['dummyEntity', 'relatedDummyEntity', 'dummyValidatedEntity'],
+                        'identifiers' => [
+                            ['id', DummyEntity::class, true, 'id'],
+                            ['anotherSubresource', RelatedDummyEntity::class, true, 'anotherSubresource'],
+                            ['anotherSubresource', DummyValidatedEntity::class, true, 'anotherSubresourceAnotherSubresource'],
+                        ],
+                        'route_name' => 'api_dummy_entities_another_subresources_another_subresources_item_put_subresource',
+                        'path' => '/dummy_entities/{id}/another_subresources/{anotherSubresource}/another_subresources/{anotherSubresourceAnotherSubresource}.{_format}',
+                        'operation_name' => 'another_subresources_another_subresources_item_put_subresource',
+                        'method' => 'PUT',
+                    ] + SubresourceOperationFactory::ROUTE_OPTIONS,
+                    'api_dummy_entities_another_subresources_another_subresources_item_get_subresource' => [
+                        'property' => 'anotherSubresource',
+                        'collection' => false,
+                        'resource_class' => DummyValidatedEntity::class,
+                        'shortNames' => ['dummyEntity', 'relatedDummyEntity', 'dummyValidatedEntity'],
+                        'identifiers' => [
+                            ['id', DummyEntity::class, true, 'id'],
+                            ['anotherSubresource', RelatedDummyEntity::class, true, 'anotherSubresource'],
+                            ['anotherSubresource', DummyValidatedEntity::class, true, 'anotherSubresourceAnotherSubresource'],
+                        ],
+                        'route_name' => 'api_dummy_entities_another_subresources_another_subresources_item_get_subresource',
+                        'path' => '/dummy_entities/{id}/another_subresources/{anotherSubresource}/another_subresources/{anotherSubresourceAnotherSubresource}.{_format}',
+                        'operation_name' => 'another_subresources_another_subresources_item_get_subresource',
+                        'method' => 'GET',
+                    ] + SubresourceOperationFactory::ROUTE_OPTIONS,
+                    'api_dummy_entities_another_subresources_another_subresources_another_subresources_get_subresource' => [
+                        'property' => 'anotherSubresource',
+                        'collection' => true,
+                        'resource_class' => DummyEntity::class,
+                        'shortNames' => ['dummyEntity', 'relatedDummyEntity', 'dummyValidatedEntity'],
+                        'identifiers' => [
+                            ['id', DummyEntity::class, true, 'id'],
+                            ['anotherSubresource', RelatedDummyEntity::class, true, 'anotherSubresource'],
+                            ['anotherSubresource', DummyValidatedEntity::class, true, 'anotherSubresourceAnotherSubresource'],
+                        ],
+                        'route_name' => 'api_dummy_entities_another_subresources_another_subresources_another_subresources_get_subresource',
+                        'path' => '/dummy_entities/{id}/another_subresources/{anotherSubresource}/another_subresources/{anotherSubresourceAnotherSubresource}/another_subresources.{_format}',
+                        'operation_name' => 'another_subresources_another_subresources_another_subresources_get_subresource',
+                        'method' => 'GET',
+                    ] + SubresourceOperationFactory::ROUTE_OPTIONS,
+                    'api_dummy_entities_another_subresources_another_subresources_another_subresources_post_subresource' => [
+                        'property' => 'anotherSubresource',
+                        'collection' => true,
+                        'resource_class' => DummyEntity::class,
+                        'shortNames' => ['dummyEntity', 'relatedDummyEntity', 'dummyValidatedEntity'],
+                        'identifiers' => [
+                            ['id', DummyEntity::class, true, 'id'],
+                            ['anotherSubresource', RelatedDummyEntity::class, true, 'anotherSubresource'],
+                            ['anotherSubresource', DummyValidatedEntity::class, true, 'anotherSubresourceAnotherSubresource'],
+                        ],
+                        'route_name' => 'api_dummy_entities_another_subresources_another_subresources_another_subresources_post_subresource',
+                        'path' => '/dummy_entities/{id}/another_subresources/{anotherSubresource}/another_subresources/{anotherSubresourceAnotherSubresource}/another_subresources.{_format}',
+                        'operation_name' => 'another_subresources_another_subresources_another_subresources_post_subresource',
+                        'method' => 'POST',
+                    ] + SubresourceOperationFactory::ROUTE_OPTIONS,
+                    'api_dummy_entities_another_subresources_another_subresources_another_subresources_item_delete_subresource' => [
+                        'property' => 'anotherSubresource',
+                        'collection' => false,
+                        'resource_class' => DummyEntity::class,
+                        'shortNames' => ['dummyEntity', 'relatedDummyEntity', 'dummyValidatedEntity'],
+                        'identifiers' => [
+                            ['id', DummyEntity::class, true, 'id'],
+                            ['anotherSubresource', RelatedDummyEntity::class, true, 'anotherSubresource'],
+                            ['anotherSubresource', DummyValidatedEntity::class, true, 'anotherSubresourceAnotherSubresource'],
+                            ['anotherSubresource', DummyEntity::class, true, 'anotherSubresourceAnotherSubresourceAnotherSubresource'],
+                        ],
+                        'route_name' => 'api_dummy_entities_another_subresources_another_subresources_another_subresources_item_delete_subresource',
+                        'path' => '/dummy_entities/{id}/another_subresources/{anotherSubresource}/another_subresources/{anotherSubresourceAnotherSubresource}/another_subresources/{anotherSubresourceAnotherSubresourceAnotherSubresource}.{_format}',
+                        'operation_name' => 'another_subresources_another_subresources_another_subresources_item_delete_subresource',
+                        'method' => 'DELETE',
+                    ] + SubresourceOperationFactory::ROUTE_OPTIONS,
+                    'api_dummy_entities_another_subresources_another_subresources_another_subresources_item_put_subresource' => [
+                        'property' => 'anotherSubresource',
+                        'collection' => false,
+                        'resource_class' => DummyEntity::class,
+                        'shortNames' => ['dummyEntity', 'relatedDummyEntity', 'dummyValidatedEntity'],
+                        'identifiers' => [
+                            ['id', DummyEntity::class, true, 'id'],
+                            ['anotherSubresource', RelatedDummyEntity::class, true, 'anotherSubresource'],
+                            ['anotherSubresource', DummyValidatedEntity::class, true, 'anotherSubresourceAnotherSubresource'],
+                            ['anotherSubresource', DummyEntity::class, true, 'anotherSubresourceAnotherSubresourceAnotherSubresource'],
+                        ],
+                        'route_name' => 'api_dummy_entities_another_subresources_another_subresources_another_subresources_item_put_subresource',
+                        'path' => '/dummy_entities/{id}/another_subresources/{anotherSubresource}/another_subresources/{anotherSubresourceAnotherSubresource}/another_subresources/{anotherSubresourceAnotherSubresourceAnotherSubresource}.{_format}',
+                        'operation_name' => 'another_subresources_another_subresources_another_subresources_item_put_subresource',
+                        'method' => 'PUT',
+                    ] + SubresourceOperationFactory::ROUTE_OPTIONS,
+                    'api_dummy_entities_another_subresources_another_subresources_another_subresources_item_get_subresource' => [
+                        'property' => 'anotherSubresource',
+                        'collection' => false,
+                        'resource_class' => DummyEntity::class,
+                        'shortNames' => ['dummyEntity', 'relatedDummyEntity', 'dummyValidatedEntity'],
+                        'identifiers' => [
+                            ['id', DummyEntity::class, true, 'id'],
+                            ['anotherSubresource', RelatedDummyEntity::class, true, 'anotherSubresource'],
+                            ['anotherSubresource', DummyValidatedEntity::class, true, 'anotherSubresourceAnotherSubresource'],
+                            ['anotherSubresource', DummyEntity::class, true, 'anotherSubresourceAnotherSubresourceAnotherSubresource'],
+                        ],
+                        'route_name' => 'api_dummy_entities_another_subresources_another_subresources_another_subresources_item_get_subresource',
+                        'path' => '/dummy_entities/{id}/another_subresources/{anotherSubresource}/another_subresources/{anotherSubresourceAnotherSubresource}/another_subresources/{anotherSubresourceAnotherSubresourceAnotherSubresource}.{_format}',
+                        'operation_name' => 'another_subresources_another_subresources_another_subresources_item_get_subresource',
+                        'method' => 'GET',
+                    ] + SubresourceOperationFactory::ROUTE_OPTIONS,
+                ],
+                $expectedDeprecations = [],
+            ],
+            'Subresource (collection = true) should result in collection operations (GET, POST) and item operations (GET, PUT, DELETE)' => [
+                $resourceMetadataFactory = new MappingResourceMetadataFactory([
+                    DummyEntity::class => (new ResourceMetadata('dummyEntity')),
+                ]),
+                $propertyNameCollectionFactory = MappingPropertyNameCollectionMetadataFactory::from()
+                    ->withMetadata(
+                        new PropertyNameCollection(['subcollection']),
+                        $resourceClass = DummyEntity::class
+                    ),
+                $propertyMetadataFactory = MappingPropertyMetadataFactory::from()
+                    ->withMetadata(
+                        (new PropertyMetadata())->withSubresource(new SubresourceMetadata($resourceClass = DummyEntity::class, $collection = true)),
+                        $resourceClass = DummyEntity::class,
+                        $property = 'subcollection'
+                    ),
+                $rootResourceClass = DummyEntity::class,
+                $expectedSubresourceOperations = [
+                    'api_dummy_entities_subcollections_get_subresource' => [
+                        'property' => 'subcollection',
+                        'collection' => true,
+                        'resource_class' => DummyEntity::class,
+                        'shortNames' => ['dummyEntity'],
+                        'identifiers' => [
+                            ['id', DummyEntity::class, true, 'id'],
+                        ],
+                        'route_name' => 'api_dummy_entities_subcollections_get_subresource',
+                        'path' => '/dummy_entities/{id}/subcollections.{_format}',
+                        'operation_name' => 'subcollections_get_subresource',
+                        'method' => 'GET',
+                    ] + SubresourceOperationFactory::ROUTE_OPTIONS,
+                    'api_dummy_entities_subcollections_post_subresource' => [
+                        'property' => 'subcollection',
+                        'collection' => true,
+                        'resource_class' => DummyEntity::class,
+                        'shortNames' => ['dummyEntity'],
+                        'identifiers' => [
+                            ['id', DummyEntity::class, true, 'id'],
+                        ],
+                        'route_name' => 'api_dummy_entities_subcollections_post_subresource',
+                        'path' => '/dummy_entities/{id}/subcollections.{_format}',
+                        'operation_name' => 'subcollections_post_subresource',
+                        'method' => 'POST',
+                    ] + SubresourceOperationFactory::ROUTE_OPTIONS,
+                    'api_dummy_entities_subcollections_item_delete_subresource' => [
+                        'property' => 'subcollection',
+                        'collection' => false,
+                        'resource_class' => DummyEntity::class,
+                        'shortNames' => ['dummyEntity'],
+                        'identifiers' => [
+                            ['id', DummyEntity::class, true, 'id'],
+                            ['subcollection', DummyEntity::class, true, 'subcollection'],
+                        ],
+                        'route_name' => 'api_dummy_entities_subcollections_item_delete_subresource',
+                        'path' => '/dummy_entities/{id}/subcollections/{subcollection}.{_format}',
+                        'operation_name' => 'subcollections_item_delete_subresource',
+                        'method' => 'DELETE',
+                    ] + SubresourceOperationFactory::ROUTE_OPTIONS,
+                    'api_dummy_entities_subcollections_item_put_subresource' => [
+                        'property' => 'subcollection',
+                        'collection' => false,
+                        'resource_class' => DummyEntity::class,
+                        'shortNames' => ['dummyEntity'],
+                        'identifiers' => [
+                            ['id', DummyEntity::class, true, 'id'],
+                            ['subcollection', DummyEntity::class, true, 'subcollection'],
+                        ],
+                        'route_name' => 'api_dummy_entities_subcollections_item_put_subresource',
+                        'path' => '/dummy_entities/{id}/subcollections/{subcollection}.{_format}',
+                        'operation_name' => 'subcollections_item_put_subresource',
+                        'method' => 'PUT',
+                    ] + SubresourceOperationFactory::ROUTE_OPTIONS,
+                    'api_dummy_entities_subcollections_item_get_subresource' => [
+                        'property' => 'subcollection',
+                        'collection' => false,
+                        'resource_class' => DummyEntity::class,
+                        'shortNames' => ['dummyEntity'],
+                        'identifiers' => [
+                            ['id', DummyEntity::class, true, 'id'],
+                            ['subcollection', DummyEntity::class, true, 'subcollection'],
+                        ],
+                        'route_name' => 'api_dummy_entities_subcollections_item_get_subresource',
+                        'path' => '/dummy_entities/{id}/subcollections/{subcollection}.{_format}',
+                        'operation_name' => 'subcollections_item_get_subresource',
+                        'method' => 'GET',
+                    ] + SubresourceOperationFactory::ROUTE_OPTIONS,
+                ],
+                $expectedDeprecations = [],
+            ],
+            // TODO: next major: remove the workaround test case (they are deprecated)
+            'BC: Subresource (collection = true, identifier = true) should result in collection operations (GET, POST) and item operations (GET, PUT, DELETE) and a deprecation notice' => [
+                $resourceMetadataFactory = new MappingResourceMetadataFactory([
+                    DummyEntity::class => (new ResourceMetadata('dummyEntity')),
+                    RelatedDummyEntity::class => (new ResourceMetadata('relatedDummyEntity')),
+                ]),
+                $propertyNameCollectionFactory = MappingPropertyNameCollectionMetadataFactory::from()
+                    ->withMetadata(
+                        new PropertyNameCollection(['subresource']),
+                        $resourceClass = DummyEntity::class
+                    )
+                    ->withMetadata(
+                        new PropertyNameCollection(['id']),
+                        $resourceClass = RelatedDummyEntity::class
+                    ),
+                $propertyMetadataFactory = MappingPropertyMetadataFactory::from()
+                    ->withMetadata(
+                        (new PropertyMetadata())->withSubresource(new SubresourceMetadata($resourceClass = RelatedDummyEntity::class, $collection = true)),
+                        $resourceClass = DummyEntity::class,
+                        $property = 'subresource'
+                    )
+                    ->withMetadata(
+                        (new PropertyMetadata())->withSubresource(new SubresourceMetadata($resourceClass = DummyEntity::class, $collection = false))->withIdentifier(true),
+                        $resourceClass = RelatedDummyEntity::class,
+                        $property = 'id'
+                    ),
+                $rootResourceClass = DummyEntity::class,
+                $expectedSubresourceOperations = [
+                    'api_dummy_entities_subresources_get_subresource' => [
+                        'property' => 'subresource',
+                        'collection' => true,
+                        'resource_class' => RelatedDummyEntity::class,
+                        'shortNames' => ['dummyEntity', 'relatedDummyEntity'],
+                        'identifiers' => [
+                            ['id', DummyEntity::class, true, 'id'],
+                        ],
+                        'route_name' => 'api_dummy_entities_subresources_get_subresource',
+                        'path' => '/dummy_entities/{id}/subresources.{_format}',
+                        'operation_name' => 'subresources_get_subresource',
+                        'method' => 'GET',
+                    ] + SubresourceOperationFactory::ROUTE_OPTIONS,
+                    'api_dummy_entities_subresources_post_subresource' => [
+                        'property' => 'subresource',
+                        'collection' => true,
+                        'resource_class' => RelatedDummyEntity::class,
+                        'shortNames' => ['dummyEntity', 'relatedDummyEntity'],
+                        'identifiers' => [
+                            ['id', DummyEntity::class, true, 'id'],
+                        ],
+                        'route_name' => 'api_dummy_entities_subresources_post_subresource',
+                        'path' => '/dummy_entities/{id}/subresources.{_format}',
+                        'operation_name' => 'subresources_post_subresource',
+                        'method' => 'POST',
+                    ] + SubresourceOperationFactory::ROUTE_OPTIONS,
+                    'api_dummy_entities_subresources_item_delete_subresource' => [
+                        'property' => 'id',
+                        'collection' => false,
+                        'resource_class' => DummyEntity::class,
+                        'shortNames' => ['dummyEntity', 'relatedDummyEntity'],
+                        'identifiers' => [
+                            ['id', DummyEntity::class, true, 'id'],
+                            ['subresource', RelatedDummyEntity::class, true, 'subresource'],
+                        ],
+                        'route_name' => 'api_dummy_entities_subresources_item_delete_subresource',
+                        'path' => '/dummy_entities/{id}/subresources/{subresource}.{_format}',
+                        'operation_name' => 'subresources_item_delete_subresource',
+                        'method' => 'DELETE',
+                    ] + SubresourceOperationFactory::ROUTE_OPTIONS,
+                    'api_dummy_entities_subresources_item_put_subresource' => [
+                        'property' => 'id',
+                        'collection' => false,
+                        'resource_class' => DummyEntity::class,
+                        'shortNames' => ['dummyEntity', 'relatedDummyEntity'],
+                        'identifiers' => [
+                            ['id', DummyEntity::class, true, 'id'],
+                            ['subresource', RelatedDummyEntity::class, true, 'subresource'],
+                        ],
+                        'route_name' => 'api_dummy_entities_subresources_item_put_subresource',
+                        'path' => '/dummy_entities/{id}/subresources/{subresource}.{_format}',
+                        'operation_name' => 'subresources_item_put_subresource',
+                        'method' => 'PUT',
+                    ] + SubresourceOperationFactory::ROUTE_OPTIONS,
+                    'api_dummy_entities_subresources_item_get_subresource' => [
+                        'property' => 'id',
+                        'collection' => false,
+                        'resource_class' => DummyEntity::class,
+                        'shortNames' => ['dummyEntity', 'relatedDummyEntity'],
+                        'identifiers' => [
+                            ['id', DummyEntity::class, true, 'id'],
+                            ['subresource', RelatedDummyEntity::class, true, 'subresource'],
+                        ],
+                        'route_name' => 'api_dummy_entities_subresources_item_get_subresource',
+                        'path' => '/dummy_entities/{id}/subresources/{subresource}.{_format}',
+                        'operation_name' => 'subresources_item_get_subresource',
+                        'method' => 'GET',
+                    ] + SubresourceOperationFactory::ROUTE_OPTIONS,
+                ],
+                $expectedDeprecations = [
+                    'Declaring identifier property "id" (in class ApiPlatform\Core\Tests\Fixtures\RelatedDummyEntity) with @ApiSubresource as a workaround (https://github.com/api-platform/core/pull/1875) to enable subresource GET item operation is deprecated and will cause an error in Api-Platform 3.0. The operation(s) is now offered by default. Please remove the @ApiSubresource declaration in the "id" property.',
+                ],
+            ],
+        ];
+    }
+
     public function testCreateWithEndButNoCollection()
     {
-        $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
-        $resourceMetadataFactoryProphecy->create(RelatedDummyEntity::class)->shouldBeCalled()->willReturn(new ResourceMetadata('relatedDummyEntity'));
-        $resourceMetadataFactoryProphecy->create(DummyEntity::class)->shouldBeCalled()->willReturn(new ResourceMetadata('dummyEntity'));
+        $resourceMetadataFactory = new MappingResourceMetadataFactory([
+            DummyEntity::class => (new ResourceMetadata('dummyEntity')),
+            RelatedDummyEntity::class => new ResourceMetadata('relatedDummyEntity'),
+        ]);
 
-        $propertyNameCollectionFactoryProphecy = $this->prophesize(PropertyNameCollectionFactoryInterface::class);
-        $propertyNameCollectionFactoryProphecy->create(DummyEntity::class)->shouldBeCalled()->willReturn(new PropertyNameCollection(['subresource']));
-        $propertyNameCollectionFactoryProphecy->create(RelatedDummyEntity::class)->shouldBeCalled()->willReturn(new PropertyNameCollection(['id']));
+        $propertyNameCollectionMetadataFactory = MappingPropertyNameCollectionMetadataFactory::from()
+            ->withMetadata(
+                new PropertyNameCollection(['subresource']),
+                $resourceClass = DummyEntity::class
+            )
+            ->withMetadata(
+                new PropertyNameCollection(['id']),
+                $resourceClass = RelatedDummyEntity::class
+            );
 
-        $subresourceMetadataCollection = (new PropertyMetadata())->withSubresource(new SubresourceMetadata(RelatedDummyEntity::class, false));
-        $identifierSubresourceMetadata = (new PropertyMetadata())->withSubresource(new SubresourceMetadata(DummyEntity::class, false))->withIdentifier(true);
+        $propertyMetadataFactory = MappingPropertyMetadataFactory::from()
+            ->withMetadata(
+                (new PropertyMetadata())->withSubresource(new SubresourceMetadata($resourceClass = RelatedDummyEntity::class, $collection = false)),
+                $resourceClass = DummyEntity::class,
+                $property = 'subresource'
+            )
+            ->withMetadata(
+                (new PropertyMetadata())->withSubresource(new SubresourceMetadata($resourceClass = DummyEntity::class, $collection = false))->withIdentifier(true),
+                $resourceClass = RelatedDummyEntity::class,
+                $property = 'id'
+            );
 
-        $propertyMetadataFactoryProphecy = $this->prophesize(PropertyMetadataFactoryInterface::class);
-        $propertyMetadataFactoryProphecy->create(DummyEntity::class, 'subresource')->shouldBeCalled()->willReturn($subresourceMetadataCollection);
-        $propertyMetadataFactoryProphecy->create(RelatedDummyEntity::class, 'id')->shouldBeCalled()->willReturn($identifierSubresourceMetadata);
-
-        $pathSegmentNameGeneratorProphecy = $this->prophesize(PathSegmentNameGeneratorInterface::class);
-        $pathSegmentNameGeneratorProphecy->getSegmentName('dummyEntity')->shouldBeCalled()->willReturn('dummy_entities');
-        $pathSegmentNameGeneratorProphecy->getSegmentName('subresource', false)->shouldBeCalled()->willReturn('subresource');
-
-        $subresourceOperationFactory = new SubresourceOperationFactory(
-                $resourceMetadataFactoryProphecy->reveal(),
-                $propertyNameCollectionFactoryProphecy->reveal(),
-                $propertyMetadataFactoryProphecy->reveal(),
-                $pathSegmentNameGeneratorProphecy->reveal()
-        );
+        $subresourceOperationFactory = new SubresourceOperationFactory($resourceMetadataFactory, $propertyNameCollectionMetadataFactory, $propertyMetadataFactory, new UnderscorePathSegmentNameGenerator());
 
         $result = $subresourceOperationFactory->create(DummyEntity::class);
         $this->assertEquals([
-            'api_dummy_entities_subresource_get_subresource' => [
+            'api_dummy_entities_subresource_item_get_subresource' => [
                 'property' => 'subresource',
                 'collection' => false,
                 'resource_class' => RelatedDummyEntity::class,
-                'shortNames' => ['relatedDummyEntity', 'dummyEntity'],
+                'shortNames' => ['dummyEntity', 'relatedDummyEntity'],
                 'identifiers' => [
-                    ['id', DummyEntity::class, true],
+                    ['id', DummyEntity::class, true, 'id'],
                 ],
-                'route_name' => 'api_dummy_entities_subresource_get_subresource',
+                'route_name' => 'api_dummy_entities_subresource_item_get_subresource',
                 'path' => '/dummy_entities/{id}/subresource.{_format}',
-                'operation_name' => 'subresource_get_subresource',
+                'operation_name' => 'subresource_item_get_subresource',
+                'method' => 'GET',
+            ] + SubresourceOperationFactory::ROUTE_OPTIONS,
+            'api_dummy_entities_subresource_item_delete_subresource' => [
+                'property' => 'subresource',
+                'collection' => false,
+                'resource_class' => RelatedDummyEntity::class,
+                'shortNames' => ['dummyEntity', 'relatedDummyEntity'],
+                'identifiers' => [
+                    ['id', DummyEntity::class, true, 'id'],
+                ],
+                'route_name' => 'api_dummy_entities_subresource_item_delete_subresource',
+                'path' => '/dummy_entities/{id}/subresource.{_format}',
+                'operation_name' => 'subresource_item_delete_subresource',
+                'method' => 'DELETE',
+            ] + SubresourceOperationFactory::ROUTE_OPTIONS,
+            'api_dummy_entities_subresource_item_put_subresource' => [
+                'property' => 'subresource',
+                'collection' => false,
+                'resource_class' => RelatedDummyEntity::class,
+                'shortNames' => ['dummyEntity', 'relatedDummyEntity'],
+                'identifiers' => [
+                    ['id', DummyEntity::class, true, 'id'],
+                ],
+                'route_name' => 'api_dummy_entities_subresource_item_put_subresource',
+                'path' => '/dummy_entities/{id}/subresource.{_format}',
+                'operation_name' => 'subresource_item_put_subresource',
+                'method' => 'PUT',
             ] + SubresourceOperationFactory::ROUTE_OPTIONS,
         ], $result);
     }
 
     public function testCreateWithRootResourcePrefix()
     {
-        $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
-        $resourceMetadataFactoryProphecy->create(RelatedDummyEntity::class)->shouldBeCalled()->willReturn(new ResourceMetadata('relatedDummyEntity'));
-        $resourceMetadataFactoryProphecy->create(DummyEntity::class)->shouldBeCalled()->willReturn(new ResourceMetadata('dummyEntity', null, null, null, null, ['route_prefix' => 'root_resource_prefix']));
+        $resourceMetadataFactory = new MappingResourceMetadataFactory([
+            DummyEntity::class => new ResourceMetadata('dummyEntity', null, null, null, null, ['route_prefix' => 'root_resource_prefix']),
+            RelatedDummyEntity::class => new ResourceMetadata('relatedDummyEntity'),
+        ]);
 
-        $propertyNameCollectionFactoryProphecy = $this->prophesize(PropertyNameCollectionFactoryInterface::class);
-        $propertyNameCollectionFactoryProphecy->create(DummyEntity::class)->shouldBeCalled()->willReturn(new PropertyNameCollection(['subresource']));
-        $propertyNameCollectionFactoryProphecy->create(RelatedDummyEntity::class)->shouldBeCalled()->willReturn(new PropertyNameCollection(['bar', 'anotherSubresource']));
+        $propertyNameCollectionMetadataFactory = MappingPropertyNameCollectionMetadataFactory::from()
+            ->withMetadata(
+                new PropertyNameCollection(['subresource']),
+                $resourceClass = DummyEntity::class
+            )
+            ->withMetadata(
+                new PropertyNameCollection(['bar', 'anotherSubresource']),
+                $resourceClass = RelatedDummyEntity::class
+            );
 
-        $subresourceMetadataCollectionWithMaxDepth = (new PropertyMetadata())->withSubresource(new SubresourceMetadata(RelatedDummyEntity::class, false, 1));
-        $anotherSubresourceMetadata = (new PropertyMetadata())->withSubresource(new SubresourceMetadata(DummyEntity::class, false));
+        $propertyMetadataFactory = MappingPropertyMetadataFactory::from()
+            ->withMetadata(
+                (new PropertyMetadata())->withSubresource(new SubresourceMetadata($resourceClass = RelatedDummyEntity::class, $collection = false, $maxDepth = 1)),
+                $resourceClass = DummyEntity::class,
+                $property = 'subresource'
+            )
+            ->withMetadata(
+                new PropertyMetadata(),
+                $resourceClass = RelatedDummyEntity::class,
+                $property = 'bar'
+            )
+            ->withMetadata(
+                (new PropertyMetadata())->withSubresource(new SubresourceMetadata($resourceClass = DummyEntity::class, $collection = false)),
+                $resourceClass = RelatedDummyEntity::class,
+                $property = 'anotherSubresource'
+            );
 
-        $propertyMetadataFactoryProphecy = $this->prophesize(PropertyMetadataFactoryInterface::class);
-        $propertyMetadataFactoryProphecy->create(DummyEntity::class, 'subresource')->shouldBeCalled()->willReturn($subresourceMetadataCollectionWithMaxDepth);
-        $propertyMetadataFactoryProphecy->create(RelatedDummyEntity::class, 'bar')->shouldBeCalled()->willReturn(new PropertyMetadata());
-        $propertyMetadataFactoryProphecy->create(RelatedDummyEntity::class, 'anotherSubresource')->shouldBeCalled()->willReturn($anotherSubresourceMetadata);
-
-        $pathSegmentNameGeneratorProphecy = $this->prophesize(PathSegmentNameGeneratorInterface::class);
-        $pathSegmentNameGeneratorProphecy->getSegmentName('dummyEntity')->shouldBeCalled()->willReturn('dummy_entities');
-        $pathSegmentNameGeneratorProphecy->getSegmentName('subresource', false)->shouldBeCalled()->willReturn('subresource');
-
-        $subresourceOperationFactory = new SubresourceOperationFactory(
-            $resourceMetadataFactoryProphecy->reveal(),
-            $propertyNameCollectionFactoryProphecy->reveal(),
-            $propertyMetadataFactoryProphecy->reveal(),
-            $pathSegmentNameGeneratorProphecy->reveal()
-        );
+        $subresourceOperationFactory = new SubresourceOperationFactory($resourceMetadataFactory, $propertyNameCollectionMetadataFactory, $propertyMetadataFactory, new UnderscorePathSegmentNameGenerator());
 
         $this->assertEquals([
-            'api_dummy_entities_subresource_get_subresource' => [
+            'api_dummy_entities_subresource_item_get_subresource' => [
                 'property' => 'subresource',
                 'collection' => false,
                 'resource_class' => RelatedDummyEntity::class,
-                'shortNames' => ['relatedDummyEntity', 'dummyEntity'],
+                'shortNames' => ['dummyEntity', 'relatedDummyEntity'],
                 'identifiers' => [
-                    ['id', DummyEntity::class, true],
+                    ['id', DummyEntity::class, true, 'id'],
                 ],
-                'route_name' => 'api_dummy_entities_subresource_get_subresource',
+                'route_name' => 'api_dummy_entities_subresource_item_get_subresource',
                 'path' => '/root_resource_prefix/dummy_entities/{id}/subresource.{_format}',
-                'operation_name' => 'subresource_get_subresource',
+                'operation_name' => 'subresource_item_get_subresource',
+                'method' => 'GET',
+            ] + SubresourceOperationFactory::ROUTE_OPTIONS,
+            'api_dummy_entities_subresource_item_delete_subresource' => [
+                'property' => 'subresource',
+                'collection' => false,
+                'resource_class' => RelatedDummyEntity::class,
+                'shortNames' => ['dummyEntity', 'relatedDummyEntity'],
+                'identifiers' => [
+                    ['id', DummyEntity::class, true, 'id'],
+                ],
+                'route_name' => 'api_dummy_entities_subresource_item_delete_subresource',
+                'path' => '/root_resource_prefix/dummy_entities/{id}/subresource.{_format}',
+                'operation_name' => 'subresource_item_delete_subresource',
+                'method' => 'DELETE',
+            ] + SubresourceOperationFactory::ROUTE_OPTIONS,
+            'api_dummy_entities_subresource_item_put_subresource' => [
+                'property' => 'subresource',
+                'collection' => false,
+                'resource_class' => RelatedDummyEntity::class,
+                'shortNames' => ['dummyEntity', 'relatedDummyEntity'],
+                'identifiers' => [
+                    ['id', DummyEntity::class, true, 'id'],
+                ],
+                'route_name' => 'api_dummy_entities_subresource_item_put_subresource',
+                'path' => '/root_resource_prefix/dummy_entities/{id}/subresource.{_format}',
+                'operation_name' => 'subresource_item_put_subresource',
+                'method' => 'PUT',
             ] + SubresourceOperationFactory::ROUTE_OPTIONS,
         ], $subresourceOperationFactory->create(DummyEntity::class));
     }

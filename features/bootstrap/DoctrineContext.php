@@ -100,9 +100,11 @@ use ApiPlatform\Core\Tests\Fixtures\TestBundle\Entity\User;
 use ApiPlatform\Core\Tests\Fixtures\TestBundle\Entity\UuidIdentifierDummy;
 use Behat\Behat\Context\Context;
 use Doctrine\Common\Persistence\ManagerRegistry;
+use Doctrine\Common\Persistence\Mapping\ClassMetadata;
 use Doctrine\ODM\MongoDB\DocumentManager;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Tools\SchemaTool;
+use Symfony\Component\ExpressionLanguage\ExpressionLanguage;
 
 /**
  * Defines application features from the specific context.
@@ -945,6 +947,48 @@ final class DoctrineContext implements Context
     }
 
     /**
+     * @Then the expression :expression on the object of the entity :shortName with id :id should return :expectedResult
+     */
+    public function theExpressionOnTheObjectOfTheEntityWithIdShouldReturn(string $expression, string $shortName, string $id, string $expectedResult)
+    {
+        /** @var \Doctrine\ORM\Mapping\ClassMetadata|\Doctrine\ODM\MongoDB\Mapping\ClassMetadata $class */
+        $class = $this->getClass($shortName);
+
+        $repository = $this->manager->getRepository($class->getName());
+
+        $entity = $repository->find($id);
+
+        $expressionLanguage = new ExpressionLanguage();
+        $actualResult = $expressionLanguage->evaluate($expression, ['object' => $entity]);
+
+        if ($expectedResult !== ((string) $actualResult)) {
+            throw new \Exception(sprintf('The expected value "%s" is not equal to the actual value "%s"', $expectedResult, $actualResult));
+        }
+
+        $this->manager->clear();
+    }
+
+    /**
+     * @Then the count of entity :shortName with attribute :attribute equal to :attributeValue should be equal to :expectedCount
+     */
+    public function theCountOfEntityWithAttributeEqualToShouldBeEqualTo(string $shortName, string $attribute, string $attributeValue, string $expectedCount)
+    {
+        $class = $this->getClass($shortName);
+
+        $repository = $this->manager->getRepository($class->getName());
+
+        $entities = $repository->findBy([
+            $attribute => $attributeValue,
+        ]);
+
+        if ($expectedCount !== ((string) $actualCount = count($entities))) {
+            throw new \Exception(sprintf('The expected count "%s" is not equals to the actual count "%s"', $expectedCount, $actualCount));
+        }
+
+        $this->manager->clear();
+    }
+
+    /**
      * @Given there are :nb nodes in a container :uuid
      */
     public function thereAreNodesInAContainer(int $nb, string $uuid)
@@ -1570,5 +1614,23 @@ final class DoctrineContext implements Context
     private function buildThirdLevel()
     {
         return $this->isOrm() ? new ThirdLevel() : new ThirdLevelDocument();
+    }
+
+    private function getClass(string $shortName): ClassMetadata
+    {
+        /** @var ClassMetadata $class */
+        $class = current(array_filter($this->classes, function (ClassMetadata $class) use ($shortName) {
+            $fullName = '\\'.$class->getName();
+            $shortName = '\\'.$shortName;
+
+            return strrpos($fullName, $shortName) === strlen($fullName) - strlen($shortName);
+        }));
+
+        if (false === $class) {
+            throw new \Exception(sprintf('Given entity class name "%s" does not exist. Please make sure it is defined',
+                $shortName));
+        }
+
+        return $class;
     }
 }
