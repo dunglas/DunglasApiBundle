@@ -31,32 +31,31 @@ final class DocumentationAction
     private $title;
     private $description;
     private $version;
-    private $formats = [];
+    private $formats;
     private $formatsProvider;
 
     /**
      * @throws InvalidArgumentException
      */
-    public function __construct(ResourceNameCollectionFactoryInterface $resourceNameCollectionFactory, string $title = '', string $description = '', string $version = '', /* FormatsProviderInterface */ $formatsProvider = [])
+    public function __construct(ResourceNameCollectionFactoryInterface $resourceNameCollectionFactory, string $title = '', string $description = '', string $version = '', $formats = [])
     {
         $this->resourceNameCollectionFactory = $resourceNameCollectionFactory;
         $this->title = $title;
         $this->description = $description;
         $this->version = $version;
-        if (\is_array($formatsProvider)) {
-            if ($formatsProvider) {
-                // Only trigger notification for non-default argument
-                @trigger_error('Using an array as formats provider is deprecated since API Platform 2.3 and will not be possible anymore in API Platform 3', E_USER_DEPRECATED);
-            }
-            $this->formats = $formatsProvider;
+
+        if ($formats instanceof FormatsProviderInterface) {
+            @trigger_error(sprintf('Passing an instance of "%s" as 5th parameter of the constructor of "%s" is deprecated since API Platform 2.5', FormatsProviderInterface::class, __CLASS__), E_USER_DEPRECATED);
+            $this->formatsProvider = $formats;
 
             return;
         }
-        if (!$formatsProvider instanceof FormatsProviderInterface) {
-            throw new InvalidArgumentException(sprintf('The "$formatsProvider" argument is expected to be an implementation of the "%s" interface.', FormatsProviderInterface::class));
+
+        if (!\is_array($formats)) {
+            throw new InvalidArgumentException('The "$formats" argument is expected to be an array.');
         }
 
-        $this->formatsProvider = $formatsProvider;
+        $this->formats = $formats;
     }
 
     public function __invoke(Request $request = null): Documentation

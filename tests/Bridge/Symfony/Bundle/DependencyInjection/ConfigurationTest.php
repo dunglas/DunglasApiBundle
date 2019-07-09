@@ -87,12 +87,14 @@ class ConfigurationTest extends TestCase
             'show_webby' => true,
             'formats' => [
                 'jsonld' => ['mime_types' => ['application/ld+json']],
-                'json' => ['mime_types' => ['application/json']],
                 'html' => ['mime_types' => ['text/html']],
             ],
             'error_formats' => [
                 'jsonproblem' => ['mime_types' => ['application/problem+json']],
                 'jsonld' => ['mime_types' => ['application/ld+json']],
+            ],
+            'doc_formats' => [
+                'json' => ['mime_types' => ['application/json']],
             ],
             'exception_to_status' => [
                 ExceptionInterface::class => Response::HTTP_BAD_REQUEST,

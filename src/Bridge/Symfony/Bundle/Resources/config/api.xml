@@ -231,7 +231,7 @@
             <argument>%api_platform.title%</argument>
             <argument>%api_platform.description%</argument>
             <argument>%api_platform.version%</argument>
-            <argument type="service" id="api_platform.formats_provider" />
+            <argument>%api_platform.doc_formats%</argument>
         </service>
 
         <service id="api_platform.action.exception" class="ApiPlatform\Core\Action\ExceptionAction" public="true">

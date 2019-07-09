@@ -764,6 +764,7 @@ class ApiPlatformExtensionTest extends TestCase
             'api_platform.collection.order_parameter_name' => 'order',
             'api_platform.description' => 'description',
             'api_platform.error_formats' => ['jsonproblem' => ['application/problem+json'], 'jsonld' => ['application/ld+json']],
+            'api_platform.doc_formats' => ['json' => ['application/json']],
             'api_platform.formats' => ['jsonld' => ['application/ld+json'], 'jsonhal' => ['application/hal+json']],
             'api_platform.exception_to_status' => [
                 ExceptionInterface::class => Response::HTTP_BAD_REQUEST,

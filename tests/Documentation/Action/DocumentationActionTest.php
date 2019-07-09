@@ -19,7 +19,6 @@ use ApiPlatform\Core\Documentation\Documentation;
 use ApiPlatform\Core\Metadata\Resource\Factory\ResourceNameCollectionFactoryInterface;
 use ApiPlatform\Core\Metadata\Resource\ResourceNameCollection;
 use PHPUnit\Framework\TestCase;
-use Prophecy\Argument;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Symfony\Component\HttpFoundation\ParameterBag;
 use Symfony\Component\HttpFoundation\Request;
@@ -44,28 +43,28 @@ class DocumentationActionTest extends TestCase
         $attributesProphecy->all()->willReturn(['_api_normalization_context' => ['foo' => 'bar', 'base_url' => '/api', 'api_gateway' => true, 'spec_version' => 2]])->shouldBeCalledTimes(1);
         $attributesProphecy->get('_api_normalization_context', [])->willReturn(['foo' => 'bar'])->shouldBeCalledTimes(1);
         $attributesProphecy->set('_api_normalization_context', ['foo' => 'bar', 'base_url' => '/api', 'api_gateway' => true, 'spec_version' => 2])->shouldBeCalledTimes(1);
-        $formatsProviderProphecy = $this->prophesize(FormatsProviderInterface::class);
-        $formatsProviderProphecy->getFormatsFromAttributes(Argument::type('array'))->willReturn(['formats' => ['jsonld' => 'application/ld+json']])->shouldBeCalled();
 
-        $documentation = new DocumentationAction($resourceNameCollectionFactoryProphecy->reveal(), 'My happy hippie api', 'lots of chocolate', '1.0.0', $formatsProviderProphecy->reveal());
-        $this->assertEquals(new Documentation(new ResourceNameCollection(['dummies']), 'My happy hippie api', 'lots of chocolate', '1.0.0', ['formats' => ['jsonld' => 'application/ld+json']]), $documentation($requestProphecy->reveal()));
+        $documentation = new DocumentationAction($resourceNameCollectionFactoryProphecy->reveal(), 'My happy hippie api', 'lots of chocolate', '1.0.0', ['formats' => ['json' => 'application/json']]);
+        $this->assertEquals(new Documentation(new ResourceNameCollection(['dummies']), 'My happy hippie api', 'lots of chocolate', '1.0.0', ['formats' => ['json' => 'application/json']]), $documentation($requestProphecy->reveal()));
     }
 
     /**
      * @group legacy
-     * @expectedDeprecation Using an array as formats provider is deprecated since API Platform 2.3 and will not be possible anymore in API Platform 3
+     * @expectedDeprecation Passing an instance of "ApiPlatform\Core\Api\FormatsProviderInterface" as 5th parameter of the constructor of "ApiPlatform\Core\Documentation\Action\DocumentationAction" is deprecated since API Platform 2.5
      */
     public function testDocumentationActionFormatDeprecation()
     {
         $resourceNameCollectionFactoryProphecy = $this->prophesize(ResourceNameCollectionFactoryInterface::class);
         $resourceNameCollectionFactoryProphecy->create()->willReturn(new ResourceNameCollection(['dummies']));
-        new DocumentationAction($resourceNameCollectionFactoryProphecy->reveal(), '', '', '', ['formats' => ['jsonld' => 'application/ld+json']]);
+        $formatsProviderProphecy = $this->prophesize(FormatsProviderInterface::class);
+
+        new DocumentationAction($resourceNameCollectionFactoryProphecy->reveal(), '', '', '', $formatsProviderProphecy->reveal());
     }
 
     public function testDocumentationActionThrowsOnBadFormatArgument()
     {
         $this->expectException(\ApiPlatform\Core\Exception\InvalidArgumentException::class);
-        $this->expectExceptionMessage('The "$formatsProvider" argument is expected to be an implementation of the "ApiPlatform\\Core\\Api\\FormatsProviderInterface" interface.');
+        $this->expectExceptionMessage('The "$formats" argument is expected to be an array.');
 
         $resourceNameCollectionFactoryProphecy = $this->prophesize(ResourceNameCollectionFactoryInterface::class);
         $resourceNameCollectionFactoryProphecy->create()->willReturn(new ResourceNameCollection(['dummies']));

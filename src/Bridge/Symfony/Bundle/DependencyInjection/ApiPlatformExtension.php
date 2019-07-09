@@ -88,8 +88,9 @@ final class ApiPlatformExtension extends Extension implements PrependExtensionIn
 
         $formats = $this->getFormats($config['formats']);
         $errorFormats = $this->getFormats($config['error_formats']);
+        $docFormats = $this->getFormats($config['doc_formats']);
 
-        $this->registerCommonConfiguration($container, $config, $loader, $formats, $errorFormats);
+        $this->registerCommonConfiguration($container, $config, $loader, $formats, $errorFormats, $docFormats);
         $this->registerMetadataConfiguration($container, $config, $loader);
         $this->registerOAuthConfiguration($container, $config);
         $this->registerSwaggerConfiguration($container, $config, $loader);
@@ -127,7 +128,7 @@ final class ApiPlatformExtension extends Extension implements PrependExtensionIn
         }
     }
 
-    private function registerCommonConfiguration(ContainerBuilder $container, array $config, XmlFileLoader $loader, array $formats, array $errorFormats): void
+    private function registerCommonConfiguration(ContainerBuilder $container, array $config, XmlFileLoader $loader, array $formats, array $errorFormats, array $docFormats): void
     {
         $loader->load('api.xml');
         $loader->load('data_persister.xml');
@@ -147,6 +148,7 @@ final class ApiPlatformExtension extends Extension implements PrependExtensionIn
         $container->setParameter('api_platform.exception_to_status', $config['exception_to_status']);
         $container->setParameter('api_platform.formats', $formats);
         $container->setParameter('api_platform.error_formats', $errorFormats);
+        $container->setParameter('api_platform.doc_formats', $docFormats);
         $container->setParameter('api_platform.allow_plain_identifiers', $config['allow_plain_identifiers']);
         $container->setParameter('api_platform.eager_loading.enabled', $this->isConfigEnabled($container, $config['eager_loading']));
         $container->setParameter('api_platform.eager_loading.max_joins', $config['eager_loading']['max_joins']);
