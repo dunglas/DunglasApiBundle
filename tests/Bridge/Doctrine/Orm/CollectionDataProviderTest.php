@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace ApiPlatform\Core\Tests\Bridge\Doctrine\Orm;
 
+use ApiPlatform\Core\Bridge\Doctrine\Orm\Cache\QueryExpander;
 use ApiPlatform\Core\Bridge\Doctrine\Orm\CollectionDataProvider;
 use ApiPlatform\Core\Bridge\Doctrine\Orm\Extension\QueryCollectionExtensionInterface;
 use ApiPlatform\Core\Bridge\Doctrine\Orm\Extension\QueryResultCollectionExtensionInterface;
@@ -54,7 +55,9 @@ class CollectionDataProviderTest extends TestCase
         $extensionProphecy = $this->prophesize(QueryCollectionExtensionInterface::class);
         $extensionProphecy->applyToCollection($queryBuilder, Argument::type(QueryNameGeneratorInterface::class), Dummy::class, 'foo', [])->shouldBeCalled();
 
-        $dataProvider = new CollectionDataProvider($managerRegistryProphecy->reveal(), [$extensionProphecy->reveal()]);
+        $queryExpanderProphecy = $this->prophesize(QueryExpander::class);
+
+        $dataProvider = new CollectionDataProvider($managerRegistryProphecy->reveal(), $queryExpanderProphecy->reveal(), [$extensionProphecy->reveal()]);
         $this->assertEquals([], $dataProvider->getCollection(Dummy::class, 'foo'));
     }
 
@@ -77,7 +80,9 @@ class CollectionDataProviderTest extends TestCase
         $extensionProphecy->supportsResult(Dummy::class, 'foo', [])->willReturn(true)->shouldBeCalled();
         $extensionProphecy->getResult($queryBuilder, Dummy::class, 'foo', [])->willReturn([])->shouldBeCalled();
 
-        $dataProvider = new CollectionDataProvider($managerRegistryProphecy->reveal(), [$extensionProphecy->reveal()]);
+        $queryExpanderProphecy = $this->prophesize(QueryExpander::class);
+
+        $dataProvider = new CollectionDataProvider($managerRegistryProphecy->reveal(), $queryExpanderProphecy->reveal(), [$extensionProphecy->reveal()]);
         $this->assertEquals([], $dataProvider->getCollection(Dummy::class, 'foo'));
     }
 
@@ -94,7 +99,9 @@ class CollectionDataProviderTest extends TestCase
         $managerRegistryProphecy = $this->prophesize(ManagerRegistry::class);
         $managerRegistryProphecy->getManagerForClass(Dummy::class)->willReturn($managerProphecy->reveal())->shouldBeCalled();
 
-        $dataProvider = new CollectionDataProvider($managerRegistryProphecy->reveal());
+        $queryExpanderProphecy = $this->prophesize(QueryExpander::class);
+
+        $dataProvider = new CollectionDataProvider($managerRegistryProphecy->reveal(), $queryExpanderProphecy->reveal());
         $this->assertEquals([], $dataProvider->getCollection(Dummy::class, 'foo'));
     }
 
@@ -105,7 +112,9 @@ class CollectionDataProviderTest extends TestCase
 
         $extensionProphecy = $this->prophesize(QueryResultCollectionExtensionInterface::class);
 
-        $dataProvider = new CollectionDataProvider($managerRegistryProphecy->reveal(), [$extensionProphecy->reveal()]);
+        $queryExpanderProphecy = $this->prophesize(QueryExpander::class);
+
+        $dataProvider = new CollectionDataProvider($managerRegistryProphecy->reveal(), $queryExpanderProphecy->reveal(), [$extensionProphecy->reveal()]);
         $this->assertFalse($dataProvider->supports(Dummy::class, 'foo'));
     }
 }

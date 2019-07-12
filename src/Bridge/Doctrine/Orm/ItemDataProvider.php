@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace ApiPlatform\Core\Bridge\Doctrine\Orm;
 
 use ApiPlatform\Core\Bridge\Doctrine\Common\Util\IdentifierManagerTrait;
+use ApiPlatform\Core\Bridge\Doctrine\Orm\Cache\QueryExpander;
 use ApiPlatform\Core\Bridge\Doctrine\Orm\Extension\QueryItemExtensionInterface;
 use ApiPlatform\Core\Bridge\Doctrine\Orm\Extension\QueryResultItemExtensionInterface;
 use ApiPlatform\Core\Bridge\Doctrine\Orm\Util\QueryNameGenerator;
@@ -42,16 +43,18 @@ class ItemDataProvider implements DenormalizedIdentifiersAwareItemDataProviderIn
 
     private $managerRegistry;
     private $itemExtensions;
+    private $queryExpander;
 
     /**
      * @param QueryItemExtensionInterface[] $itemExtensions
      */
-    public function __construct(ManagerRegistry $managerRegistry, PropertyNameCollectionFactoryInterface $propertyNameCollectionFactory, PropertyMetadataFactoryInterface $propertyMetadataFactory, /* iterable */ $itemExtensions = [])
+    public function __construct(ManagerRegistry $managerRegistry, PropertyNameCollectionFactoryInterface $propertyNameCollectionFactory, PropertyMetadataFactoryInterface $propertyMetadataFactory, QueryExpander $queryExpander, /* iterable */ $itemExtensions = [])
     {
         $this->managerRegistry = $managerRegistry;
         $this->propertyNameCollectionFactory = $propertyNameCollectionFactory;
         $this->propertyMetadataFactory = $propertyMetadataFactory;
         $this->itemExtensions = $itemExtensions;
+        $this->queryExpander = $queryExpander;
     }
 
     public function supports(string $resourceClass, string $operationName = null, array $context = []): bool
@@ -98,8 +101,10 @@ class ItemDataProvider implements DenormalizedIdentifiersAwareItemDataProviderIn
                 return $extension->getResult($queryBuilder, $resourceClass, $operationName, $context);
             }
         }
+        $query = $queryBuilder->getQuery();
+        $this->queryExpander->expand($resourceClass, $query);
 
-        return $queryBuilder->getQuery()->getOneOrNullResult();
+        return $query->getOneOrNullResult();
     }
 
     /**

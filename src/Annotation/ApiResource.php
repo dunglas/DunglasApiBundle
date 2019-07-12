@@ -31,6 +31,7 @@ use ApiPlatform\Core\Exception\InvalidArgumentException;
  *     @Attribute("denormalizationContext", type="array"),
  *     @Attribute("deprecationReason", type="string"),
  *     @Attribute("description", type="string"),
+ *     @Attribute("doctrineCache", type="array"),
  *     @Attribute("elasticsearch", type="bool"),
  *     @Attribute("fetchPartial", type="bool"),
  *     @Attribute("forceEager", type="bool"),
@@ -137,6 +138,13 @@ final class ApiResource
      * @var string
      */
     private $deprecationReason;
+
+    /**
+     * @see https://github.com/Haehnchen/idea-php-annotation-plugin/issues/112
+     *
+     * @var array
+     */
+    private $doctrineCache;
 
     /**
      * @see https://github.com/Haehnchen/idea-php-annotation-plugin/issues/112

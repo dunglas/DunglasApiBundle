@@ -15,8 +15,14 @@
             <tag name="api_platform.data_persister" priority="-1000" />
         </service>
 
+        <service id="api_platform.doctrine.orm.cache.query_expander" class="ApiPlatform\Core\Bridge\Doctrine\Orm\Cache\QueryExpander" public="false">
+            <argument type="service" id="api_platform.metadata.resource.metadata_factory" />
+        </service>
+        <service id="ApiPlatform\Core\Bridge\Doctrine\Orm\Cache\QueryExpander" alias="api_platform.doctrine.orm.cache.query_expander" />
+
         <service id="api_platform.doctrine.orm.collection_data_provider" public="false" abstract="true">
             <argument type="service" id="doctrine" />
+            <argument type="service" id="api_platform.doctrine.orm.cache.query_expander" />
             <argument type="tagged" tag="api_platform.doctrine.orm.query_extension.collection" />
         </service>
 
@@ -24,6 +30,7 @@
             <argument type="service" id="doctrine" />
             <argument type="service" id="api_platform.metadata.property.name_collection_factory" />
             <argument type="service" id="api_platform.metadata.property.metadata_factory" />
+            <argument type="service" id="api_platform.doctrine.orm.cache.query_expander" />
             <argument type="tagged" tag="api_platform.doctrine.orm.query_extension.item" />
         </service>
 
@@ -31,6 +38,7 @@
             <argument type="service" id="doctrine" />
             <argument type="service" id="api_platform.metadata.property.name_collection_factory" />
             <argument type="service" id="api_platform.metadata.property.metadata_factory" />
+            <argument type="service" id="api_platform.doctrine.orm.cache.query_expander" />
             <argument type="tagged" tag="api_platform.doctrine.orm.query_extension.collection" />
             <argument type="tagged" tag="api_platform.doctrine.orm.query_extension.item" />
         </service>
@@ -158,6 +166,7 @@
             <argument type="service" id="doctrine" />
             <argument type="service" id="api_platform.metadata.resource.metadata_factory" />
             <argument type="service" id="api_platform.pagination" />
+            <argument type="service" id="api_platform.doctrine.orm.cache.query_expander" />
 
             <tag name="api_platform.doctrine.orm.query_extension.collection" priority="-64" />
         </service>

@@ -13,12 +13,14 @@ declare(strict_types=1);
 
 namespace ApiPlatform\Core\Bridge\Doctrine\Orm;
 
+use ApiPlatform\Core\Bridge\Doctrine\Orm\Cache\QueryExpander;
 use ApiPlatform\Core\Bridge\Doctrine\Orm\Extension\ContextAwareQueryCollectionExtensionInterface;
 use ApiPlatform\Core\Bridge\Doctrine\Orm\Extension\QueryCollectionExtensionInterface;
 use ApiPlatform\Core\Bridge\Doctrine\Orm\Extension\QueryResultCollectionExtensionInterface;
 use ApiPlatform\Core\Bridge\Doctrine\Orm\Util\QueryNameGenerator;
 use ApiPlatform\Core\DataProvider\ContextAwareCollectionDataProviderInterface;
 use ApiPlatform\Core\DataProvider\RestrictedDataProviderInterface;
+use ApiPlatform\Core\Exception\ResourceClassNotFoundException;
 use ApiPlatform\Core\Exception\RuntimeException;
 use Doctrine\Common\Persistence\ManagerRegistry;
 use Doctrine\Common\Persistence\ObjectManager;
@@ -34,14 +36,16 @@ class CollectionDataProvider implements ContextAwareCollectionDataProviderInterf
 {
     private $managerRegistry;
     private $collectionExtensions;
+    private $queryExpander;
 
     /**
      * @param QueryCollectionExtensionInterface[]|ContextAwareQueryCollectionExtensionInterface[] $collectionExtensions
      */
-    public function __construct(ManagerRegistry $managerRegistry, /* iterable */ $collectionExtensions = [])
+    public function __construct(ManagerRegistry $managerRegistry, QueryExpander $queryExpander, /* iterable */ $collectionExtensions = [])
     {
         $this->managerRegistry = $managerRegistry;
         $this->collectionExtensions = $collectionExtensions;
+        $this->queryExpander = $queryExpander;
     }
 
     public function supports(string $resourceClass, string $operationName = null, array $context = []): bool
@@ -53,6 +57,7 @@ class CollectionDataProvider implements ContextAwareCollectionDataProviderInterf
      * {@inheritdoc}
      *
      * @throws RuntimeException
+     * @throws ResourceClassNotFoundException
      */
     public function getCollection(string $resourceClass, string $operationName = null, array $context = [])
     {
@@ -73,7 +78,9 @@ class CollectionDataProvider implements ContextAwareCollectionDataProviderInterf
                 return $extension->getResult($queryBuilder, $resourceClass, $operationName, $context);
             }
         }
+        $query = $queryBuilder->getQuery();
+        $this->queryExpander->expand($resourceClass, $query);
 
-        return $queryBuilder->getQuery()->getResult();
+        return $query->getResult();
     }
 }
