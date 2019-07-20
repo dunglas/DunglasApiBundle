@@ -463,7 +463,7 @@ class FieldsBuilderTest extends TestCase
                 true, null, 'mutation', null,
                 [
                     'id' => [
-                        'type' => GraphQLType::nonNull(GraphQLType::id()),
+                        'type' => GraphQLType::id(),
                     ],
                     'propertyBool' => [
                         'type' => GraphQLType::nonNull(GraphQLType::string()),

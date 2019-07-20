@@ -269,6 +269,12 @@ services:
         tags:
             - { name: 'api_platform.graphql.mutation_resolver' }
 
+    app.graphql.mutation_resolver.dummy_custom_create:
+        class: 'ApiPlatform\Core\Tests\Fixtures\TestBundle\GraphQl\Resolver\SumCreateMutationResolver'
+        public: false
+        tags:
+            - { name: 'api_platform.graphql.mutation_resolver' }
+
     app.graphql.mutation_resolver.dummy_custom_not_persisted:
         class: 'ApiPlatform\Core\Tests\Fixtures\TestBundle\GraphQl\Resolver\SumNotPersistedMutationResolver'
         public: false

@@ -27,6 +27,11 @@ use Symfony\Component\Serializer\Annotation\Groups;
  *         "normalization_context"={"groups"={"result"}},
  *         "denormalization_context"={"groups"={"sum"}}
  *     },
+ *     "sumCreate"={
+ *         "mutation"="app.graphql.mutation_resolver.dummy_custom_create",
+ *         "normalization_context"={"groups"={"result"}},
+ *         "denormalization_context"={"groups"={"create"}}
+ *     },
  *     "sumNotPersisted"={
  *         "mutation"="app.graphql.mutation_resolver.dummy_custom_not_persisted",
  *         "normalization_context"={"groups"={"result"}},
@@ -52,6 +57,7 @@ class DummyCustomMutation
     /**
      * @var int
      *
+     * @Groups({"create"})
      * @ODM\Field(type="integer")
      */
     private $operandA;
@@ -59,7 +65,7 @@ class DummyCustomMutation
     /**
      * @var int
      *
-     * @Groups({"sum"})
+     * @Groups({"sum", "create"})
      * @ODM\Field(type="integer", nullable=true)
      */
     private $operandB;

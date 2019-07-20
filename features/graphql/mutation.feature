@@ -459,6 +459,24 @@ Feature: GraphQL mutation support
     And the header "Content-Type" should be equal to "application/json"
     And the JSON node "data.sumDummyCustomMutation.dummyCustomMutation.result" should be equal to "8"
 
+  Scenario: Execute a custom mutation without ID
+    When I send the following GraphQL request:
+    """
+    mutation {
+      sumCreateDummyCustomMutation(input: {operandA: 4, operandB: 5}) {
+        dummyCustomMutation {
+          id
+          result
+        }
+      }
+    }
+    """
+    Then the response status code should be 200
+    And the response should be in JSON
+    And the header "Content-Type" should be equal to "application/json"
+    And the JSON node "data.sumCreateDummyCustomMutation.dummyCustomMutation.id" should be equal to "/dummy_custom_mutations/2"
+    And the JSON node "data.sumCreateDummyCustomMutation.dummyCustomMutation.result" should be equal to "9"
+
   Scenario: Execute a not persisted custom mutation
     When I send the following GraphQL request:
     """

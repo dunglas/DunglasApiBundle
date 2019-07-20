@@ -134,7 +134,8 @@ final class FieldsBuilder implements FieldsBuilderInterface
     public function getResourceObjectTypeFields(?string $resourceClass, ResourceMetadata $resourceMetadata, bool $input, ?string $queryName, ?string $mutationName, int $depth = 0, ?array $ioMetadata = null): array
     {
         $fields = [];
-        $idField = ['type' => GraphQLType::nonNull(GraphQLType::id())];
+        $optionalIdField = ['type' => GraphQLType::id()];
+        $requiredIdField = ['type' => GraphQLType::nonNull(GraphQLType::id())];
         $clientMutationId = GraphQLType::string();
 
         if (null !== $ioMetadata && \array_key_exists('class', $ioMetadata) && null === $ioMetadata['class']) {
@@ -147,7 +148,7 @@ final class FieldsBuilder implements FieldsBuilderInterface
 
         if ('delete' === $mutationName) {
             $fields = [
-                'id' => $idField,
+                'id' => $requiredIdField,
             ];
 
             if ($input) {
@@ -157,8 +158,10 @@ final class FieldsBuilder implements FieldsBuilderInterface
             return $fields;
         }
 
-        if (!$input || 'create' !== $mutationName) {
-            $fields['id'] = $idField;
+        if (!$input || !$mutationName || \in_array($mutationName, ['update', 'delete'], true)) {
+            $fields['id'] = $requiredIdField;
+        } elseif ('create' !== $mutationName) {
+            $fields['id'] = $optionalIdField;
         }
 
         ++$depth; // increment the depth for the call to getResourceFieldConfiguration.
