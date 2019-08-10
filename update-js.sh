@@ -1,6 +1,6 @@
 #!/bin/sh
 
-yarn add --production --no-lockfile swagger-ui-dist es6-promise fetch react react-dom graphiql graphql-playground-react redoc
+yarn add --production --no-lockfile swagger-ui-dist es6-promise fetch react react-dom graphiql graphiql-explorer graphql-playground-react redoc
 
 dest=src/Bridge/Symfony/Bundle/Resources/public/swagger-ui/
 if [ -d $dest ]; then
@@ -26,6 +26,7 @@ fi
 mkdir -p $dest
 cp node_modules/graphiql/graphiql.min.js $dest
 cp node_modules/graphiql/graphiql.css $dest
+cp node_modules/graphiql-explorer/graphiqlExplorer.min.js $dest
 
 dest=src/Bridge/Symfony/Bundle/Resources/public/graphql-playground/
 if [ -d $dest ]; then
