@@ -863,6 +863,7 @@ class ApiPlatformExtensionTest extends TestCase
             'api_platform.identifier.integer',
             'api_platform.identifier.uuid_normalizer',
             'api_platform.item_data_provider',
+            'api_platform.stage.read',
             'api_platform.listener.exception',
             'api_platform.listener.exception.validation',
             'api_platform.listener.request.add_format',

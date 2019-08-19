@@ -45,6 +45,10 @@ final class SerializerContextBuilder implements SerializerContextBuilderInterfac
             throw new RuntimeException('Request attributes are not valid.');
         }
 
+        if (!isset($attributes['resource_class'])) {
+            return [];
+        }
+
         $resourceMetadata = $this->resourceMetadataFactory->create($attributes['resource_class']);
         $key = $normalization ? 'normalization_context' : 'denormalization_context';
         if (isset($attributes['collection_operation_name'])) {

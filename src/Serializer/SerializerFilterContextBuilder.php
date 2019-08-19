@@ -47,6 +47,10 @@ final class SerializerFilterContextBuilder implements SerializerContextBuilderIn
             throw new RuntimeException('Request attributes are not valid.');
         }
 
+        if (!isset($attributes['resource_class'])) {
+            return [];
+        }
+
         $context = $this->decorated->createFromRequest($request, $normalization, $attributes);
         $resourceMetadata = $this->resourceMetadataFactory->create($attributes['resource_class']);
 

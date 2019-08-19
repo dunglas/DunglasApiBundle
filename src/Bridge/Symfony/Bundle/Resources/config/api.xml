@@ -153,6 +153,16 @@
         <service id="api_platform.path_segment_name_generator.underscore" class="ApiPlatform\Core\Operation\UnderscorePathSegmentNameGenerator" public="false" />
         <service id="api_platform.path_segment_name_generator.dash" class="ApiPlatform\Core\Operation\DashPathSegmentNameGenerator" public="false" />
 
+        <!-- Stages -->
+
+        <service id="api_platform.stage.read" class="ApiPlatform\Core\Stage\ReadStage">
+            <argument type="service" id="api_platform.collection_data_provider" />
+            <argument type="service" id="api_platform.item_data_provider" />
+            <argument type="service" id="api_platform.subresource_data_provider" />
+            <argument type="service" id="api_platform.identifier.converter" />
+            <argument type="service" id="api_platform.metadata.resource.metadata_factory" />
+        </service>
+
         <!-- Event listeners -->
 
         <!-- kernel.request priority must be < 8 to be executed after the Firewall -->
@@ -165,12 +175,8 @@
         </service>
 
         <service id="api_platform.listener.request.read" class="ApiPlatform\Core\EventListener\ReadListener">
-            <argument type="service" id="api_platform.collection_data_provider" />
-            <argument type="service" id="api_platform.item_data_provider" />
-            <argument type="service" id="api_platform.subresource_data_provider" />
+            <argument type="service" id="api_platform.stage.read" />
             <argument type="service" id="api_platform.serializer.context_builder" />
-            <argument type="service" id="api_platform.identifier.converter" />
-            <argument type="service" id="api_platform.metadata.resource.metadata_factory" />
 
             <tag name="kernel.event_listener" event="kernel.request" method="onKernelRequest" priority="4" />
         </service>
