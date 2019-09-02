@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace ApiPlatform\Core\HttpCache;
 
 use GuzzleHttp\ClientInterface;
+use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 /**
  * Purges Varnish.
@@ -27,7 +28,7 @@ final class VarnishPurger implements PurgerInterface
     private $clients;
 
     /**
-     * @param ClientInterface[] $clients
+     * @param HttpClientInterface[] $clients
      */
     public function __construct(array $clients)
     {
