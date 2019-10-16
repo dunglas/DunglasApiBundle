@@ -52,6 +52,7 @@ final class RangeFilter extends AbstractFilter implements RangeFilterInterface
         if ($this->isPropertyNested($property, $resourceClass)) {
             [$matchField] = $this->addLookupsForNestedProperty($property, $aggregationBuilder, $resourceClass);
         }
+        $fieldType = $this->getClassMetadata($resourceClass)->getTypeOfField($field);
 
         foreach ($values as $operator => $value) {
             $this->addMatch(
@@ -59,7 +60,8 @@ final class RangeFilter extends AbstractFilter implements RangeFilterInterface
                 $field,
                 $matchField,
                 $operator,
-                $value
+                $value,
+                $fieldType
             );
         }
     }
@@ -67,13 +69,13 @@ final class RangeFilter extends AbstractFilter implements RangeFilterInterface
     /**
      * Adds the match stage according to the operator.
      */
-    protected function addMatch(Builder $aggregationBuilder, string $field, string $matchField, string $operator, string $value)
+    protected function addMatch(Builder $aggregationBuilder, string $field, string $matchField, string $operator, string $value, ?string $fieldType)
     {
         switch ($operator) {
             case self::PARAMETER_BETWEEN:
                 $rangeValue = explode('..', $value);
 
-                $rangeValue = $this->normalizeBetweenValues($rangeValue);
+                $rangeValue = $this->normalizeBetweenValues($rangeValue, $fieldType);
                 if (null === $rangeValue) {
                     return;
                 }
@@ -82,7 +84,7 @@ final class RangeFilter extends AbstractFilter implements RangeFilterInterface
 
                 break;
             case self::PARAMETER_GREATER_THAN:
-                $value = $this->normalizeValue($value, $operator);
+                $value = $this->normalizeValue($value, $operator, $fieldType);
                 if (null === $value) {
                     return;
                 }
@@ -91,7 +93,7 @@ final class RangeFilter extends AbstractFilter implements RangeFilterInterface
 
                 break;
             case self::PARAMETER_GREATER_THAN_OR_EQUAL:
-                $value = $this->normalizeValue($value, $operator);
+                $value = $this->normalizeValue($value, $operator, $fieldType);
                 if (null === $value) {
                     return;
                 }
@@ -100,7 +102,7 @@ final class RangeFilter extends AbstractFilter implements RangeFilterInterface
 
                 break;
             case self::PARAMETER_LESS_THAN:
-                $value = $this->normalizeValue($value, $operator);
+                $value = $this->normalizeValue($value, $operator, $fieldType);
                 if (null === $value) {
                     return;
                 }
@@ -109,7 +111,7 @@ final class RangeFilter extends AbstractFilter implements RangeFilterInterface
 
                 break;
             case self::PARAMETER_LESS_THAN_OR_EQUAL:
-                $value = $this->normalizeValue($value, $operator);
+                $value = $this->normalizeValue($value, $operator, $fieldType);
                 if (null === $value) {
                     return;
                 }

@@ -379,6 +379,18 @@ class RangeFilterTest extends DoctrineOrmFilterTestCase
                 'lte + gte' => [
                     sprintf('SELECT o FROM %s o WHERE o.dummyPrice >= :dummyPrice_p1 AND o.dummyPrice <= :dummyPrice_p2', Dummy::class),
                 ],
+                'between (cast float to integer)' => [
+                    sprintf('SELECT o FROM %s o WHERE o.id BETWEEN :id_p1_1 AND :id_p1_2', Dummy::class),
+                    ['id_p1_1' => 9, 'id_p1_2' => 15],
+                ],
+                'lt (cast float to integer)' => [
+                    sprintf('SELECT o FROM %s o WHERE o.id < :id_p1', Dummy::class),
+                    ['id_p1' => 15],
+                ],
+                'gt (cast float to integer)' => [
+                    sprintf('SELECT o FROM %s o WHERE o.id > :id_p1', Dummy::class),
+                    ['id_p1' => 9],
+                ],
             ]
         );
     }

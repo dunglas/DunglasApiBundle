@@ -96,7 +96,7 @@ trait RangeFilterTrait
     /**
      * Normalize the values array for between operator.
      */
-    private function normalizeBetweenValues(array $values): ?array
+    private function normalizeBetweenValues(array $values, ?string $fieldType): ?array
     {
         if (2 !== \count($values)) {
             $this->getLogger()->notice('Invalid filter ignored', [
@@ -114,7 +114,7 @@ trait RangeFilterTrait
             return null;
         }
 
-        return [$values[0] + 0, $values[1] + 0]; // coerce to the right types.
+        return [$this->castValue($values[0], $fieldType), $this->castValue($values[1], $fieldType)];
     }
 
     /**
@@ -122,7 +122,7 @@ trait RangeFilterTrait
      *
      * @return int|float|null
      */
-    private function normalizeValue(string $value, string $operator)
+    private function normalizeValue(string $value, string $operator, ?string $fieldType)
     {
         if (!is_numeric($value)) {
             $this->getLogger()->notice('Invalid filter ignored', [
@@ -132,6 +132,24 @@ trait RangeFilterTrait
             return null;
         }
 
-        return $value + 0; // coerce $value to the right type.
+        return $this->castValue($value, $fieldType);
+    }
+
+    /**
+     * @param int|float|string $value
+     *
+     * @return int|float|null
+     */
+    private function castValue($value, ?string $fieldType)
+    {
+        if (!is_numeric($value)) {
+            return null;
+        }
+        $casted = $value + 0; // coerce $value to the right type.
+        if (\is_float($casted) && 'integer' === $fieldType) {
+            $casted = (int) $casted;
+        }
+
+        return $casted;
     }
 }

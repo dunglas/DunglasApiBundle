@@ -536,6 +536,40 @@ class RangeFilterTest extends DoctrineMongoDbOdmFilterTestCase
                         ],
                     ],
                 ],
+                'between (cast float to integer)' => [
+                    [
+                        [
+                            '$match' => [
+                                '_id' => [
+                                    '$gte' => 9,
+                                    '$lte' => 15,
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+                'lt (cast float to integer)' => [
+                    [
+                        [
+                            '$match' => [
+                                '_id' => [
+                                    '$lt' => 15,
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+                'gt (cast float to integer)' => [
+                    [
+                        [
+                            '$match' => [
+                                '_id' => [
+                                    '$gt' => 9,
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
             ]
         );
     }
