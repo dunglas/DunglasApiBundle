@@ -81,13 +81,13 @@ abstract class AbstractFilter implements FilterInterface
     protected function getMetadata(string $resourceClass, string $property): array
     {
         $noop = [null, null, null, null];
+        $properties = explode('.', $property);
+        $totalProperties = \count($properties);
 
-        if (!$this->hasProperty($resourceClass, $property)) {
+        if (1 === $totalProperties && !$this->hasProperty($resourceClass, $property)) {
             return $noop;
         }
 
-        $properties = explode('.', $property);
-        $totalProperties = \count($properties);
         $currentResourceClass = $resourceClass;
         $hasAssociation = false;
         $currentProperty = null;
