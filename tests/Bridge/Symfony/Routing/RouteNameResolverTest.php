@@ -99,6 +99,28 @@ class RouteNameResolverTest extends TestCase
         $this->assertSame('some_item_route', $actual);
     }
 
+    public function testGetRouteNameForItemRouteWithParentResource()
+    {
+        $routeCollection = new RouteCollection();
+        $routeCollection->add('some_collection_route', new Route('/some/collection/path', [
+            '_api_resource_class' => 'AppBundle\Entity\User',
+            '_api_collection_operation_name' => 'some_collection_op',
+        ]));
+        $routeCollection->add('some_item_route', new Route('/some/item/path/{id}', [
+            '_api_resource_class' => 'AppBundle\Entity\UserDetails',
+            '_api_parent_resource_class' => 'AppBundle\Entity\User',
+            '_api_item_operation_name' => 'some_item_op',
+        ]));
+
+        $routerProphecy = $this->prophesize(RouterInterface::class);
+        $routerProphecy->getRouteCollection()->willReturn($routeCollection);
+
+        $routeNameResolver = new RouteNameResolver($routerProphecy->reveal());
+        $actual = $routeNameResolver->getRouteName('AppBundle\Entity\User', OperationType::ITEM);
+
+        $this->assertSame('some_item_route', $actual);
+    }
+
     public function testGetRouteNameForCollectionRouteWithNoMatchingRoute()
     {
         $this->expectException(\InvalidArgumentException::class);
