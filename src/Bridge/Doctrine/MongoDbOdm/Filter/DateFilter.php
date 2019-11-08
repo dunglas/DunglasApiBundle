@@ -69,7 +69,8 @@ class DateFilter extends AbstractFilter implements DateFilterInterface
                 $matchField,
                 self::PARAMETER_BEFORE,
                 $values[self::PARAMETER_BEFORE],
-                $nullManagement
+                $nullManagement,
+                $property
             );
         }
 
@@ -79,7 +80,8 @@ class DateFilter extends AbstractFilter implements DateFilterInterface
                 $matchField,
                 self::PARAMETER_STRICTLY_BEFORE,
                 $values[self::PARAMETER_STRICTLY_BEFORE],
-                $nullManagement
+                $nullManagement,
+                $property
             );
         }
 
@@ -89,7 +91,8 @@ class DateFilter extends AbstractFilter implements DateFilterInterface
                 $matchField,
                 self::PARAMETER_AFTER,
                 $values[self::PARAMETER_AFTER],
-                $nullManagement
+                $nullManagement,
+                $property
             );
         }
 
@@ -99,7 +102,8 @@ class DateFilter extends AbstractFilter implements DateFilterInterface
                 $matchField,
                 self::PARAMETER_STRICTLY_AFTER,
                 $values[self::PARAMETER_STRICTLY_AFTER],
-                $nullManagement
+                $nullManagement,
+                $property
             );
         }
     }
@@ -107,16 +111,9 @@ class DateFilter extends AbstractFilter implements DateFilterInterface
     /**
      * Adds the match stage according to the chosen null management.
      */
-    private function addMatch(Builder $aggregationBuilder, string $field, string $operator, string $value, string $nullManagement = null): void
+    private function addMatch(Builder $aggregationBuilder, string $field, string $operator, string $value, ?string $nullManagement, string $property): void
     {
-        try {
-            $value = new \DateTime($value);
-        } catch (\Exception $e) {
-            // Silently ignore this filter if it can not be transformed to a \DateTime
-            $this->logger->notice('Invalid filter ignored', [
-                'exception' => new InvalidArgumentException(sprintf('The field "%s" has a wrong date format. Use one accepted by the \DateTime constructor', $field)),
-            ]);
-
+        if (null === $value = $this->normalizeValue($value, 'DateTime', $property, $operator)) {
             return;
         }
 
@@ -129,7 +126,7 @@ class DateFilter extends AbstractFilter implements DateFilterInterface
 
         if ((self::INCLUDE_NULL_BEFORE === $nullManagement && \in_array($operator, [self::PARAMETER_BEFORE, self::PARAMETER_STRICTLY_BEFORE], true)) ||
             (self::INCLUDE_NULL_AFTER === $nullManagement && \in_array($operator, [self::PARAMETER_AFTER, self::PARAMETER_STRICTLY_AFTER], true)) ||
-            (self::INCLUDE_NULL_BEFORE_AND_AFTER === $nullManagement && \in_array($operator, [self::PARAMETER_AFTER, self::PARAMETER_STRICTLY_AFTER, self::PARAMETER_BEFORE, self::PARAMETER_STRICTLY_BEFORE], true))
+            (self::INCLUDE_NULL_BEFORE_AND_AFTER === $nullManagement && \in_array($operator, [self::PARAMETER_BEFORE, self::PARAMETER_STRICTLY_BEFORE, self::PARAMETER_AFTER, self::PARAMETER_STRICTLY_AFTER], true))
         ) {
             $aggregationBuilder->match()->addOr(
                 $aggregationBuilder->matchExpr()->field($field)->operator($operatorValue[$operator], $value),

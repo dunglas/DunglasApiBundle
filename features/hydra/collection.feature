@@ -17,14 +17,35 @@ Feature: Collections support
         "@context": {"pattern": "^/contexts/Dummy$"},
         "@id": {"pattern": "^/dummies$"},
         "@type": {"pattern": "^hydra:Collection$"},
-        "hydra:totalItems": {"type":"number", "maximum": 0},
         "hydra:member": {
           "type": "array",
           "maxItems": 0
         },
-        "hydra:search": {}
+        "hydra:totalItems": {"type":"number", "minimum": 0, "maximum": 0},
+        "hydra:view": {
+          "type": "object",
+          "properties": {
+            "@id": {"pattern": "^/dummies\\?page=1$"},
+            "@type": {"pattern": "^hydra:PartialCollectionView$"},
+            "hydra:first": {"pattern": "^/dummies\\?page=1$"},
+            "hydra:last": {"pattern": "^/dummies\\?page=1$"}
+          },
+          "required": [
+            "@id",
+            "@type",
+            "hydra:first",
+            "hydra:last"
+          ],
+          "additionalProperties": false
+        }
       },
-      "additionalProperties": false
+      "required": [
+        "@context",
+        "@id",
+        "@type",
+        "hydra:member",
+        "hydra:totalItems"
+      ]
     }
     """
 
@@ -42,7 +63,6 @@ Feature: Collections support
         "@context": {"pattern": "^/contexts/Dummy$"},
         "@id": {"pattern": "^/dummies$"},
         "@type": {"pattern": "^hydra:Collection$"},
-        "hydra:totalItems": {"type":"number", "maximum": 30},
         "hydra:member": {
           "type": "array",
           "items": {
@@ -55,10 +75,15 @@ Feature: Collections support
                   {"pattern": "^/dummies/3$"}
                 ]
               }
-            }
+            },
+            "required": [
+              "@id"
+            ]
           },
+          "minItems": 3,
           "maxItems": 3
         },
+        "hydra:totalItems": {"type":"number", "minimum": 30, "maximum": 30},
         "hydra:view": {
           "type": "object",
           "properties": {
@@ -67,9 +92,25 @@ Feature: Collections support
             "hydra:first": {"pattern": "^/dummies\\?page=1$"},
             "hydra:last": {"pattern": "^/dummies\\?page=10$"},
             "hydra:next": {"pattern": "^/dummies\\?page=2$"}
-          }
+          },
+          "required": [
+            "@id",
+            "@type",
+            "hydra:first",
+            "hydra:last",
+            "hydra:next"
+          ],
+          "additionalProperties": false
         }
-      }
+      },
+      "required": [
+        "@context",
+        "@id",
+        "@type",
+        "hydra:member",
+        "hydra:totalItems",
+        "hydra:view"
+      ]
     }
     """
 
@@ -86,7 +127,6 @@ Feature: Collections support
         "@context": {"pattern": "^/contexts/Dummy$"},
         "@id": {"pattern": "^/dummies$"},
         "@type": {"pattern": "^hydra:Collection$"},
-        "hydra:totalItems": {"type":"number", "maximum": 30},
         "hydra:member": {
           "type": "array",
           "items": {
@@ -99,10 +139,15 @@ Feature: Collections support
                   {"pattern": "^/dummies/21$"}
                 ]
               }
-            }
+            },
+            "required": [
+              "@id"
+            ]
           },
+          "minItems": 3,
           "maxItems": 3
         },
+        "hydra:totalItems": {"type":"number", "minimum": 30, "maximum": 30},
         "hydra:view": {
           "type": "object",
           "properties": {
@@ -112,9 +157,26 @@ Feature: Collections support
             "hydra:last": {"pattern": "^/dummies\\?page=10$"},
             "hydra:next": {"pattern": "^/dummies\\?page=8$"},
             "hydra:previous": {"pattern": "^/dummies\\?page=6$"}
-          }
+          },
+          "required": [
+            "@id",
+            "@type",
+            "hydra:first",
+            "hydra:last",
+            "hydra:previous",
+            "hydra:next"
+          ],
+          "additionalProperties": false
         }
-      }
+      },
+      "required": [
+        "@context",
+        "@id",
+        "@type",
+        "hydra:member",
+        "hydra:totalItems",
+        "hydra:view"
+      ]
     }
     """
 
@@ -131,7 +193,6 @@ Feature: Collections support
         "@context": {"pattern": "^/contexts/Dummy$"},
         "@id": {"pattern": "^/dummies$"},
         "@type": {"pattern": "^hydra:Collection$"},
-        "hydra:totalItems": {"type":"number", "maximum": 30},
         "hydra:member": {
           "type": "array",
           "items": {
@@ -144,10 +205,15 @@ Feature: Collections support
                   {"pattern": "^/dummies/30$"}
                 ]
               }
-            }
+            },
+            "required": [
+              "@id"
+            ]
           },
+          "minItems": 3,
           "maxItems": 3
         },
+        "hydra:totalItems": {"type":"number", "minimum": 30, "maximum": 30},
         "hydra:view": {
           "type": "object",
           "properties": {
@@ -156,16 +222,30 @@ Feature: Collections support
             "hydra:first": {"pattern": "^/dummies\\?page=1$"},
             "hydra:last": {"pattern": "^/dummies\\?page=10$"},
             "hydra:previous": {"pattern": "^/dummies\\?page=9$"}
-          }
-        },
-        "hydra:search": {}
+          },
+          "required": [
+            "@id",
+            "@type",
+            "hydra:first",
+            "hydra:last",
+            "hydra:previous"
+          ],
+          "additionalProperties": false
+        }
       },
-      "additionalProperties": false
+      "required": [
+        "@context",
+        "@id",
+        "@type",
+        "hydra:member",
+        "hydra:totalItems",
+        "hydra:view"
+      ]
     }
     """
 
   @!mongodb
-  Scenario: Enable the partial pagination client side
+  Scenario: Enable partial pagination from client side
     When I send a "GET" request to "/dummies?page=7&partial=1"
     Then the response status code should be 200
     And the response should be in JSON
@@ -178,7 +258,6 @@ Feature: Collections support
         "@context": {"pattern": "^/contexts/Dummy$"},
         "@id": {"pattern": "^/dummies$"},
         "@type": {"pattern": "^hydra:Collection$"},
-        "hydra:totalItems": {"type":"number", "maximum": 30},
         "hydra:member": {
           "type": "array",
           "items": {
@@ -191,8 +270,12 @@ Feature: Collections support
                   {"pattern": "^/dummies/21$"}
                 ]
               }
-            }
+            },
+            "required": [
+              "@id"
+            ]
           },
+          "minItems": 3,
           "maxItems": 3
         },
         "hydra:view": {
@@ -200,16 +283,29 @@ Feature: Collections support
           "properties": {
             "@id": {"pattern": "^/dummies\\?partial=1&page=7$"},
             "@type": {"pattern": "^hydra:PartialCollectionView$"},
-            "hydra:next": {"pattern": "^/dummies\\?partial=1&page=8$"},
-            "hydra:previous": {"pattern": "^/dummies\\?partial=1&page=6$"}
+            "hydra:previous": {"pattern": "^/dummies\\?partial=1&page=6$"},
+            "hydra:next": {"pattern": "^/dummies\\?partial=1&page=8$"}
           },
+          "required": [
+            "@id",
+            "@type",
+            "hydra:previous",
+            "hydra:next"
+          ],
           "additionalProperties": false
         }
-      }
+      },
+      "required": [
+        "@context",
+        "@id",
+        "@type",
+        "hydra:member",
+        "hydra:view"
+      ]
     }
     """
 
-  Scenario: Disable the pagination client side
+  Scenario: Disable pagination from client side
     When I send a "GET" request to "/dummies?pagination=0"
     Then the response status code should be 200
     And the response should be in JSON
@@ -222,18 +318,24 @@ Feature: Collections support
         "@context": {"pattern": "^/contexts/Dummy$"},
         "@id": {"pattern": "^/dummies$"},
         "@type": {"pattern": "^hydra:Collection$"},
-        "hydra:totalItems": {"type":"number", "minimum": 30},
         "hydra:member": {
           "type": "array",
-          "minItems": 30
+          "minItems": 30,
+          "maxItems": 30
         },
-        "hydra:search": {}
+        "hydra:totalItems": {"type":"number", "minimum": 30, "maximum": 30}
       },
-      "additionalProperties": false
+      "required": [
+        "@context",
+        "@id",
+        "@type",
+        "hydra:member",
+        "hydra:totalItems"
+      ]
     }
     """
 
-  Scenario: Change the number of element by page client side
+  Scenario: Change number of items per page from client side
     When I send a "GET" request to "/dummies?page=2&itemsPerPage=10"
     Then the response status code should be 200
     And the response should be in JSON
@@ -246,12 +348,12 @@ Feature: Collections support
         "@context": {"pattern": "^/contexts/Dummy$"},
         "@id": {"pattern": "^/dummies$"},
         "@type": {"pattern": "^hydra:Collection$"},
-        "hydra:totalItems": {"type":"number", "maximum": 30},
         "hydra:member": {
           "type": "array",
           "minItems": 10,
           "maxItems": 10
         },
+        "hydra:totalItems": {"type":"number", "minimum": 30, "maximum": 30},
         "hydra:view": {
           "type": "object",
           "properties": {
@@ -261,31 +363,30 @@ Feature: Collections support
             "hydra:last": {"pattern": "^/dummies\\?itemsPerPage=10&page=3$"},
             "hydra:previous": {"pattern": "^/dummies\\?itemsPerPage=10&page=1$"},
             "hydra:next": {"pattern": "^/dummies\\?itemsPerPage=10&page=3$"}
-          }
-        },
-        "hydra:search": {}
+          },
+          "required": [
+            "@id",
+            "@type",
+            "hydra:first",
+            "hydra:last",
+            "hydra:previous",
+            "hydra:next"
+          ],
+          "additionalProperties": false
+        }
       },
-      "additionalProperties": false
+      "required": [
+        "@context",
+        "@id",
+        "@type",
+        "hydra:member",
+        "hydra:totalItems",
+        "hydra:view"
+      ]
     }
     """
 
-  Scenario: Test presence of next
-    When I send a "GET" request to "/dummies?page=3"
-    Then the response status code should be 200
-    And the response should be in JSON
-    And the header "Content-Type" should be equal to "application/ld+json; charset=utf-8"
-    And the JSON should be valid according to this schema:
-  """
-  {
-    "@id":"/dummies?page=3",
-    "@type":"hydra:PartialCollectionView",
-    "hydra:first":"/dummies?page=1",
-    "hydra:last":"/dummies?page=10",
-    "hydra:previous":"/dummies?page=2",
-    "hydra:next":"/dummies?page=4"
-  }
-  """
-  Scenario: Filter with exact match
+  Scenario: Retrieve a collection filtered by exact match (plain identifier)
     When I send a "GET" request to "/dummies?id=8"
     Then the response status code should be 200
     And the response should be in JSON
@@ -298,31 +399,50 @@ Feature: Collections support
         "@context": {"pattern": "^/contexts/Dummy$"},
         "@id": {"pattern": "^/dummies$"},
         "@type": {"pattern": "^hydra:Collection$"},
-        "hydra:totalItems": {"type":"number", "maximum": 1},
         "hydra:member": {
           "type": "array",
           "items": {
             "type": "object",
             "properties": {
               "@id": {"pattern": "^/dummies/8$"}
-            }
+            },
+            "required": [
+              "@id"
+            ]
           },
+          "minItems": 1,
           "maxItems": 1
         },
+        "hydra:totalItems": {"type":"number", "minimum": 1, "maximum": 1},
         "hydra:view": {
           "type": "object",
           "properties": {
-            "@id": {"pattern": "^/dummies\\?id=8$"},
-            "@type": {"pattern": "^hydra:PartialCollectionView$"}
-          }
-        },
-        "hydra:search": {}
+            "@id": {"pattern": "^/dummies\\?id=8&page=1$"},
+            "@type": {"pattern": "^hydra:PartialCollectionView$"},
+            "hydra:first": {"pattern": "^/dummies\\?id=8&page=1$"},
+            "hydra:last": {"pattern": "^/dummies\\?id=8&page=1$"}
+          },
+          "required": [
+            "@id",
+            "@type",
+            "hydra:first",
+            "hydra:last"
+          ],
+          "additionalProperties": false
+        }
       },
-      "additionalProperties": false
+      "required": [
+        "@context",
+        "@id",
+        "@type",
+        "hydra:member",
+        "hydra:totalItems",
+        "hydra:view"
+      ]
     }
     """
 
-  Scenario: Filter with a raw URL
+  Scenario: Retrieve a collection filtered by exact match (IRI)
     When I send a "GET" request to "/dummies?id=%2fdummies%2f8"
     Then the response status code should be 200
     And the response should be in JSON
@@ -335,31 +455,50 @@ Feature: Collections support
         "@context": {"pattern": "^/contexts/Dummy$"},
         "@id": {"pattern": "^/dummies$"},
         "@type": {"pattern": "^hydra:Collection$"},
-        "hydra:totalItems": {"type":"number", "maximum": 1},
         "hydra:member": {
           "type": "array",
           "items": {
             "type": "object",
             "properties": {
               "@id": {"pattern": "^/dummies/8$"}
-            }
+            },
+            "required": [
+              "@id"
+            ]
           },
+          "minItems": 1,
           "maxItems": 1
         },
+        "hydra:totalItems": {"type":"number", "minimum": 1, "maximum": 1},
         "hydra:view": {
           "type": "object",
           "properties": {
-            "@id": {"pattern": "^/dummies\\?id=%2Fdummies%2F8$"},
-            "@type": {"pattern": "^hydra:PartialCollectionView$"}
-          }
-        },
-        "hydra:search": {}
+            "@id": {"pattern": "^/dummies\\?id=%2Fdummies%2F8&page=1$"},
+            "@type": {"pattern": "^hydra:PartialCollectionView$"},
+            "hydra:first": {"pattern": "^/dummies\\?id=%2Fdummies%2F8&page=1$"},
+            "hydra:last": {"pattern": "^/dummies\\?id=%2Fdummies%2F8&page=1$"}
+          },
+          "required": [
+            "@id",
+            "@type",
+            "hydra:first",
+            "hydra:last"
+          ],
+          "additionalProperties": false
+        }
       },
-      "additionalProperties": false
+      "required": [
+        "@context",
+        "@id",
+        "@type",
+        "hydra:member",
+        "hydra:totalItems",
+        "hydra:view"
+      ]
     }
     """
 
-  Scenario: Filter with non-exact match
+  Scenario: Retrieve a collection filtered by partial match
     When I send a "GET" request to "/dummies?name=Dummy%20%238"
     Then the response status code should be 200
     And the response should be in JSON
@@ -372,32 +511,50 @@ Feature: Collections support
         "@context": {"pattern": "^/contexts/Dummy$"},
         "@id": {"pattern": "^/dummies$"},
         "@type": {"pattern": "^hydra:Collection$"},
-        "hydra:totalItems": {"type":"number", "maximum": 1},
         "hydra:member": {
           "type": "array",
           "items": {
             "type": "object",
             "properties": {
               "@id": {"pattern": "^/dummies/8$"}
-            }
+            },
+            "required": [
+              "@id"
+            ]
           },
+          "minItems": 1,
           "maxItems": 1
         },
+        "hydra:totalItems": {"type":"number", "minimum": 1, "maximum": 1},
         "hydra:view": {
           "type": "object",
           "properties": {
-            "@id": {"pattern": "^/dummies\\?name=Dummy%20%238$"},
-            "@type": {"pattern": "^hydra:PartialCollectionView$"}
-          }
-        },
-        "hydra:search": {}
+            "@id": {"pattern": "^/dummies\\?name=Dummy%20%238&page=1$"},
+            "@type": {"pattern": "^hydra:PartialCollectionView$"},
+            "hydra:first": {"pattern": "^/dummies\\?name=Dummy%20%238&page=1$"},
+            "hydra:last": {"pattern": "^/dummies\\?name=Dummy%20%238&page=1$"}
+          },
+          "required": [
+            "@id",
+            "@type",
+            "hydra:first",
+            "hydra:last"
+          ],
+          "additionalProperties": false
+        }
       },
-      "additionalProperties": false
+      "required": [
+        "@context",
+        "@id",
+        "@type",
+        "hydra:member",
+        "hydra:totalItems",
+        "hydra:view"
+      ]
     }
     """
 
-  @createSchema
-  Scenario: Allow passing 0 to `itemsPerPage`
+  Scenario: Change number of items per page to 0 from client side
     When I send a "GET" request to "/dummies?itemsPerPage=0"
     Then the response status code should be 200
     And the response should be in JSON
@@ -410,29 +567,41 @@ Feature: Collections support
         "@context": {"pattern": "^/contexts/Dummy$"},
         "@id": {"pattern": "^/dummies$"},
         "@type": {"pattern": "^hydra:Collection$"},
-        "hydra:totalItems": {"type":"number", "maximum": 30},
         "hydra:member": {
           "type": "array",
           "minItems": 0,
           "maxItems": 0
         },
+        "hydra:totalItems": {"type":"number", "minimum": 30, "maximum": 30},
         "hydra:view": {
           "type": "object",
           "properties": {
-            "@id": {"pattern": "^/dummies\\?itemsPerPage=0$"},
+            "@id": {"pattern": "^/dummies\\?itemsPerPage=0&page=1$"},
             "@type": {"pattern": "^hydra:PartialCollectionView$"},
             "hydra:first": {"pattern": "^/dummies\\?itemsPerPage=0&page=1$"},
-            "hydra:last": {"pattern": "^/dummies\\?itemsPerPage=0&page=1$"},
-            "hydra:previous": {"pattern": "^/dummies\\?itemsPerPage=0&page=1$"},
-            "hydra:next": {"pattern": "^/dummies\\?itemsPerPage=0&page=1$"}
-          }
-        },
-        "hydra:search": {}
+            "hydra:last": {"pattern": "^/dummies\\?itemsPerPage=0&page=1$"}
+          },
+          "required": [
+            "@id",
+            "@type",
+            "hydra:first",
+            "hydra:last"
+          ],
+          "additionalProperties": false
+        }
       },
-      "additionalProperties": false
+      "required": [
+        "@context",
+        "@id",
+        "@type",
+        "hydra:member",
+        "hydra:totalItems",
+        "hydra:view"
+      ]
     }
     """
 
+  Scenario: Retrieve non-existent page when number of items per page is set to 0 from client side
     When I send a "GET" request to "/dummies?itemsPerPage=0&page=2"
     Then the response status code should be 400
     And the JSON node "hydra:description" should be equal to "Page should not be greater than 1 if limit is equal to 0"

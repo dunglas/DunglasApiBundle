@@ -79,7 +79,8 @@ class DateFilter extends AbstractContextAwareFilter implements DateFilterInterfa
                 self::PARAMETER_BEFORE,
                 $values[self::PARAMETER_BEFORE],
                 $nullManagement,
-                $type
+                $type,
+                $property
             );
         }
 
@@ -92,7 +93,8 @@ class DateFilter extends AbstractContextAwareFilter implements DateFilterInterfa
                 self::PARAMETER_STRICTLY_BEFORE,
                 $values[self::PARAMETER_STRICTLY_BEFORE],
                 $nullManagement,
-                $type
+                $type,
+                $property
             );
         }
 
@@ -105,7 +107,8 @@ class DateFilter extends AbstractContextAwareFilter implements DateFilterInterfa
                 self::PARAMETER_AFTER,
                 $values[self::PARAMETER_AFTER],
                 $nullManagement,
-                $type
+                $type,
+                $property
             );
         }
 
@@ -118,7 +121,8 @@ class DateFilter extends AbstractContextAwareFilter implements DateFilterInterfa
                 self::PARAMETER_STRICTLY_AFTER,
                 $values[self::PARAMETER_STRICTLY_AFTER],
                 $nullManagement,
-                $type
+                $type,
+                $property
             );
         }
     }
@@ -128,18 +132,33 @@ class DateFilter extends AbstractContextAwareFilter implements DateFilterInterfa
      *
      * @param string|DBALType $type
      */
-    protected function addWhere(QueryBuilder $queryBuilder, QueryNameGeneratorInterface $queryNameGenerator, string $alias, string $field, string $operator, string $value, string $nullManagement = null, $type = null)
+    protected function addWhere(QueryBuilder $queryBuilder, QueryNameGeneratorInterface $queryNameGenerator, string $alias, string $field, string $operator, string $value, string $nullManagement = null, $type = null/*, string $property*/)
     {
-        $type = (string) $type;
-        try {
-            $value = false === strpos($type, '_immutable') ? new \DateTime($value) : new \DateTimeImmutable($value);
-        } catch (\Exception $e) {
-            // Silently ignore this filter if it can not be transformed to a \DateTime
-            $this->logger->notice('Invalid filter ignored', [
-                'exception' => new InvalidArgumentException(sprintf('The field "%s" has a wrong date format. Use one accepted by the \DateTime constructor', $field)),
-            ]);
+        if (\func_num_args() > 8) {
+            $property = func_get_arg(8);
+        } else {
+            if (__CLASS__ !== \get_class($this)) {
+                $r = new \ReflectionMethod($this, __FUNCTION__);
+                if (__CLASS__ !== $r->getDeclaringClass()->getName()) {
+                    @trigger_error(sprintf('Method %s() will have 9 non-optional arguments in API Platform 3.0. Not passing arguments 7-9 is deprecated since API Platform 2.4.', __FUNCTION__), E_USER_DEPRECATED);
+                }
+            }
+        }
 
+        $type = (string) $type;
+        $dateTimeClass = false === strpos($type, '_immutable') ? 'DateTime' : 'DateTimeImmutable';
+
+        if (null === $value = $this->normalizeValue($value, $dateTimeClass, $property ?? $field, $operator)) {
             return;
+        }
+
+        /*
+         * Doctrine ORM/DBAL uses the PHP default timezone
+         *
+         * @see https://www.doctrine-project.org/projects/doctrine-orm/en/current/cookbook/working-with-datetime.html#default-timezone-gotcha
+         */
+        if (false === strpos($type, 'tz')) {
+            $value = $value->setTimezone(new \DateTimeZone(date_default_timezone_get()));
         }
 
         $valueParameter = $queryNameGenerator->generateParameterName($field);
@@ -156,7 +175,7 @@ class DateFilter extends AbstractContextAwareFilter implements DateFilterInterfa
         } elseif (
             (self::INCLUDE_NULL_BEFORE === $nullManagement && \in_array($operator, [self::PARAMETER_BEFORE, self::PARAMETER_STRICTLY_BEFORE], true)) ||
             (self::INCLUDE_NULL_AFTER === $nullManagement && \in_array($operator, [self::PARAMETER_AFTER, self::PARAMETER_STRICTLY_AFTER], true)) ||
-            (self::INCLUDE_NULL_BEFORE_AND_AFTER === $nullManagement && \in_array($operator, [self::PARAMETER_AFTER, self::PARAMETER_STRICTLY_AFTER, self::PARAMETER_BEFORE, self::PARAMETER_STRICTLY_BEFORE], true))
+            (self::INCLUDE_NULL_BEFORE_AND_AFTER === $nullManagement && \in_array($operator, [self::PARAMETER_BEFORE, self::PARAMETER_STRICTLY_BEFORE, self::PARAMETER_AFTER, self::PARAMETER_STRICTLY_AFTER], true))
         ) {
             $queryBuilder->andWhere($queryBuilder->expr()->orX(
                 $baseWhere,

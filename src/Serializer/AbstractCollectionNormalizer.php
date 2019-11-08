@@ -107,13 +107,20 @@ abstract class AbstractCollectionNormalizer implements NormalizerInterface, Norm
      */
     protected function getPaginationConfig($object, array $context = []): array
     {
-        $currentPage = $lastPage = $itemsPerPage = $pageTotalItems = $totalItems = null;
-        $paginated = $paginator = false;
+        $currentPage = null;
+        $lastPage = null;
+        $itemsPerPage = null;
+        $pageTotalItems = null;
+        $totalItems = null;
+        $paginated = false;
+        $isPaginator = false;
 
         if ($object instanceof PartialPaginatorInterface) {
-            $paginated = $paginator = true;
+            $paginated = true;
+            $isPaginator = true;
             if ($object instanceof PaginatorInterface) {
-                $paginated = 1. !== $lastPage = $object->getLastPage();
+                $paginated = true;
+                $lastPage = $object->getLastPage();
                 $totalItems = $object->getTotalItems();
             } else {
                 $pageTotalItems = (float) \count($object);
@@ -125,7 +132,7 @@ abstract class AbstractCollectionNormalizer implements NormalizerInterface, Norm
             $totalItems = \count($object);
         }
 
-        return [$paginator, $paginated, $currentPage, $itemsPerPage, $lastPage, $pageTotalItems, $totalItems];
+        return [$isPaginator, $paginated, $currentPage, $itemsPerPage, $lastPage, $pageTotalItems, $totalItems];
     }
 
     /**

@@ -54,10 +54,14 @@ final class PartialCollectionViewNormalizer implements NormalizerInterface, Norm
             return $data;
         }
 
-        $currentPage = $lastPage = $itemsPerPage = $pageTotalItems = null;
+        $currentPage = null;
+        $lastPage = null;
+        $itemsPerPage = null;
+        $pageTotalItems = null;
         if ($paginated = $object instanceof PartialPaginatorInterface) {
             if ($object instanceof PaginatorInterface) {
-                $paginated = 1. !== $lastPage = $object->getLastPage();
+                $paginated = true;
+                $lastPage = $object->getLastPage();
             } else {
                 $itemsPerPage = $object->getItemsPerPage();
                 $pageTotalItems = (float) \count($object);

@@ -14,6 +14,8 @@ declare(strict_types=1);
 namespace ApiPlatform\Core\Bridge\Doctrine\Common\Filter;
 
 use ApiPlatform\Core\Bridge\Doctrine\Common\PropertyHelperTrait;
+use ApiPlatform\Core\Exception\InvalidArgumentException;
+use Psr\Log\LoggerInterface;
 
 /**
  * Trait for filtering the collection by date intervals.
@@ -54,6 +56,8 @@ trait DateFilterTrait
 
     abstract protected function getProperties(): ?array;
 
+    abstract protected function getLogger(): LoggerInterface;
+
     /**
      * Determines whether the given property refers to a date field.
      */
@@ -74,5 +78,18 @@ trait DateFilterTrait
                 'required' => false,
             ],
         ];
+    }
+
+    private function normalizeValue(string $value, string $dateTimeClass, string $property, string $parameterType): ?\DateTimeInterface
+    {
+        try {
+            return new $dateTimeClass($value);
+        } catch (\Exception $e) {
+            $this->getLogger()->notice('Invalid filter ignored', [
+                'exception' => new InvalidArgumentException(sprintf('Invalid value for "%s[%s]". Use date/time string supported by %s::__construct', $property, $parameterType, $dateTimeClass)),
+            ]);
+
+            return null;
+        }
     }
 }

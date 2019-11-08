@@ -32,7 +32,7 @@ final class CollectionNormalizer extends AbstractCollectionNormalizer
      */
     protected function getPaginationData($object, array $context = []): array
     {
-        [$paginator, $paginated, $currentPage, $itemsPerPage, $lastPage, $pageTotalItems, $totalItems] = $this->getPaginationConfig($object, $context);
+        [$isPaginator, $paginated, $currentPage, $itemsPerPage, $lastPage, $pageTotalItems, $totalItems] = $this->getPaginationConfig($object, $context);
         $parsed = IriHelper::parseIri($context['request_uri'] ?? '/', $this->pageParameterName);
 
         $data = [
@@ -51,7 +51,7 @@ final class CollectionNormalizer extends AbstractCollectionNormalizer
                 $data['_links']['prev']['href'] = IriHelper::createIri($parsed['parts'], $parsed['parameters'], $this->pageParameterName, $currentPage - 1.);
             }
 
-            if ((null !== $lastPage && $currentPage !== $lastPage) || (null === $lastPage && $pageTotalItems >= $itemsPerPage)) {
+            if (null !== $lastPage && $currentPage !== $lastPage || null === $lastPage && $pageTotalItems >= $itemsPerPage) {
                 $data['_links']['next']['href'] = IriHelper::createIri($parsed['parts'], $parsed['parameters'], $this->pageParameterName, $currentPage + 1.);
             }
         }
@@ -60,7 +60,7 @@ final class CollectionNormalizer extends AbstractCollectionNormalizer
             $data['totalItems'] = $totalItems;
         }
 
-        if ($paginator) {
+        if ($isPaginator) {
             $data['itemsPerPage'] = (int) $itemsPerPage;
         }
 

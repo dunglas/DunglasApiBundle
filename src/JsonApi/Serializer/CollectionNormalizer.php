@@ -33,7 +33,7 @@ final class CollectionNormalizer extends AbstractCollectionNormalizer
      */
     protected function getPaginationData($object, array $context = []): array
     {
-        [$paginator, $paginated, $currentPage, $itemsPerPage, $lastPage, $pageTotalItems, $totalItems] = $this->getPaginationConfig($object, $context);
+        [$isPaginator, $paginated, $currentPage, $itemsPerPage, $lastPage, $pageTotalItems, $totalItems] = $this->getPaginationConfig($object, $context);
         $parsed = IriHelper::parseIri($context['request_uri'] ?? '/', $this->pageParameterName);
 
         $data = [
@@ -61,7 +61,7 @@ final class CollectionNormalizer extends AbstractCollectionNormalizer
             $data['meta']['totalItems'] = $totalItems;
         }
 
-        if ($paginator) {
+        if ($isPaginator) {
             $data['meta']['itemsPerPage'] = (int) $itemsPerPage;
             $data['meta']['currentPage'] = (int) $currentPage;
         }
