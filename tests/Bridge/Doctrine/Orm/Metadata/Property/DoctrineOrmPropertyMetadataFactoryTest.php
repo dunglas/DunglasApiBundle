@@ -22,6 +22,7 @@ use Doctrine\Common\Persistence\Mapping\ClassMetadata;
 use Doctrine\Common\Persistence\ObjectManager;
 use Doctrine\ORM\Mapping\ClassMetadataInfo;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\PropertyInfo\Type;
 
 /**
  * @author Antoine Bluchet <soyuka@gmail.com>
@@ -73,6 +74,7 @@ class DoctrineOrmPropertyMetadataFactoryTest extends TestCase
 
         $classMetadata = $this->prophesize(ClassMetadataInfo::class);
         $classMetadata->getIdentifier()->shouldBeCalled()->willReturn(['id']);
+        $classMetadata->getAssociationMappings()->shouldBeCalled()->willReturn([]);
 
         $objectManager = $this->prophesize(ObjectManager::class);
         $objectManager->getClassMetadata(Dummy::class)->shouldBeCalled()->willReturn($classMetadata->reveal());
@@ -98,6 +100,7 @@ class DoctrineOrmPropertyMetadataFactoryTest extends TestCase
         $classMetadata = $this->prophesize(ClassMetadataInfo::class);
         $classMetadata->getIdentifier()->shouldBeCalled()->willReturn(['id']);
         $classMetadata->isIdentifierNatural()->shouldBeCalled()->willReturn(true);
+        $classMetadata->getAssociationMappings()->shouldBeCalled()->willReturn([]);
 
         $objectManager = $this->prophesize(ObjectManager::class);
         $objectManager->getClassMetadata(Dummy::class)->shouldBeCalled()->willReturn($classMetadata->reveal());
@@ -135,5 +138,74 @@ class DoctrineOrmPropertyMetadataFactoryTest extends TestCase
 
         $this->assertEquals($doctrinePropertyMetadata->isIdentifier(), true);
         $this->assertEquals($doctrinePropertyMetadata->isWritable(), false);
+    }
+
+    public function testCreateIsNullable()
+    {
+        $type = new Type(Type::BUILTIN_TYPE_OBJECT);
+
+        $propertyMetadata = new PropertyMetadata();
+        $propertyMetadata = $propertyMetadata->withType($type);
+
+        $propertyMetadataFactory = $this->prophesize(PropertyMetadataFactoryInterface::class);
+        $propertyMetadataFactory->create(Dummy::class, 'nullable_relation', [])->shouldBeCalled()->willReturn($propertyMetadata);
+
+        $classMetadata = $this->prophesize(ClassMetadataInfo::class);
+        $classMetadata->getIdentifier()->shouldBeCalled()->willReturn(['id']);
+        $classMetadata->getAssociationMappings()->shouldBeCalled()->willReturn([
+            [
+                'fieldName' => 'nullable_relation',
+                'joinColumns' => [
+                    ['nullable'=>true]
+                ]
+            ]
+        ]);
+
+        $objectManager = $this->prophesize(ObjectManager::class);
+        $objectManager->getClassMetadata(Dummy::class)->shouldBeCalled()->willReturn($classMetadata->reveal());
+
+        $managerRegistry = $this->prophesize(ManagerRegistry::class);
+        $managerRegistry->getManagerForClass(Dummy::class)->shouldBeCalled()->willReturn($objectManager->reveal());
+
+        $doctrineOrmPropertyMetadataFactory = new DoctrineOrmPropertyMetadataFactory($managerRegistry->reveal(), $propertyMetadataFactory->reveal());
+
+        $doctrinePropertyMetadata = $doctrineOrmPropertyMetadataFactory->create(Dummy::class, 'nullable_relation');
+
+        $this->assertEquals($doctrinePropertyMetadata->getType()->isNullable(), true);
+    }
+
+    public function testCreateIsNullableFalse()
+    {
+        $type = new Type(Type::BUILTIN_TYPE_OBJECT);
+
+        $propertyMetadata = new PropertyMetadata();
+        $propertyMetadata = $propertyMetadata->withType($type);
+
+        $propertyMetadataFactory = $this->prophesize(PropertyMetadataFactoryInterface::class);
+        $propertyMetadataFactory->create(Dummy::class, 'nullable_relation', [])->shouldBeCalled()->willReturn($propertyMetadata);
+
+        $classMetadata = $this->prophesize(ClassMetadataInfo::class);
+        $classMetadata->getIdentifier()->shouldBeCalled()->willReturn(['id']);
+        $classMetadata->getAssociationMappings()->shouldBeCalled()->willReturn([
+            [
+                'fieldName' => 'nullable_relation',
+                'joinColumns' => [
+                    ['nullable'=>true],
+                    ['nillable'=>false]
+                ]
+            ]
+        ]);
+
+        $objectManager = $this->prophesize(ObjectManager::class);
+        $objectManager->getClassMetadata(Dummy::class)->shouldBeCalled()->willReturn($classMetadata->reveal());
+
+        $managerRegistry = $this->prophesize(ManagerRegistry::class);
+        $managerRegistry->getManagerForClass(Dummy::class)->shouldBeCalled()->willReturn($objectManager->reveal());
+
+        $doctrineOrmPropertyMetadataFactory = new DoctrineOrmPropertyMetadataFactory($managerRegistry->reveal(), $propertyMetadataFactory->reveal());
+
+        $doctrinePropertyMetadata = $doctrineOrmPropertyMetadataFactory->create(Dummy::class, 'nullable_relation');
+
+        $this->assertEquals($doctrinePropertyMetadata->getType()->isNullable(), false);
     }
 }
