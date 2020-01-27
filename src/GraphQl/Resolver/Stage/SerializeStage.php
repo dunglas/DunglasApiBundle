@@ -75,11 +75,7 @@ final class SerializeStage implements SerializeStageInterface
 
         $data = null;
         if (!$isCollection) {
-            if ($isMutation && 'delete' === $operationName) {
-                $data = ['id' => $args['input']['id'] ?? null];
-            } else {
-                $data = $this->normalizer->normalize($itemOrCollection, ItemNormalizer::FORMAT, $normalizationContext);
-            }
+            $data = $this->normalizer->normalize($itemOrCollection, ItemNormalizer::FORMAT, $normalizationContext);
         }
 
         if ($isCollection && is_iterable($itemOrCollection)) {

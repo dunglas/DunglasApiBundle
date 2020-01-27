@@ -90,9 +90,10 @@ final class ItemMutationResolverFactory implements ResolverFactoryInterface
                         'previous_object' => $previousItem,
                     ],
                 ]);
-                $item = ($this->writeStage)($item, $resourceClass, $operationName, $resolverContext);
+                $itemBeforeDelete = ($this->serializeStage)($item, $resourceClass, $operationName, $resolverContext);
+                ($this->writeStage)($item, $resourceClass, $operationName, $resolverContext);
 
-                return ($this->serializeStage)($item, $resourceClass, $operationName, $resolverContext);
+                return $itemBeforeDelete;
             }
 
             $item = ($this->deserializeStage)($item, $resourceClass, $operationName, $resolverContext);
