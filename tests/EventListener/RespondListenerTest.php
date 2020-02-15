@@ -181,6 +181,30 @@ class RespondListenerTest extends TestCase
         $this->assertSame(Response::HTTP_ACCEPTED, $event->getResponse()->getStatusCode());
     }
 
+    public function testSetCustomStatusDynamicallyFromResultEvent()
+    {
+        $kernelProphecy = $this->prophesize(HttpKernelInterface::class);
+
+        $request = new Request([], [], ['_api_resource_class' => Dummy::class, '_api_item_operation_name' => 'get', '_api_respond' => true]);
+
+        $event = new GetResponseForControllerResultEvent(
+            $kernelProphecy->reveal(),
+            $request,
+            HttpKernelInterface::MASTER_REQUEST,
+            'bar'
+        );
+        $eventRequest = $event->getRequest();
+        $eventRequest->attributes->set('request_attributes_status', Response::HTTP_CREATED);
+
+        $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
+        $resourceMetadataFactoryProphecy->create(Dummy::class)->willReturn(new ResourceMetadata(null, null, null, ['get' => ['status' => 'request_attributes_status']]));
+
+        $listener = new RespondListener($resourceMetadataFactoryProphecy->reveal());
+        $listener->onKernelView($event);
+
+        $this->assertSame(Response::HTTP_CREATED, $event->getResponse()->getStatusCode());
+    }
+
     public function testHandleResponse()
     {
         $request = new Request([], [], ['_api_resource_class' => Dummy::class, '_api_item_operation_name' => 'get', '_api_respond' => true]);

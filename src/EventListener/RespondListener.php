@@ -79,6 +79,10 @@ final class RespondListener
             }
 
             $status = $resourceMetadata->getOperationAttribute($attributes, 'status');
+
+            if ('request_attributes_status' === $status) {
+                $status = $request->attributes->get($status);
+            }
         }
 
         $event->setResponse(new Response(
