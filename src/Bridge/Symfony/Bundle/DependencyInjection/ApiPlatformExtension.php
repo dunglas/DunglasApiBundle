@@ -220,7 +220,6 @@ final class ApiPlatformExtension extends Extension implements PrependExtensionIn
     {
         $loader->load('metadata/metadata.xml');
         $loader->load('metadata/xml.xml');
-
         [$xmlResources, $yamlResources] = $this->getResourcesToWatch($container, $config);
 
         if (!empty($config['resource_class_directories'])) {
@@ -242,6 +241,10 @@ final class ApiPlatformExtension extends Extension implements PrependExtensionIn
 
         if (interface_exists(DocBlockFactoryInterface::class)) {
             $loader->load('metadata/php_doc.xml');
+        }
+
+        if (true === $config['mapping']['auto_mapping']) {
+            $loader->load('metadata/directory.xml');
         }
     }
 
@@ -311,7 +314,7 @@ final class ApiPlatformExtension extends Extension implements PrependExtensionIn
 
         $container->setParameter('api_platform.resource_class_directories', $resources['dir']);
 
-        return [$resources['xml'], $resources['yml']];
+        return [$resources['xml'], $resources['yml'], $resources['dir']];
     }
 
     private function registerOAuthConfiguration(ContainerBuilder $container, array $config): void

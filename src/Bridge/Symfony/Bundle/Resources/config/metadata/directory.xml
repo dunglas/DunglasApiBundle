@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8" ?>
+
+<container xmlns="http://symfony.com/schema/dic/services">
+    <services>
+        <service id="api_platform.metadata.resource.name_collection_factory.directory" decorates="api_platform.metadata.resource.name_collection_factory"
+                 class="ApiPlatform\Core\Metadata\Resource\Factory\DirectoryResourceNameCollectionFactory" public="false">
+            <argument>%api_platform.resource_class_directories%</argument>
+            <argument type="service" id="api_platform.metadata.resource.name_collection_factory.directory.inner" />
+        </service>
+
+        <service id="api_platform.metadata.resource.metadata_factory.directory"
+                 decorates="api_platform.metadata.resource.metadata_factory" decoration-priority="5"
+                 class="ApiPlatform\Core\Metadata\Resource\Factory\DirectoryResourceMetadataFactory" public="false">
+            <argument>%api_platform.defaults%</argument>
+            <argument type="service" id="api_platform.metadata.resource.metadata_factory.directory.inner"/>
+        </service>
+    </services>
+</container>

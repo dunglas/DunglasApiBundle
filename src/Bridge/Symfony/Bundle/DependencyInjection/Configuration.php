@@ -179,6 +179,7 @@ final class Configuration implements ConfigurationInterface
                         ->arrayNode('paths')
                             ->prototype('scalar')->end()
                         ->end()
+                        ->booleanNode('auto_mapping')->defaultFalse()->end()
                     ->end()
                 ->end()
                 ->arrayNode('resource_class_directories')

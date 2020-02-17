@@ -5,6 +5,7 @@ parameters:
 		- tests
 		- tests/Fixtures/app/console
 	inferPrivatePropertyTypeFromConstructor: true
+	reportUnmatchedIgnoredErrors: false
 	symfony:
 		container_xml_path: %rootDir%/../../../tests/Fixtures/app/var/cache/test/appAppKernelTestDebugContainer.xml
 		constant_hassers: false
@@ -106,7 +107,6 @@ parameters:
 		- '#Method Symfony\\Component\\Serializer\\NameConverter\\NameConverterInterface::denormalize\(\) invoked with (2|3|4) parameters, 1 required\.#'
 		- '#Method Symfony\\Component\\Serializer\\NameConverter\\NameConverterInterface::normalize\(\) invoked with (2|3|4) parameters, 1 required\.#'
 		- '#Method Symfony\\Component\\Serializer\\Normalizer\\NormalizerInterface::supportsNormalization\(\) invoked with 3 parameters, 1-2 required\.#'
-
 		# Expected, due to deprecations
 		- '#Method ApiPlatform\\Core\\Bridge\\Doctrine\\Orm\\Filter\\(Abstract|Exists|Order)Filter::filterProperty\(\) invoked with 7 parameters, 5-6 required\.#'
 		- '#Method ApiPlatform\\Core\\Bridge\\Doctrine\\Orm\\Filter\\(AbstractFilter|FilterInterface)::apply\(\) invoked with 5 parameters, 3-4 required\.#'
@@ -123,3 +123,22 @@ parameters:
 			paths:
 				- %currentWorkingDirectory%/tests/Bridge/Symfony/Validator/EventListener/ValidationExceptionListenerTest.php
 				- %currentWorkingDirectory%/tests/EventListener/ExceptionListenerTest.php
+		-
+			message: '#Instanceof between bool\|float\|int|null and ArrayObject will always evaluate to false\.#'
+			paths:
+				- %currentWorkingDirectory%/src/JsonApi/Serializer/ItemNormalizer.php
+				- %currentWorkingDirectory%/src/Serializer/AbstractItemNormalizer.php
+
+		-
+			message: '#Call to an undefined method ApiPlatform\\Core\\JsonApi\\Serializer\\ItemNormalizer::setCircularReferenceLimit\(\)#'
+			paths:
+				- tests/JsonApi/Serializer/ItemNormalizerTest.php
+				- %currentWorkingDirectory%/src/Serializer/AbstractItemNormalizer.php
+		-
+			message: '#Call to an undefined method ApiPlatform\\Core\\Serializer\\AbstractItemNormalizer::setCircularReferenceHandler\(\)#'
+			paths:
+				- %currentWorkingDirectory%/src/Serializer/AbstractItemNormalizer.php
+		-
+			message: '#Call to an undefined method ApiPlatform\\Core\\Serializer\\AbstractItemNormalizer&PHPUnit\\Framework\\MockObject\\MockObject::setIgnoredAttributes\(\).#'
+			paths:
+				- tests/Serializer/AbstractItemNormalizerTest.php

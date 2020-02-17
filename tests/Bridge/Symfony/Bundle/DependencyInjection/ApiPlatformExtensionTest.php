@@ -791,6 +791,20 @@ class ApiPlatformExtensionTest extends TestCase
         $this->extension->load($config, $containerBuilder);
     }
 
+    public function testEnableAutoMapping()
+    {
+        $config = self::DEFAULT_CONFIG;
+        $config['api_platform']['mapping']['auto_mapping'] = true;
+        $config['api_platform']['enable_swagger'] = true;
+        $config['api_platform']['enable_swagger_ui'] = true;
+        $config['api_platform']['formats'] = [
+            'jsonhal' => ['mime_types' => ['application/hal+json']],
+        ];
+        $containerBuilderProphecy = $this->getBaseContainerBuilderProphecy(['orm'], $config);
+        $containerBuilder = $containerBuilderProphecy->reveal();
+        $this->extension->load($config, $containerBuilder);
+    }
+
     public function testDisabledSwagger()
     {
         $config = self::DEFAULT_CONFIG;
@@ -1033,6 +1047,7 @@ class ApiPlatformExtensionTest extends TestCase
     {
         $hasSwagger = null === $configuration || true === $configuration['api_platform']['enable_swagger'] ?? false;
         $hasHydra = null === $configuration || isset($configuration['api_platform']['formats']['jsonld']);
+        $autoMapping = $configuration['api_platform']['mapping']['auto_mapping'] ?? false;
 
         $containerBuilderProphecy = $this->getPartialContainerBuilderProphecy($configuration);
 
@@ -1251,6 +1266,12 @@ class ApiPlatformExtensionTest extends TestCase
             'api_platform.validator.query_parameter_validator',
             'test.api_platform.client',
         ];
+        if (true === $autoMapping) {
+            $definitions = array_merge($definitions, [
+                'api_platform.metadata.resource.name_collection_factory.directory',
+                'api_platform.metadata.resource.metadata_factory.directory',
+            ]);
+        }
 
         if (\in_array('odm', $doctrineIntegrationsToLoad, true)) {
             $definitions = array_merge($definitions, [

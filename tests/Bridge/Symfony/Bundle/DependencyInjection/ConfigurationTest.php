@@ -176,6 +176,7 @@ class ConfigurationTest extends TestCase
             ],
             'mapping' => [
                 'paths' => [],
+                'auto_mapping' => false,
             ],
             'http_cache' => [
                 'invalidation' => [
@@ -298,6 +299,20 @@ class ConfigurationTest extends TestCase
                 ],
             ],
         ]);
+    }
+
+    public function testAutoMapping()
+    {
+        $config = $this->processor->processConfiguration($this->configuration, [
+            'api_platform' => [
+                'mapping' => [
+                    'auto_mapping' => true,
+                ],
+            ],
+        ]);
+        $this->assertArrayHasKey('auto_mapping', $config['mapping']);
+        $this->assertIsBool($config['mapping']['auto_mapping']);
+        $this->assertTrue($config['mapping']['auto_mapping']);
     }
 
     /**
