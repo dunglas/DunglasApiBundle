@@ -69,7 +69,7 @@ final class SchemaFactory implements SchemaFactoryInterface
     public function buildSchema(string $className, string $format = 'json', string $type = Schema::TYPE_OUTPUT, ?string $operationType = null, ?string $operationName = null, ?Schema $schema = null, ?array $serializerContext = null, bool $forceCollection = false): Schema
     {
         $schema = $schema ?? new Schema();
-        if (null === $metadata = $this->getMetadata($className, $type, $operationType, $operationName, $serializerContext)) {
+        if (!class_exists($className) || null === $metadata = $this->getMetadata($className, $type, $operationType, $operationName, $serializerContext)) {
             return $schema;
         }
         [$resourceMetadata, $serializerContext, $inputOrOutputClass] = $metadata;
@@ -214,6 +214,7 @@ final class SchemaFactory implements SchemaFactoryInterface
         [$resourceMetadata, $serializerContext, $inputOrOutputClass] = $this->getMetadata($className, $type, $operationType, $operationName, $serializerContext);
 
         $prefix = $resourceMetadata ? $resourceMetadata->getShortName() : (new \ReflectionClass($className))->getShortName();
+
         if (null !== $inputOrOutputClass && $className !== $inputOrOutputClass) {
             $prefix .= ':'.md5($inputOrOutputClass);
         }

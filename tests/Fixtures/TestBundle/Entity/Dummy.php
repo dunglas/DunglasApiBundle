@@ -81,7 +81,7 @@ class Dummy
     public $description;
 
     /**
-     * @var string A dummy
+     * @var self
      *
      * @ORM\Column(nullable=true)
      */

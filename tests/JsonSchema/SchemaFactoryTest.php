@@ -74,4 +74,20 @@ class SchemaFactoryTest extends TestCase
         $this->assertArrayHasKey('type', $definitions[$rootDefinitionKey]['properties']['bar']);
         $this->assertSame('integer', $definitions[$rootDefinitionKey]['properties']['bar']['type']);
     }
+
+    public function testBuildSchemaForBadClass(): void
+    {
+        $typeFactoryProphecy = $this->prophesize(TypeFactoryInterface::class);
+        $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
+        $propertyNameCollectionFactoryProphecy = $this->prophesize(PropertyNameCollectionFactoryInterface::class);
+        $propertyMetadataFactoryProphecy = $this->prophesize(PropertyMetadataFactoryInterface::class);
+        $resourceClassResolverProphecy = $this->prophesize(ResourceClassResolverInterface::class);
+
+        $schemaFactory = new SchemaFactory($typeFactoryProphecy->reveal(), $resourceMetadataFactoryProphecy->reveal(), $propertyNameCollectionFactoryProphecy->reveal(), $propertyMetadataFactoryProphecy->reveal(), null, $resourceClassResolverProphecy->reveal());
+        $resultSchema = $schemaFactory->buildSchema('notaclass');
+
+        $definitions = $resultSchema->getDefinitions();
+
+        $this->assertNull($resultSchema->getRootDefinitionKey());
+    }
 }
