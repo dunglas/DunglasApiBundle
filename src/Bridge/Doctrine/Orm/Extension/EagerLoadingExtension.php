@@ -54,10 +54,10 @@ final class EagerLoadingExtension implements ContextAwareQueryCollectionExtensio
      */
     public function __construct(PropertyNameCollectionFactoryInterface $propertyNameCollectionFactory, PropertyMetadataFactoryInterface $propertyMetadataFactory, ResourceMetadataFactoryInterface $resourceMetadataFactory, int $maxJoins = 30, bool $forceEager = true, RequestStack $requestStack = null, SerializerContextBuilderInterface $serializerContextBuilder = null, bool $fetchPartial = false, ClassMetadataFactoryInterface $classMetadataFactory = null)
     {
-        if (null !== $this->requestStack) {
+        if (null !== $requestStack) {
             @trigger_error(sprintf('Passing an instance of "%s" is deprecated since version 2.2 and will be removed in 3.0. Use the data provider\'s context instead.', RequestStack::class), E_USER_DEPRECATED);
         }
-        if (null !== $this->serializerContextBuilder) {
+        if (null !== $serializerContextBuilder) {
             @trigger_error(sprintf('Passing an instance of "%s" is deprecated since version 2.2 and will be removed in 3.0. Use the data provider\'s context instead.', SerializerContextBuilderInterface::class), E_USER_DEPRECATED);
         }
 

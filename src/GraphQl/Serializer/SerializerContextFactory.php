@@ -15,17 +15,18 @@ namespace ApiPlatform\Core\GraphQl\Serializer;
 
 use ApiPlatform\Core\Metadata\Resource\Factory\ResourceMetadataFactoryInterface;
 use ApiPlatform\Core\Metadata\Resource\ResourceMetadata;
+use ApiPlatform\Core\Serializer\SerializerContextFactoryInterface;
 use GraphQL\Type\Definition\ResolveInfo;
 use Symfony\Component\Serializer\NameConverter\NameConverterInterface;
 
 /**
- * Builds the context used by the Symfony Serializer.
+ * Creates the context used by the Symfony Serializer.
  *
  * @experimental
  *
  * @author Alan Poulain <contact@alanpoulain.eu>
  */
-final class SerializerContextBuilder implements SerializerContextBuilderInterface
+final class SerializerContextFactory implements SerializerContextFactoryInterface
 {
     private $resourceMetadataFactory;
     private $nameConverter;
@@ -36,7 +37,7 @@ final class SerializerContextBuilder implements SerializerContextBuilderInterfac
         $this->nameConverter = $nameConverter;
     }
 
-    public function create(?string $resourceClass, string $operationName, array $resolverContext, bool $normalization): array
+    public function create(?string $resourceClass, string $operationName, bool $normalization, array $resolverContext): array
     {
         $resourceMetadata = $resourceClass ? $this->resourceMetadataFactory->create($resourceClass) : null;
 

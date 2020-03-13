@@ -56,7 +56,7 @@
             <argument type="service" id="api_platform.iri_converter" />
             <argument type="service" id="api_platform.collection_data_provider" />
             <argument type="service" id="api_platform.subresource_data_provider" />
-            <argument type="service" id="api_platform.graphql.serializer.context_builder" />
+            <argument type="service" id="api_platform.graphql.serializer.context_factory" />
             <argument>%api_platform.graphql.nesting_separator%</argument>
         </service>
 
@@ -73,20 +73,20 @@
         <service id="api_platform.graphql.resolver.stage.serialize" class="ApiPlatform\Core\GraphQl\Resolver\Stage\SerializeStage" public="false">
             <argument type="service" id="api_platform.metadata.resource.metadata_factory" />
             <argument type="service" id="serializer" />
-            <argument type="service" id="api_platform.graphql.serializer.context_builder" />
+            <argument type="service" id="api_platform.graphql.serializer.context_factory" />
             <argument type="service" id="api_platform.pagination" />
         </service>
 
         <service id="api_platform.graphql.resolver.stage.deserialize" class="ApiPlatform\Core\GraphQl\Resolver\Stage\DeserializeStage" public="false">
             <argument type="service" id="api_platform.metadata.resource.metadata_factory" />
             <argument type="service" id="serializer" />
-            <argument type="service" id="api_platform.graphql.serializer.context_builder" />
+            <argument type="service" id="api_platform.graphql.serializer.context_factory" />
         </service>
 
         <service id="api_platform.graphql.resolver.stage.write" class="ApiPlatform\Core\GraphQl\Resolver\Stage\WriteStage" public="false">
             <argument type="service" id="api_platform.metadata.resource.metadata_factory" />
             <argument type="service" id="api_platform.data_persister" />
-            <argument type="service" id="api_platform.graphql.serializer.context_builder" />
+            <argument type="service" id="api_platform.graphql.serializer.context_factory" />
         </service>
 
         <service id="api_platform.graphql.resolver.stage.validate" class="ApiPlatform\Core\GraphQl\Resolver\Stage\ValidateStage" public="false">
@@ -245,11 +245,10 @@
             <tag name="serializer.normalizer" priority="-780" />
         </service>
 
-        <service id="api_platform.graphql.serializer.context_builder" class="ApiPlatform\Core\GraphQl\Serializer\SerializerContextBuilder" public="false">
+        <service id="api_platform.graphql.serializer.context_factory" class="ApiPlatform\Core\GraphQl\Serializer\SerializerContextFactory" public="false">
             <argument type="service" id="api_platform.metadata.resource.metadata_factory" />
             <argument type="service" id="api_platform.name_converter" on-invalid="ignore" />
         </service>
-        <service id="ApiPlatform\Core\GraphQl\Serializer\SerializerContextBuilderInterface" alias="api_platform.graphql.serializer.context_builder" />
 
         <!-- Subscription -->
 

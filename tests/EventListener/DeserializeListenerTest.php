@@ -18,6 +18,7 @@ use ApiPlatform\Core\EventListener\DeserializeListener;
 use ApiPlatform\Core\Metadata\Resource\Factory\ResourceMetadataFactoryInterface;
 use ApiPlatform\Core\Metadata\Resource\ResourceMetadata;
 use ApiPlatform\Core\Serializer\SerializerContextBuilderInterface;
+use ApiPlatform\Core\Serializer\SerializerContextFactoryInterface;
 use ApiPlatform\Core\Tests\Fixtures\TestBundle\Entity\Dummy;
 use PHPUnit\Framework\TestCase;
 use Prophecy\Argument;
@@ -45,13 +46,13 @@ class DeserializeListenerTest extends TestCase
         $serializerProphecy = $this->prophesize(SerializerInterface::class);
         $serializerProphecy->deserialize(Argument::cetera())->shouldNotBeCalled();
 
-        $serializerContextBuilderProphecy = $this->prophesize(SerializerContextBuilderInterface::class);
-        $serializerContextBuilderProphecy->createFromRequest(Argument::type(Request::class), false, Argument::type('array'))->shouldNotBeCalled();
+        $serializerContextFactoryProphecy = $this->prophesize(SerializerContextFactoryInterface::class);
+        $serializerContextFactoryProphecy->create(Argument::cetera())->shouldNotBeCalled();
 
         $resourceMetadataFactory = $this->prophesize(ResourceMetadataFactoryInterface::class);
         $resourceMetadataFactory->create()->shouldNotBeCalled();
 
-        $listener = new DeserializeListener($serializerProphecy->reveal(), $serializerContextBuilderProphecy->reveal(), $resourceMetadataFactory->reveal());
+        $listener = new DeserializeListener($serializerProphecy->reveal(), $serializerContextFactoryProphecy->reveal(), $resourceMetadataFactory->reveal());
         $listener->onKernelRequest($eventProphecy->reveal());
     }
 
@@ -66,13 +67,13 @@ class DeserializeListenerTest extends TestCase
         $serializerProphecy = $this->prophesize(SerializerInterface::class);
         $serializerProphecy->deserialize(Argument::cetera())->shouldNotBeCalled();
 
-        $serializerContextBuilderProphecy = $this->prophesize(SerializerContextBuilderInterface::class);
-        $serializerContextBuilderProphecy->createFromRequest(Argument::type(Request::class), false, Argument::type('array'))->shouldNotBeCalled();
+        $serializerContextFactoryProphecy = $this->prophesize(SerializerContextFactoryInterface::class);
+        $serializerContextFactoryProphecy->create(Argument::cetera())->shouldNotBeCalled();
 
         $resourceMetadataFactory = $this->prophesize(ResourceMetadataFactoryInterface::class);
         $resourceMetadataFactory->create()->shouldNotBeCalled();
 
-        $listener = new DeserializeListener($serializerProphecy->reveal(), $serializerContextBuilderProphecy->reveal(), $resourceMetadataFactory->reveal());
+        $listener = new DeserializeListener($serializerProphecy->reveal(), $serializerContextFactoryProphecy->reveal(), $resourceMetadataFactory->reveal());
         $listener->onKernelRequest($eventProphecy->reveal());
     }
 
@@ -81,7 +82,7 @@ class DeserializeListenerTest extends TestCase
         $serializerProphecy = $this->prophesize(SerializerInterface::class);
         $serializerProphecy->deserialize(Argument::cetera())->shouldNotBeCalled();
 
-        $serializerContextBuilderProphecy = $this->prophesize(SerializerContextBuilderInterface::class);
+        $serializerContextFactoryProphecy = $this->prophesize(SerializerContextFactoryInterface::class);
 
         $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
         $resourceMetadataFactoryProphecy->create()->shouldNotBeCalled();
@@ -92,7 +93,7 @@ class DeserializeListenerTest extends TestCase
         $eventProphecy = $this->prophesize(RequestEvent::class);
         $eventProphecy->getRequest()->willReturn($request);
 
-        $listener = new DeserializeListener($serializerProphecy->reveal(), $serializerContextBuilderProphecy->reveal(), $resourceMetadataFactoryProphecy->reveal());
+        $listener = new DeserializeListener($serializerProphecy->reveal(), $serializerContextFactoryProphecy->reveal(), $resourceMetadataFactoryProphecy->reveal());
         $listener->onKernelRequest($eventProphecy->reveal());
     }
 
@@ -101,7 +102,7 @@ class DeserializeListenerTest extends TestCase
         $serializerProphecy = $this->prophesize(SerializerInterface::class);
         $serializerProphecy->deserialize(Argument::cetera())->shouldNotBeCalled();
 
-        $serializerContextBuilderProphecy = $this->prophesize(SerializerContextBuilderInterface::class);
+        $serializerContextFactoryProphecy = $this->prophesize(SerializerContextFactoryInterface::class);
 
         $resourceMetadata = new ResourceMetadata('Dummy', null, null, [], [
             'post' => [
@@ -118,7 +119,7 @@ class DeserializeListenerTest extends TestCase
         $eventProphecy = $this->prophesize(RequestEvent::class);
         $eventProphecy->getRequest()->willReturn($request);
 
-        $listener = new DeserializeListener($serializerProphecy->reveal(), $serializerContextBuilderProphecy->reveal(), $resourceMetadataFactoryProphecy->reveal());
+        $listener = new DeserializeListener($serializerProphecy->reveal(), $serializerContextFactoryProphecy->reveal(), $resourceMetadataFactoryProphecy->reveal());
         $listener->onKernelRequest($eventProphecy->reveal());
     }
 
@@ -136,21 +137,29 @@ class DeserializeListenerTest extends TestCase
             ['post' => ['input_formats' => self::FORMATS]]
         ));
 
-        $this->doTestDeserialize($method, $populateObject, $resourceMetadataFactoryProphecy->reveal());
+        $serializerContextFactoryProphecy = $this->prophesize(SerializerContextFactoryInterface::class);
+        $serializerContextFactoryProphecy->create('Foo', 'post', false, Argument::type('array'))->willReturn(['input' => ['class' => 'Foo'], 'output' => ['class' => 'Foo'], 'resource_class' => 'Foo'])->shouldBeCalled();
+
+        $this->doTestDeserialize($method, $populateObject, $resourceMetadataFactoryProphecy->reveal(), $serializerContextFactoryProphecy->reveal());
     }
 
     /**
      * @dataProvider methodProvider
+     *
+     * @group legacy
      */
-    public function legacyTestDeserialize(string $method, bool $populateObject): void
+    public function testLegacyDeserialize(string $method, bool $populateObject): void
     {
         $formatsProviderProphecy = $this->prophesize(FormatsProviderInterface::class);
         $formatsProviderProphecy->getFormatsFromAttributes(Argument::type('array'))->willReturn(self::FORMATS)->shouldBeCalled();
 
-        $this->doTestDeserialize($method, $populateObject, $formatsProviderProphecy->reveal());
+        $serializerContextBuilderProphecy = $this->prophesize(SerializerContextBuilderInterface::class);
+        $serializerContextBuilderProphecy->createFromRequest(Argument::type(Request::class), false, Argument::type('array'))->willReturn(['input' => ['class' => 'Foo'], 'output' => ['class' => 'Foo'], 'resource_class' => 'Foo'])->shouldBeCalled();
+
+        $this->doTestDeserialize($method, $populateObject, $formatsProviderProphecy->reveal(), $serializerContextBuilderProphecy->reveal());
     }
 
-    private function doTestDeserialize(string $method, bool $populateObject, $resourceMetadataFactory): void
+    private function doTestDeserialize(string $method, bool $populateObject, $resourceMetadataFactory, $serializerContextFactory): void
     {
         $result = $populateObject ? new \stdClass() : null;
         $eventProphecy = $this->prophesize(RequestEvent::class);
@@ -167,10 +176,7 @@ class DeserializeListenerTest extends TestCase
         $context['resource_class'] = 'Foo';
         $serializerProphecy->deserialize('{}', 'Foo', 'json', $context)->willReturn($result)->shouldBeCalled();
 
-        $serializerContextBuilderProphecy = $this->prophesize(SerializerContextBuilderInterface::class);
-        $serializerContextBuilderProphecy->createFromRequest(Argument::type(Request::class), false, Argument::type('array'))->willReturn(['input' => ['class' => 'Foo'], 'output' => ['class' => 'Foo'], 'resource_class' => 'Foo'])->shouldBeCalled();
-
-        $listener = new DeserializeListener($serializerProphecy->reveal(), $serializerContextBuilderProphecy->reveal(), $resourceMetadataFactory);
+        $listener = new DeserializeListener($serializerProphecy->reveal(), $serializerContextFactory, $resourceMetadataFactory);
         $listener->onKernelRequest($eventProphecy->reveal());
     }
 
@@ -225,10 +231,10 @@ class DeserializeListenerTest extends TestCase
         $context['resource_class'] = 'Foo';
         $serializerProphecy->deserialize('{}', 'Foo', 'json', $context)->willReturn($result)->shouldBeCalled();
 
-        $serializerContextBuilderProphecy = $this->prophesize(SerializerContextBuilderInterface::class);
-        $serializerContextBuilderProphecy->createFromRequest(Argument::type(Request::class), false, Argument::type('array'))->willReturn(['input' => ['class' => 'Foo'], 'output' => ['class' => 'Foo'], 'resource_class' => 'Foo'])->shouldBeCalled();
+        $serializerContextFactoryProphecy = $this->prophesize(SerializerContextFactoryInterface::class);
+        $serializerContextFactoryProphecy->create('Foo', 'post', false, Argument::type('array'))->willReturn(['input' => ['class' => 'Foo'], 'output' => ['class' => 'Foo'], 'resource_class' => 'Foo'])->shouldBeCalled();
 
-        $listener = new DeserializeListener($serializerProphecy->reveal(), $serializerContextBuilderProphecy->reveal(), $resourceMetadataFactory);
+        $listener = new DeserializeListener($serializerProphecy->reveal(), $serializerContextFactoryProphecy->reveal(), $resourceMetadataFactory);
 
         $listener->onKernelRequest($eventProphecy->reveal());
     }
@@ -276,12 +282,12 @@ class DeserializeListenerTest extends TestCase
         $serializerProphecy = $this->prophesize(SerializerInterface::class);
         $serializerProphecy->deserialize('{}', 'Foo', 'xml', $context)->willReturn(new \stdClass())->shouldBeCalled();
 
-        $serializerContextBuilderProphecy = $this->prophesize(SerializerContextBuilderInterface::class);
-        $serializerContextBuilderProphecy->createFromRequest(Argument::type(Request::class), false, Argument::type('array'))->willReturn($context)->shouldBeCalled();
+        $serializerContextFactoryProphecy = $this->prophesize(SerializerContextFactoryInterface::class);
+        $serializerContextFactoryProphecy->create('Foo', 'post', false, Argument::type('array'))->willReturn($context)->shouldBeCalled();
 
         $listener = new DeserializeListener(
             $serializerProphecy->reveal(),
-            $serializerContextBuilderProphecy->reveal(),
+            $serializerContextFactoryProphecy->reveal(),
             $resourceMetadataFactory
         );
         $listener->onKernelRequest($eventProphecy->reveal());
@@ -303,8 +309,8 @@ class DeserializeListenerTest extends TestCase
         $serializerProphecy = $this->prophesize(SerializerInterface::class);
         $serializerProphecy->deserialize(Argument::cetera())->shouldNotBeCalled();
 
-        $serializerContextBuilderProphecy = $this->prophesize(SerializerContextBuilderInterface::class);
-        $serializerContextBuilderProphecy->createFromRequest(Argument::type(Request::class), false, Argument::type('array'))->willReturn(['input' => ['class' => 'Foo'], 'output' => ['class' => 'Foo']]);
+        $serializerContextFactoryProphecy = $this->prophesize(SerializerContextFactoryInterface::class);
+        $serializerContextFactoryProphecy->create('Foo', 'post', false, Argument::type('array'))->willReturn(['input' => ['class' => 'Foo'], 'output' => ['class' => 'Foo']]);
 
         $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
         $resourceMetadataFactoryProphecy->create('Foo')->willReturn(new ResourceMetadata(
@@ -317,7 +323,7 @@ class DeserializeListenerTest extends TestCase
 
         $listener = new DeserializeListener(
             $serializerProphecy->reveal(),
-            $serializerContextBuilderProphecy->reveal(),
+            $serializerContextFactoryProphecy->reveal(),
             $resourceMetadataFactoryProphecy->reveal()
         );
         $listener->onKernelRequest($eventProphecy->reveal());
@@ -338,15 +344,15 @@ class DeserializeListenerTest extends TestCase
         $serializerProphecy = $this->prophesize(SerializerInterface::class);
         $serializerProphecy->deserialize(Argument::cetera())->shouldNotBeCalled();
 
-        $serializerContextBuilderProphecy = $this->prophesize(SerializerContextBuilderInterface::class);
-        $serializerContextBuilderProphecy->createFromRequest(Argument::type(Request::class), false, Argument::type('array'))->willReturn(['input' => ['class' => 'Foo'], 'output' => ['class' => 'Foo']]);
+        $serializerContextFactoryProphecy = $this->prophesize(SerializerContextFactoryInterface::class);
+        $serializerContextFactoryProphecy->create('Foo', 'post', false, Argument::type('array'))->willReturn(['input' => ['class' => 'Foo'], 'output' => ['class' => 'Foo']]);
 
         $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
         $resourceMetadataFactoryProphecy->create('Foo')->willReturn(new ResourceMetadata(null, null, null, null, null, ['formats' => ['jsonld' => ['application/ld+json'], 'xml' => ['text/xml']]]));
 
         $listener = new DeserializeListener(
             $serializerProphecy->reveal(),
-            $serializerContextBuilderProphecy->reveal(),
+            $serializerContextFactoryProphecy->reveal(),
             $resourceMetadataFactoryProphecy->reveal()
         );
         $listener->onKernelRequest($eventProphecy->reveal());
@@ -360,11 +366,11 @@ class DeserializeListenerTest extends TestCase
     {
         $serializerProphecy = $this->prophesize(SerializerInterface::class);
 
-        $serializerContextBuilderProphecy = $this->prophesize(SerializerContextBuilderInterface::class);
+        $serializerContextFactoryProphecy = $this->prophesize(SerializerContextFactoryInterface::class);
 
         new DeserializeListener(
             $serializerProphecy->reveal(),
-            $serializerContextBuilderProphecy->reveal(),
+            $serializerContextFactoryProphecy->reveal(),
             self::FORMATS
         );
     }

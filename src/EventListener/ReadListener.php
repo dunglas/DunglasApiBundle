@@ -22,7 +22,9 @@ use ApiPlatform\Core\Exception\RuntimeException;
 use ApiPlatform\Core\Identifier\IdentifierConverterInterface;
 use ApiPlatform\Core\Metadata\Resource\Factory\ResourceMetadataFactoryInterface;
 use ApiPlatform\Core\Metadata\Resource\ToggleableOperationAttributeTrait;
+use ApiPlatform\Core\Serializer\ContextTrait;
 use ApiPlatform\Core\Serializer\SerializerContextBuilderInterface;
+use ApiPlatform\Core\Serializer\SerializerContextFactoryInterface;
 use ApiPlatform\Core\Util\CloneTrait;
 use ApiPlatform\Core\Util\RequestAttributesExtractor;
 use ApiPlatform\Core\Util\RequestParser;
@@ -37,19 +39,23 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 final class ReadListener
 {
     use CloneTrait;
+    use ContextTrait;
     use OperationDataProviderTrait;
     use ToggleableOperationAttributeTrait;
 
     public const OPERATION_ATTRIBUTE_KEY = 'read';
 
-    private $serializerContextBuilder;
+    private $serializerContextFactory;
 
-    public function __construct(CollectionDataProviderInterface $collectionDataProvider, ItemDataProviderInterface $itemDataProvider, SubresourceDataProviderInterface $subresourceDataProvider = null, SerializerContextBuilderInterface $serializerContextBuilder = null, IdentifierConverterInterface $identifierConverter = null, ResourceMetadataFactoryInterface $resourceMetadataFactory = null)
+    /**
+     * @param SerializerContextBuilderInterface|SerializerContextFactoryInterface $serializerContextBuilder
+     */
+    public function __construct(CollectionDataProviderInterface $collectionDataProvider, ItemDataProviderInterface $itemDataProvider, SubresourceDataProviderInterface $subresourceDataProvider = null, /* SerializerContextFactoryInterface $serializerContextFactory */$serializerContextBuilder = null, IdentifierConverterInterface $identifierConverter = null, ResourceMetadataFactoryInterface $resourceMetadataFactory = null)
     {
         $this->collectionDataProvider = $collectionDataProvider;
         $this->itemDataProvider = $itemDataProvider;
         $this->subresourceDataProvider = $subresourceDataProvider;
-        $this->serializerContextBuilder = $serializerContextBuilder;
+        $this->serializerContextFactory = $serializerContextBuilder;
         $this->identifierConverter = $identifierConverter;
         $this->resourceMetadataFactory = $resourceMetadataFactory;
     }
@@ -77,9 +83,16 @@ final class ReadListener
         }
 
         $context = null === $filters ? [] : ['filters' => $filters];
-        if ($this->serializerContextBuilder) {
+        if ($this->serializerContextFactory) {
             // Builtin data providers are able to use the serialization context to automatically add join clauses
-            $context += $normalizationContext = $this->serializerContextBuilder->createFromRequest($request, true, $attributes);
+            if ($this->serializerContextFactory instanceof SerializerContextBuilderInterface) {
+                $normalizationContext = $this->serializerContextFactory->createFromRequest($request, false, $attributes);
+            } else {
+                $operationName = $this->getOperationNameFromContext($attributes);
+                $normalizationContext = $this->addRequestContext($request, $attributes);
+                $normalizationContext = $this->serializerContextFactory->create($attributes['resource_class'], $operationName, false, $normalizationContext);
+            }
+            $context += $normalizationContext;
             $request->attributes->set('_api_normalization_context', $normalizationContext);
         }
 

@@ -39,6 +39,7 @@ api_platform:
     description: |
         This is a test API.
         Made with love
+    enable_serialization_context_doc:  true
     allow_plain_identifiers:           true
     formats:
         jsonld:                        ['application/ld+json']
@@ -243,6 +244,11 @@ services:
         decorates: api_platform.swagger.normalizer.documentation
         public: false
         arguments: ['@app.serializer.normalizer.override_documentation.inner']
+
+    app.serializer.order_context_factory:
+        class: ApiPlatform\Core\Tests\Fixtures\TestBundle\Serializer\OrderContextFactory
+        decorates: 'api_platform.serializer.context_factory'
+        autowire: true
 
     app.data_transformer.custom_input_dto:
         class: 'ApiPlatform\Core\Tests\Fixtures\TestBundle\DataTransformer\CustomInputDtoDataTransformer'

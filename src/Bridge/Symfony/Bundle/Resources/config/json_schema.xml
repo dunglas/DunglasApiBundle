@@ -22,6 +22,7 @@
             <argument type="service" id="api_platform.metadata.property.metadata_factory" />
             <argument type="service" id="api_platform.name_converter" on-invalid="ignore" />
             <argument type="service" id="api_platform.resource_class_resolver" />
+            <argument type="service" id="api_platform.serializer.context_factory" />
         </service>
         <service id="ApiPlatform\Core\JsonSchema\SchemaFactoryInterface" alias="api_platform.json_schema.schema_factory" />
 

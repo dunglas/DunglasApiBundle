@@ -44,6 +44,7 @@ Feature: Documentation support
     And the Hydra class "CustomNormalizedDummy" exists
     And the Hydra class "CustomWritableIdentifierDummy" exists
     And the Hydra class "Dummy" exists
+    And the Hydra class "Order" exists
     And the Hydra class "RelatedDummy" exists
     And the Hydra class "RelationEmbedder" exists
     And the Hydra class "ThirdLevel" exists
@@ -59,6 +60,7 @@ Feature: Documentation support
     And "name" property is readable for Hydra class "Dummy"
     And "name" property is writable for Hydra class "Dummy"
     And "name" property is required for Hydra class "Dummy"
+    And "customerIp" property doesn't exist for Hydra class "Order"
     And "plainPassword" property is not readable for Hydra class "User"
     And "plainPassword" property is writable for Hydra class "User"
     And "plainPassword" property is not required for Hydra class "User"
@@ -87,3 +89,11 @@ Feature: Documentation support
     And the boolean value of the node "owl:deprecated" of the property "deprecatedField" of the Hydra class "DeprecatedResource" is true
     And the boolean value of the node "owl:deprecated" of the property "The collection of DeprecatedResource resources" of the Hydra class "The API entrypoint" is true
     And the boolean value of the node "owl:deprecated" of the operation "GET" of the Hydra class "DeprecatedResource" is true
+
+  Scenario: Retrieve the API vocabulary with dynamic groups
+    Given I add "Authorization" header equal to "Basic YWRtaW46a2l0dGVu"
+    And I send a "GET" request to "/docs.jsonld"
+    Then the response status code should be 200
+    And the response should be in JSON
+    And the header "Content-Type" should be equal to "application/ld+json; charset=utf-8"
+    And "customerIp" property is readable for Hydra class "Order"

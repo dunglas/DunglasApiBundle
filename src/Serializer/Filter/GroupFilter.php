@@ -21,7 +21,7 @@ use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
  *
  * @author Baptiste Meyer <baptiste.meyer@gmail.com>
  */
-final class GroupFilter implements FilterInterface
+final class GroupFilter implements FilterInterface, SerializerContextFilterInterface
 {
     private $overrideDefaultGroups;
     private $parameterName;
@@ -36,9 +36,13 @@ final class GroupFilter implements FilterInterface
 
     /**
      * {@inheritdoc}
+     *
+     * @deprecated since API Platform 2.6, use {@see applyToSerializerContext()} method instead
      */
     public function apply(Request $request, bool $normalization, array $attributes, array &$context)
     {
+        trigger_deprecation('API Platform', '2.6', 'Using "%s()" method is deprecated, use "applyToSerializerContext()" method instead.', __METHOD__);
+
         if (\array_key_exists($this->parameterName, $commonAttribute = $request->attributes->get('_api_filters', []))) {
             $groups = $commonAttribute[$this->parameterName];
         } else {
@@ -58,6 +62,32 @@ final class GroupFilter implements FilterInterface
         }
 
         $context[AbstractNormalizer::GROUPS] = $groups;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function applyToSerializerContext(string $resourceClass, string $operationName, bool $normalization, array $context, array &$serializerContext): void
+    {
+        if (\array_key_exists($this->parameterName, $commonAttribute = ($context['filters'] ?? []))) {
+            $groups = $commonAttribute[$this->parameterName];
+        } else {
+            $groups = $context['request_query'][$this->parameterName] ?? null;
+        }
+
+        if (!\is_array($groups)) {
+            return;
+        }
+
+        if (null !== $this->whitelist) {
+            $groups = array_intersect($this->whitelist, $groups);
+        }
+
+        if (!$this->overrideDefaultGroups && isset($serializerContext[AbstractNormalizer::GROUPS])) {
+            $groups = array_merge((array) $serializerContext[AbstractNormalizer::GROUPS], $groups);
+        }
+
+        $serializerContext[AbstractNormalizer::GROUPS] = $groups;
     }
 
     /**

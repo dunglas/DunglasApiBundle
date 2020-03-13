@@ -1397,6 +1397,7 @@ final class DoctrineContext implements Context
         $order = $this->isOrm() ? new Order() : new OrderDocument();
         $order->recipient = $customer;
         $order->customer = $customer;
+        $order->customerIp = '82.654.87.09';
 
         $customer->addresses->add($address1);
         $customer->addresses->add($address2);

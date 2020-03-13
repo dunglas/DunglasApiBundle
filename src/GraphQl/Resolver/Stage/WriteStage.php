@@ -15,8 +15,8 @@ namespace ApiPlatform\Core\GraphQl\Resolver\Stage;
 
 use ApiPlatform\Core\DataPersister\ContextAwareDataPersisterInterface;
 use ApiPlatform\Core\DataPersister\DataPersisterInterface;
-use ApiPlatform\Core\GraphQl\Serializer\SerializerContextBuilderInterface;
 use ApiPlatform\Core\Metadata\Resource\Factory\ResourceMetadataFactoryInterface;
+use ApiPlatform\Core\Serializer\SerializerContextFactoryInterface;
 
 /**
  * Write stage of GraphQL resolvers.
@@ -29,13 +29,13 @@ final class WriteStage implements WriteStageInterface
 {
     private $resourceMetadataFactory;
     private $dataPersister;
-    private $serializerContextBuilder;
+    private $serializerContextFactory;
 
-    public function __construct(ResourceMetadataFactoryInterface $resourceMetadataFactory, ContextAwareDataPersisterInterface $dataPersister, SerializerContextBuilderInterface $serializerContextBuilder)
+    public function __construct(ResourceMetadataFactoryInterface $resourceMetadataFactory, ContextAwareDataPersisterInterface $dataPersister, SerializerContextFactoryInterface $serializerContextFactory)
     {
         $this->resourceMetadataFactory = $resourceMetadataFactory;
         $this->dataPersister = $dataPersister;
-        $this->serializerContextBuilder = $serializerContextBuilder;
+        $this->serializerContextFactory = $serializerContextFactory;
     }
 
     /**
@@ -48,7 +48,7 @@ final class WriteStage implements WriteStageInterface
             return $data;
         }
 
-        $denormalizationContext = $this->serializerContextBuilder->create($resourceClass, $operationName, $context, false);
+        $denormalizationContext = $this->serializerContextFactory->create($resourceClass, $operationName, false, $context);
 
         if ('delete' === $operationName) {
             $this->dataPersister->remove($data, $denormalizationContext);

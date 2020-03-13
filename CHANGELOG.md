@@ -7,8 +7,11 @@
 * GraphQL: Subscription support with Mercure (#3321)
 * GraphQL: Allow to format GraphQL errors based on exceptions (#3063)
 * GraphQL: Add page-based pagination (#3175)
+* GraphQL: **BC Break** `SerializerContextBuilder` and its related `api_platform.graphql.serializer.context_builder` service have been replaced by `SerializerContextFactory` (using the new `ApiPlatform\Core\Serializer\SerializerContextFactoryInterface` interface) and `api_platform.graphql.serializer.context_factory`. If you have decorated the previous service, you need to: change the service id in the configuration, implement the new interface, change the order of the `create` method arguments (`$normalization` before `$resolverContext`).
 * OpenAPI: Add PHP default values to the documentation (#2386)
 * Deprecate using a validation groups generator service not implementing `ApiPlatform\Core\Bridge\Symfony\Validator\ValidationGroupsGeneratorInterface` (#3346)
+* The `SerializerContextBuilder` and its related service `api_platform.serializer.context_builder` are deprecated. You need to use the `api_platform.serializer.context_factory` service. The related `SerializerContextFactory` class implements a new `ApiPlatform\Core\Serializer\SerializerContextFactoryInterface` interface not dependent of the request. If you have decorated the previous service, you need to: change the service id in the configuration, implement the new interface, replace the `createFromRequest` method with the `create` method. If you need to use request information, you can use the `request_*` keys in the context.
+* Hydra and OpenAPI documentation can take into account the dynamic serialization groups added with the serializer context builder (set `enable_serialization_context_doc` to `true` in configuration)
 
 ## 2.5.x-dev
 

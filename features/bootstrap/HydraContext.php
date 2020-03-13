@@ -154,7 +154,7 @@ final class HydraContext implements Context
     }
 
     /**
-     * @Then :prop property doesn't exist for the Hydra class :class
+     * @Then :prop property doesn't exist for Hydra class :class
      */
     public function assertPropertyNotExist(string $propertyName, string $className)
     {

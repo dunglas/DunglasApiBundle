@@ -17,8 +17,8 @@ use ApiPlatform\Core\DataProvider\Pagination;
 use ApiPlatform\Core\DataProvider\PaginatorInterface;
 use ApiPlatform\Core\GraphQl\Resolver\Util\IdentifierTrait;
 use ApiPlatform\Core\GraphQl\Serializer\ItemNormalizer;
-use ApiPlatform\Core\GraphQl\Serializer\SerializerContextBuilderInterface;
 use ApiPlatform\Core\Metadata\Resource\Factory\ResourceMetadataFactoryInterface;
+use ApiPlatform\Core\Serializer\SerializerContextFactoryInterface;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 
 /**
@@ -34,14 +34,14 @@ final class SerializeStage implements SerializeStageInterface
 
     private $resourceMetadataFactory;
     private $normalizer;
-    private $serializerContextBuilder;
+    private $serializerContextFactory;
     private $pagination;
 
-    public function __construct(ResourceMetadataFactoryInterface $resourceMetadataFactory, NormalizerInterface $normalizer, SerializerContextBuilderInterface $serializerContextBuilder, Pagination $pagination)
+    public function __construct(ResourceMetadataFactoryInterface $resourceMetadataFactory, NormalizerInterface $normalizer, SerializerContextFactoryInterface $serializerContextFactory, Pagination $pagination)
     {
         $this->resourceMetadataFactory = $resourceMetadataFactory;
         $this->normalizer = $normalizer;
-        $this->serializerContextBuilder = $serializerContextBuilder;
+        $this->serializerContextFactory = $serializerContextFactory;
         $this->pagination = $pagination;
     }
 
@@ -77,7 +77,7 @@ final class SerializeStage implements SerializeStageInterface
             return null;
         }
 
-        $normalizationContext = $this->serializerContextBuilder->create($resourceClass, $operationName, $context, true);
+        $normalizationContext = $this->serializerContextFactory->create($resourceClass, $operationName, true, $context);
 
         $data = null;
         if (!$isCollection) {

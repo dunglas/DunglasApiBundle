@@ -19,9 +19,9 @@ use ApiPlatform\Core\DataProvider\SubresourceDataProviderInterface;
 use ApiPlatform\Core\Exception\ItemNotFoundException;
 use ApiPlatform\Core\GraphQl\Resolver\Stage\ReadStage;
 use ApiPlatform\Core\GraphQl\Serializer\ItemNormalizer;
-use ApiPlatform\Core\GraphQl\Serializer\SerializerContextBuilderInterface;
 use ApiPlatform\Core\Metadata\Resource\Factory\ResourceMetadataFactoryInterface;
 use ApiPlatform\Core\Metadata\Resource\ResourceMetadata;
+use ApiPlatform\Core\Serializer\SerializerContextFactoryInterface;
 use GraphQL\Type\Definition\ResolveInfo;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -37,7 +37,7 @@ class ReadStageTest extends TestCase
     private $iriConverterProphecy;
     private $collectionDataProviderProphecy;
     private $subresourceDataProviderProphecy;
-    private $serializerContextBuilderProphecy;
+    private $serializerContextFactoryProphecy;
 
     /**
      * {@inheritdoc}
@@ -48,14 +48,14 @@ class ReadStageTest extends TestCase
         $this->iriConverterProphecy = $this->prophesize(IriConverterInterface::class);
         $this->collectionDataProviderProphecy = $this->prophesize(ContextAwareCollectionDataProviderInterface::class);
         $this->subresourceDataProviderProphecy = $this->prophesize(SubresourceDataProviderInterface::class);
-        $this->serializerContextBuilderProphecy = $this->prophesize(SerializerContextBuilderInterface::class);
+        $this->serializerContextFactoryProphecy = $this->prophesize(SerializerContextFactoryInterface::class);
 
         $this->readStage = new ReadStage(
             $this->resourceMetadataFactoryProphecy->reveal(),
             $this->iriConverterProphecy->reveal(),
             $this->collectionDataProviderProphecy->reveal(),
             $this->subresourceDataProviderProphecy->reveal(),
-            $this->serializerContextBuilderProphecy->reveal(),
+            $this->serializerContextFactoryProphecy->reveal(),
             '_'
         );
     }
@@ -108,7 +108,7 @@ class ReadStageTest extends TestCase
         $this->resourceMetadataFactoryProphecy->create($resourceClass)->willReturn(new ResourceMetadata());
 
         $normalizationContext = ['normalization' => true];
-        $this->serializerContextBuilderProphecy->create($resourceClass, $operationName, $context, true)->shouldBeCalled()->willReturn($normalizationContext);
+        $this->serializerContextFactoryProphecy->create($resourceClass, $operationName, true, $context)->shouldBeCalled()->willReturn($normalizationContext);
 
         if ($throwNotFound) {
             $this->iriConverterProphecy->getItemFromIri($identifier, $normalizationContext)->willThrow(new ItemNotFoundException());
@@ -152,7 +152,7 @@ class ReadStageTest extends TestCase
         $this->resourceMetadataFactoryProphecy->create($resourceClass)->willReturn(new ResourceMetadata('shortName'));
 
         $normalizationContext = ['normalization' => true];
-        $this->serializerContextBuilderProphecy->create($resourceClass, $operationName, $context, true)->shouldBeCalled()->willReturn($normalizationContext);
+        $this->serializerContextFactoryProphecy->create($resourceClass, $operationName, true, $context)->shouldBeCalled()->willReturn($normalizationContext);
 
         if ($throwNotFound) {
             $this->iriConverterProphecy->getItemFromIri($identifier, $normalizationContext)->willThrow(new ItemNotFoundException());
@@ -205,7 +205,7 @@ class ReadStageTest extends TestCase
         $this->resourceMetadataFactoryProphecy->create($resourceClass)->willReturn(new ResourceMetadata());
 
         $normalizationContext = ['normalization' => true];
-        $this->serializerContextBuilderProphecy->create($resourceClass, $operationName, $context, true)->shouldBeCalled()->willReturn($normalizationContext);
+        $this->serializerContextFactoryProphecy->create($resourceClass, $operationName, true, $context)->shouldBeCalled()->willReturn($normalizationContext);
 
         $this->subresourceDataProviderProphecy->getSubresource($resourceClass, ['id' => 3], $normalizationContext + ['filters' => $expectedFilters, 'property' => $fieldName, 'identifiers' => [['id', $resourceClass]], 'collection' => true], $operationName)->willReturn(['subresource']);
 

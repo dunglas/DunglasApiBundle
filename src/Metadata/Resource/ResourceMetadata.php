@@ -238,6 +238,8 @@ final class ResourceMetadata
                 return $this->getCollectionOperationAttribute($operationName, $key, $defaultValue, $resourceFallback);
             case OperationType::ITEM:
                 return $this->getItemOperationAttribute($operationName, $key, $defaultValue, $resourceFallback);
+            case OperationType::RESOURCE:
+                return $this->getAttribute($key, $defaultValue);
             default:
                 return $this->getSubresourceOperationAttribute($operationName, $key, $defaultValue, $resourceFallback);
         }

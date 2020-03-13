@@ -17,12 +17,13 @@ use ApiPlatform\Core\Exception\RuntimeException;
 use ApiPlatform\Core\Metadata\Resource\Factory\ResourceMetadataFactoryInterface;
 use ApiPlatform\Core\Metadata\Resource\ResourceMetadata;
 use ApiPlatform\Core\Serializer\SerializerContextBuilder;
-use ApiPlatform\Core\Swagger\Serializer\DocumentationNormalizer;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request;
 
 /**
  * @author Kévin Dunglas <dunglas@gmail.com>
+ *
+ * @group legacy
  */
 class SerializerContextBuilderTest extends TestCase
 {
@@ -40,7 +41,7 @@ class SerializerContextBuilderTest extends TestCase
             [],
             [],
             [
-                'normalization_context' => ['foo' => 'bar', DocumentationNormalizer::SWAGGER_DEFINITION_NAME => 'MyDefinition'],
+                'normalization_context' => ['foo' => 'bar'],
                 'denormalization_context' => ['bar' => 'baz'],
             ]
         );
@@ -91,9 +92,12 @@ class SerializerContextBuilderTest extends TestCase
         $this->builder->createFromRequest(new Request(), false);
     }
 
-    public function testReuseExistingAttributes()
+    public function testReuseExistingAttributes(): void
     {
         $expected = ['bar' => 'baz', 'item_operation_name' => 'get', 'resource_class' => 'Foo', 'request_uri' => '/foos/1', 'api_allow_update' => false, 'operation_type' => 'item', 'uri' => 'http://localhost/foos/1', 'output' => null, 'input' => null];
         $this->assertEquals($expected, $this->builder->createFromRequest(Request::create('/foos/1'), false, ['resource_class' => 'Foo', 'item_operation_name' => 'get']));
+
+        $expected = ['bar' => 'baz', 'resource_operation_name' => 'resource', 'resource_class' => 'Foo', 'request_uri' => '', 'api_allow_update' => false, 'operation_type' => 'resource', 'uri' => 'http://:/', 'output' => null, 'input' => null];
+        $this->assertEquals($expected, $this->builder->createFromRequest(new Request(), false, ['resource_class' => 'Foo', 'resource_operation_name' => 'resource']));
     }
 }

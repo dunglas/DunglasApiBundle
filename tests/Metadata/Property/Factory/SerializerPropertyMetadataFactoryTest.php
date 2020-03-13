@@ -51,7 +51,7 @@ class SerializerPropertyMetadataFactoryTest extends TestCase
     /**
      * @dataProvider groupsProvider
      */
-    public function testCreate($readGroups, $writeGroups)
+    public function testCreate($readGroups, $writeGroups, array $options): void
     {
         $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
         $dummyResourceMetadata = (new ResourceMetadata())
@@ -92,13 +92,13 @@ class SerializerPropertyMetadataFactoryTest extends TestCase
             ->withType(new Type(Type::BUILTIN_TYPE_ARRAY, true))
             ->withReadable(false)
             ->withWritable(true);
-        $decoratedProphecy->create(Dummy::class, 'foo', [])->willReturn($fooPropertyMetadata);
+        $decoratedProphecy->create(Dummy::class, 'foo', $options)->willReturn($fooPropertyMetadata);
         $relatedDummyPropertyMetadata = (new PropertyMetadata())
             ->withType(new Type(Type::BUILTIN_TYPE_OBJECT, true, RelatedDummy::class));
-        $decoratedProphecy->create(Dummy::class, 'relatedDummy', [])->willReturn($relatedDummyPropertyMetadata);
+        $decoratedProphecy->create(Dummy::class, 'relatedDummy', $options)->willReturn($relatedDummyPropertyMetadata);
         $nameConvertedPropertyMetadata = (new PropertyMetadata())
             ->withType(new Type(Type::BUILTIN_TYPE_STRING, true));
-        $decoratedProphecy->create(Dummy::class, 'nameConverted', [])->willReturn($nameConvertedPropertyMetadata);
+        $decoratedProphecy->create(Dummy::class, 'nameConverted', $options)->willReturn($nameConvertedPropertyMetadata);
 
         $resourceClassResolverProphecy = $this->prophesize(ResourceClassResolverInterface::class);
         $resourceClassResolverProphecy->isResourceClass(RelatedDummy::class)->willReturn(true);
@@ -107,9 +107,9 @@ class SerializerPropertyMetadataFactoryTest extends TestCase
         $serializerPropertyMetadataFactory = new SerializerPropertyMetadataFactory($resourceMetadataFactoryProphecy->reveal(), $serializerClassMetadataFactoryProphecy->reveal(), $decoratedProphecy->reveal(), $resourceClassResolverProphecy->reveal());
 
         $actual = [];
-        $actual[] = $serializerPropertyMetadataFactory->create(Dummy::class, 'foo');
-        $actual[] = $serializerPropertyMetadataFactory->create(Dummy::class, 'relatedDummy');
-        $actual[] = $serializerPropertyMetadataFactory->create(Dummy::class, 'nameConverted');
+        $actual[] = $serializerPropertyMetadataFactory->create(Dummy::class, 'foo', $options);
+        $actual[] = $serializerPropertyMetadataFactory->create(Dummy::class, 'relatedDummy', $options);
+        $actual[] = $serializerPropertyMetadataFactory->create(Dummy::class, 'nameConverted', $options);
 
         $this->assertInstanceOf(PropertyMetadata::class, $actual[0]);
         $this->assertFalse($actual[0]->isReadable());
@@ -129,8 +129,9 @@ class SerializerPropertyMetadataFactoryTest extends TestCase
     public function groupsProvider(): array
     {
         return [
-            [['dummy_read'], ['dummy_write']],
-            ['dummy_read', 'dummy_write'],
+            [['dummy_read'], ['dummy_write'], []],
+            ['dummy_read', 'dummy_write', []],
+            'with serializer_groups and deserializer_groups' => ['dummy_read', 'dummy_write', ['serializer_groups' => ['dummy_read'], 'deserializer_groups' => ['dummy_write']]],
         ];
     }
 

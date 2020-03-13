@@ -17,9 +17,9 @@ use ApiPlatform\Core\DataProvider\ArrayPaginator;
 use ApiPlatform\Core\DataProvider\Pagination;
 use ApiPlatform\Core\GraphQl\Resolver\Stage\SerializeStage;
 use ApiPlatform\Core\GraphQl\Serializer\ItemNormalizer;
-use ApiPlatform\Core\GraphQl\Serializer\SerializerContextBuilderInterface;
 use ApiPlatform\Core\Metadata\Resource\Factory\ResourceMetadataFactoryInterface;
 use ApiPlatform\Core\Metadata\Resource\ResourceMetadata;
+use ApiPlatform\Core\Serializer\SerializerContextFactoryInterface;
 use GraphQL\Type\Definition\ResolveInfo;
 use PHPUnit\Framework\TestCase;
 use Prophecy\Argument;
@@ -32,7 +32,7 @@ class SerializeStageTest extends TestCase
 {
     private $resourceMetadataFactoryProphecy;
     private $normalizerProphecy;
-    private $serializerContextBuilderProphecy;
+    private $serializerContextFactoryProphecy;
 
     /**
      * {@inheritdoc}
@@ -41,7 +41,7 @@ class SerializeStageTest extends TestCase
     {
         $this->resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
         $this->normalizerProphecy = $this->prophesize(NormalizerInterface::class);
-        $this->serializerContextBuilderProphecy = $this->prophesize(SerializerContextBuilderInterface::class);
+        $this->serializerContextFactoryProphecy = $this->prophesize(SerializerContextFactoryInterface::class);
     }
 
     /**
@@ -83,7 +83,7 @@ class SerializeStageTest extends TestCase
         $this->resourceMetadataFactoryProphecy->create($resourceClass)->willReturn(new ResourceMetadata('shortName'));
 
         $normalizationContext = ['normalization' => true];
-        $this->serializerContextBuilderProphecy->create($resourceClass, $operationName, $context, true)->shouldBeCalled()->willReturn($normalizationContext);
+        $this->serializerContextFactoryProphecy->create($resourceClass, $operationName, true, $context)->shouldBeCalled()->willReturn($normalizationContext);
 
         $this->normalizerProphecy->normalize(Argument::type('stdClass'), ItemNormalizer::FORMAT, $normalizationContext)->willReturn(['normalized_item']);
 
@@ -125,7 +125,7 @@ class SerializeStageTest extends TestCase
         $this->resourceMetadataFactoryProphecy->create($resourceClass)->willReturn(new ResourceMetadata('shortName'));
 
         $normalizationContext = ['normalization' => true];
-        $this->serializerContextBuilderProphecy->create($resourceClass, $operationName, $context, true)->shouldBeCalled()->willReturn($normalizationContext);
+        $this->serializerContextFactoryProphecy->create($resourceClass, $operationName, true, $context)->shouldBeCalled()->willReturn($normalizationContext);
 
         $this->normalizerProphecy->normalize(Argument::type('stdClass'), ItemNormalizer::FORMAT, $normalizationContext)->willReturn(['normalized_item']);
 
@@ -163,7 +163,7 @@ class SerializeStageTest extends TestCase
         $this->resourceMetadataFactoryProphecy->create($resourceClass)->willReturn(new ResourceMetadata());
 
         $normalizationContext = ['normalization' => true];
-        $this->serializerContextBuilderProphecy->create($resourceClass, $operationName, $context, true)->shouldBeCalled()->willReturn($normalizationContext);
+        $this->serializerContextFactoryProphecy->create($resourceClass, $operationName, true, $context)->shouldBeCalled()->willReturn($normalizationContext);
 
         $this->normalizerProphecy->normalize(Argument::type('stdClass'), ItemNormalizer::FORMAT, $normalizationContext)->willReturn(new \stdClass());
 
@@ -180,7 +180,7 @@ class SerializeStageTest extends TestCase
         return new SerializeStage(
             $this->resourceMetadataFactoryProphecy->reveal(),
             $this->normalizerProphecy->reveal(),
-            $this->serializerContextBuilderProphecy->reveal(),
+            $this->serializerContextFactoryProphecy->reveal(),
             $pagination
         );
     }

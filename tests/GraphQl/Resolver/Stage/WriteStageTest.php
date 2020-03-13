@@ -15,9 +15,9 @@ namespace ApiPlatform\Core\Tests\GraphQl\Resolver\Stage;
 
 use ApiPlatform\Core\DataPersister\ContextAwareDataPersisterInterface;
 use ApiPlatform\Core\GraphQl\Resolver\Stage\WriteStage;
-use ApiPlatform\Core\GraphQl\Serializer\SerializerContextBuilderInterface;
 use ApiPlatform\Core\Metadata\Resource\Factory\ResourceMetadataFactoryInterface;
 use ApiPlatform\Core\Metadata\Resource\ResourceMetadata;
+use ApiPlatform\Core\Serializer\SerializerContextFactoryInterface;
 use PHPUnit\Framework\TestCase;
 use Prophecy\Argument;
 
@@ -30,7 +30,7 @@ class WriteStageTest extends TestCase
     private $writeStage;
     private $resourceMetadataFactoryProphecy;
     private $dataPersisterProphecy;
-    private $serializerContextBuilderProphecy;
+    private $serializerContextFactoryProphecy;
 
     /**
      * {@inheritdoc}
@@ -39,12 +39,12 @@ class WriteStageTest extends TestCase
     {
         $this->resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
         $this->dataPersisterProphecy = $this->prophesize(ContextAwareDataPersisterInterface::class);
-        $this->serializerContextBuilderProphecy = $this->prophesize(SerializerContextBuilderInterface::class);
+        $this->serializerContextFactoryProphecy = $this->prophesize(SerializerContextFactoryInterface::class);
 
         $this->writeStage = new WriteStage(
             $this->resourceMetadataFactoryProphecy->reveal(),
             $this->dataPersisterProphecy->reveal(),
-            $this->serializerContextBuilderProphecy->reveal()
+            $this->serializerContextFactoryProphecy->reveal()
         );
     }
 
@@ -81,7 +81,7 @@ class WriteStageTest extends TestCase
         $this->resourceMetadataFactoryProphecy->create($resourceClass)->willReturn(new ResourceMetadata());
 
         $denormalizationContext = ['denormalization' => true];
-        $this->serializerContextBuilderProphecy->create($resourceClass, $operationName, $context, false)->willReturn($denormalizationContext);
+        $this->serializerContextFactoryProphecy->create($resourceClass, $operationName, false, $context)->willReturn($denormalizationContext);
 
         $data = new \stdClass();
         $this->dataPersisterProphecy->remove($data, $denormalizationContext)->shouldBeCalled();
@@ -100,7 +100,7 @@ class WriteStageTest extends TestCase
         $this->resourceMetadataFactoryProphecy->create($resourceClass)->willReturn(new ResourceMetadata());
 
         $denormalizationContext = ['denormalization' => true];
-        $this->serializerContextBuilderProphecy->create($resourceClass, $operationName, $context, false)->willReturn($denormalizationContext);
+        $this->serializerContextFactoryProphecy->create($resourceClass, $operationName, false, $context)->willReturn($denormalizationContext);
 
         $data = new \stdClass();
         $persistedData = new \stdClass();
@@ -124,7 +124,7 @@ class WriteStageTest extends TestCase
         $this->resourceMetadataFactoryProphecy->create($resourceClass)->willReturn(new ResourceMetadata());
 
         $denormalizationContext = ['denormalization' => true];
-        $this->serializerContextBuilderProphecy->create($resourceClass, $operationName, $context, false)->willReturn($denormalizationContext);
+        $this->serializerContextFactoryProphecy->create($resourceClass, $operationName, false, $context)->willReturn($denormalizationContext);
 
         $data = new \stdClass();
         $this->dataPersisterProphecy->remove(Argument::cetera())->shouldNotBeCalled();

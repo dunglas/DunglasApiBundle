@@ -20,11 +20,15 @@ use Symfony\Component\HttpFoundation\Request;
  * Symfony serializer context builder filter interface.
  *
  * @author Baptiste Meyer <baptiste.meyer@gmail.com>
+ *
+ * @deprecated since API Platform 2.6, use {@see \ApiPlatform\Core\Serializer\Filter\SerializerContextFilterInterface} interface instead
  */
 interface FilterInterface extends BaseFilterInterface
 {
     /**
      * Apply a filter to the serializer context.
+     *
+     * @deprecated since API Platform 2.6, use {@see \ApiPlatform\Core\Serializer\Filter\SerializerContextFilterInterface::applyToSerializerContext()} method instead
      */
     public function apply(Request $request, bool $normalization, array $attributes, array &$context);
 }

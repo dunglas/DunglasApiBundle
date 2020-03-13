@@ -24,7 +24,10 @@ use Symfony\Component\HttpFoundation\Request;
  */
 class PropertyFilterTest extends TestCase
 {
-    public function testApply()
+    /**
+     * @group legacy
+     */
+    public function testLegacyApply(): void
     {
         $request = new Request(['properties' => ['foo', 'bar', 'baz']]);
         $context = ['attributes' => ['foo', 'qux']];
@@ -35,7 +38,10 @@ class PropertyFilterTest extends TestCase
         $this->assertEquals(['attributes' => ['foo', 'qux', 'foo', 'bar', 'baz']], $context);
     }
 
-    public function testApplyWithOverriding()
+    /**
+     * @group legacy
+     */
+    public function testLegacyApplyWithOverriding(): void
     {
         $request = new Request(['custom_properties' => ['foo', 'bar', 'baz']]);
         $context = ['attributes' => ['foo', 'qux']];
@@ -46,7 +52,10 @@ class PropertyFilterTest extends TestCase
         $this->assertEquals(['attributes' => ['foo', 'bar', 'baz']], $context);
     }
 
-    public function testApplyWithoutPropertiesInRequest()
+    /**
+     * @group legacy
+     */
+    public function testLegacyApplyWithoutPropertiesInRequest(): void
     {
         $context = ['attributes' => ['foo', 'bar']];
 
@@ -56,7 +65,10 @@ class PropertyFilterTest extends TestCase
         $this->assertEquals(['attributes' => ['foo', 'bar']], $context);
     }
 
-    public function testApplyWithPropertiesWhitelist()
+    /**
+     * @group legacy
+     */
+    public function testLegacyApplyWithPropertiesWhitelist(): void
     {
         $request = new Request(['properties' => ['foo', 'bar', 'baz']]);
         $context = ['attributes' => ['qux']];
@@ -67,7 +79,10 @@ class PropertyFilterTest extends TestCase
         $this->assertEquals(['attributes' => ['qux', 'foo', 'bar']], $context);
     }
 
-    public function testApplyWithPropertiesWhitelistAndNestedProperty()
+    /**
+     * @group legacy
+     */
+    public function testLegacyApplyWithPropertiesWhitelistAndNestedProperty(): void
     {
         $request = new Request(['properties' => ['foo', 'bar', 'group' => ['baz' => ['baz', 'qux'], 'qux']]]);
         $context = ['attributes' => ['qux']];
@@ -78,7 +93,10 @@ class PropertyFilterTest extends TestCase
         $this->assertEquals(['attributes' => ['qux', 'foo', 'group' => ['baz' => ['qux']]]], $context);
     }
 
-    public function testApplyWithPropertiesWhitelistNotMatchingAnyProperty()
+    /**
+     * @group legacy
+     */
+    public function testLegacyApplyWithPropertiesWhitelistNotMatchingAnyProperty(): void
     {
         $request = new Request(['properties' => ['foo', 'bar', 'group' => ['baz' => ['baz', 'qux'], 'qux']]]);
         $context = ['attributes' => ['qux']];
@@ -89,7 +107,10 @@ class PropertyFilterTest extends TestCase
         $this->assertEquals(['attributes' => ['qux']], $context);
     }
 
-    public function testApplyWithPropertiesWhitelistAndOverriding()
+    /**
+     * @group legacy
+     */
+    public function testLegacyApplyWithPropertiesWhitelistAndOverriding(): void
     {
         $request = new Request(['properties' => ['foo', 'bar', 'baz']]);
         $context = ['attributes' => ['qux']];
@@ -100,7 +121,10 @@ class PropertyFilterTest extends TestCase
         $this->assertEquals(['attributes' => ['foo', 'baz']], $context);
     }
 
-    public function testApplyWithPropertiesInPropertyFilterAttribute()
+    /**
+     * @group legacy
+     */
+    public function testLegacyApplyWithPropertiesInPropertyFilterAttribute(): void
     {
         $request = new Request(['properties' => ['foo', 'bar', 'baz']], [], ['_api_filters' => ['properties' => ['fooz']]]);
         $context = ['attributes' => ['foo', 'qux']];
@@ -111,7 +135,10 @@ class PropertyFilterTest extends TestCase
         $this->assertEquals(['attributes' => ['foo', 'qux', 'fooz']], $context);
     }
 
-    public function testApplyWithInvalidPropertiesInRequest()
+    /**
+     * @group legacy
+     */
+    public function testLegacyApplyWithInvalidPropertiesInRequest(): void
     {
         $request = new Request(['properties' => 'foo,bar,baz']);
         $context = ['attributes' => ['foo', 'bar']];
@@ -122,7 +149,10 @@ class PropertyFilterTest extends TestCase
         $this->assertEquals(['attributes' => ['foo', 'bar']], $context);
     }
 
-    public function testApplyWithNameConverter()
+    /**
+     * @group legacy
+     */
+    public function testLegacyApplyWithNameConverter(): void
     {
         $request = new Request(['properties' => ['foo', 'bar', 'name_converted']]);
         $context = ['attributes' => ['foo', 'name_converted']];
@@ -133,7 +163,10 @@ class PropertyFilterTest extends TestCase
         $this->assertEquals(['attributes' => ['foo', 'name_converted', 'foo', 'bar', 'nameConverted']], $context);
     }
 
-    public function testApplyWithOverridingAndNameConverter()
+    /**
+     * @group legacy
+     */
+    public function testLegacyApplyWithOverridingAndNameConverter(): void
     {
         $request = new Request(['custom_properties' => ['foo', 'bar', 'name_converted']]);
         $context = ['attributes' => ['foo', 'qux']];
@@ -144,7 +177,10 @@ class PropertyFilterTest extends TestCase
         $this->assertEquals(['attributes' => ['foo', 'bar', 'nameConverted']], $context);
     }
 
-    public function testApplyWithoutPropertiesInRequestAndNameConverter()
+    /**
+     * @group legacy
+     */
+    public function testLegacyApplyWithoutPropertiesInRequestAndNameConverter(): void
     {
         $context = ['attributes' => ['foo', 'name_converted']];
 
@@ -154,7 +190,10 @@ class PropertyFilterTest extends TestCase
         $this->assertEquals(['attributes' => ['foo', 'name_converted']], $context);
     }
 
-    public function testApplyWithPropertiesWhitelistAndNameConverter()
+    /**
+     * @group legacy
+     */
+    public function testLegacyApplyWithPropertiesWhitelistAndNameConverter(): void
     {
         $request = new Request(['properties' => ['foo', 'name_converted', 'baz']]);
         $context = ['attributes' => ['qux']];
@@ -165,7 +204,10 @@ class PropertyFilterTest extends TestCase
         $this->assertEquals(['attributes' => ['qux', 'foo', 'nameConverted']], $context);
     }
 
-    public function testApplyWithPropertiesWhitelistWithNestedPropertyAndNameConverter()
+    /**
+     * @group legacy
+     */
+    public function testLegacyApplyWithPropertiesWhitelistWithNestedPropertyAndNameConverter(): void
     {
         $request = new Request(['properties' => ['foo', 'bar', 'name_converted' => ['baz' => ['baz', 'name_converted'], 'qux']]]);
         $context = ['attributes' => ['qux']];
@@ -176,7 +218,10 @@ class PropertyFilterTest extends TestCase
         $this->assertEquals(['attributes' => ['qux', 'foo', 'nameConverted' => ['baz' => ['nameConverted']]]], $context);
     }
 
-    public function testApplyWithPropertiesWhitelistNotMatchingAnyPropertyAndNameConverter()
+    /**
+     * @group legacy
+     */
+    public function testLegacyApplyWithPropertiesWhitelistNotMatchingAnyPropertyAndNameConverter(): void
     {
         $request = new Request(['properties' => ['foo', 'bar', 'name_converted' => ['baz' => ['baz', 'name_converted'], 'qux']]]);
         $context = ['attributes' => ['qux']];
@@ -187,7 +232,10 @@ class PropertyFilterTest extends TestCase
         $this->assertEquals(['attributes' => ['qux']], $context);
     }
 
-    public function testApplyWithPropertiesWhitelistAndOverridingAndNameConverter()
+    /**
+     * @group legacy
+     */
+    public function testLegacyApplyWithPropertiesWhitelistAndOverridingAndNameConverter(): void
     {
         $request = new Request(['properties' => ['foo', 'bar', 'name_converted']]);
         $context = ['attributes' => ['qux']];
@@ -198,7 +246,10 @@ class PropertyFilterTest extends TestCase
         $this->assertEquals(['attributes' => ['foo', 'nameConverted']], $context);
     }
 
-    public function testApplyWithPropertiesInPropertyFilterAttributeAndNameConverter()
+    /**
+     * @group legacy
+     */
+    public function testLegacyApplyWithPropertiesInPropertyFilterAttributeAndNameConverter(): void
     {
         $request = new Request(['properties' => ['foo', 'bar', 'baz']], [], ['_api_filters' => ['properties' => ['name_converted']]]);
         $context = ['attributes' => ['foo', 'qux']];
@@ -209,7 +260,194 @@ class PropertyFilterTest extends TestCase
         $this->assertEquals(['attributes' => ['foo', 'qux', 'nameConverted']], $context);
     }
 
-    public function testGetDescription()
+    public function testApply(): void
+    {
+        $context = ['request_attributes' => [], 'request_query' => ['properties' => ['foo', 'bar', 'baz']]];
+        $serializerContext = ['attributes' => ['foo', 'qux']];
+
+        $propertyFilter = new PropertyFilter();
+        $propertyFilter->applyToSerializerContext('Foo', 'get', true, $context, $serializerContext);
+
+        $this->assertEquals(['attributes' => ['foo', 'qux', 'foo', 'bar', 'baz']], $serializerContext);
+    }
+
+    public function testApplyWithOverriding(): void
+    {
+        $context = ['request_attributes' => [], 'request_query' => ['custom_properties' => ['foo', 'bar', 'baz']]];
+        $serializerContext = ['attributes' => ['foo', 'qux']];
+
+        $propertyFilter = new PropertyFilter('custom_properties', true);
+        $propertyFilter->applyToSerializerContext('Foo', 'get', false, $context, $serializerContext);
+
+        $this->assertEquals(['attributes' => ['foo', 'bar', 'baz']], $serializerContext);
+    }
+
+    public function testApplyWithoutPropertiesInContext(): void
+    {
+        $context = ['request_attributes' => [], 'request_query' => []];
+        $serializerContext = ['attributes' => ['foo', 'bar']];
+
+        $propertyFilter = new PropertyFilter();
+        $propertyFilter->applyToSerializerContext('Foo', 'get', false, $context, $serializerContext);
+
+        $this->assertEquals(['attributes' => ['foo', 'bar']], $serializerContext);
+    }
+
+    public function testApplyWithPropertiesWhitelist(): void
+    {
+        $context = ['request_attributes' => [], 'request_query' => ['properties' => ['foo', 'bar', 'baz']]];
+        $serializerContext = ['attributes' => ['qux']];
+
+        $propertyFilter = new PropertyFilter('properties', false, ['bar', 'fuz', 'foo']);
+        $propertyFilter->applyToSerializerContext('Foo', 'get', true, $context, $serializerContext);
+
+        $this->assertEquals(['attributes' => ['qux', 'foo', 'bar']], $serializerContext);
+    }
+
+    public function testApplyWithPropertiesWhitelistAndNestedProperty(): void
+    {
+        $context = ['request_attributes' => [], 'request_query' => ['properties' => ['foo', 'bar', 'group' => ['baz' => ['baz', 'qux'], 'qux']]]];
+        $serializerContext = ['attributes' => ['qux']];
+
+        $propertyFilter = new PropertyFilter('properties', false, ['foo' => null, 'group' => ['baz' => ['qux']]]);
+        $propertyFilter->applyToSerializerContext('Foo', 'get', true, $context, $serializerContext);
+
+        $this->assertEquals(['attributes' => ['qux', 'foo', 'group' => ['baz' => ['qux']]]], $serializerContext);
+    }
+
+    public function testApplyWithPropertiesWhitelistNotMatchingAnyProperty(): void
+    {
+        $context = ['request_attributes' => [], 'request_query' => ['properties' => ['foo', 'bar', 'group' => ['baz' => ['baz', 'qux'], 'qux']]]];
+        $serializerContext = ['attributes' => ['qux']];
+
+        $propertyFilter = new PropertyFilter('properties', false, ['fuz', 'fiz']);
+        $propertyFilter->applyToSerializerContext('Foo', 'get', true, $context, $serializerContext);
+
+        $this->assertEquals(['attributes' => ['qux']], $serializerContext);
+    }
+
+    public function testApplyWithPropertiesWhitelistAndOverriding(): void
+    {
+        $context = ['request_attributes' => [], 'request_query' => ['properties' => ['foo', 'bar', 'baz']]];
+        $serializerContext = ['attributes' => ['qux']];
+
+        $propertyFilter = new PropertyFilter('properties', true, ['foo', 'baz']);
+        $propertyFilter->applyToSerializerContext('Foo', 'get', true, $context, $serializerContext);
+
+        $this->assertEquals(['attributes' => ['foo', 'baz']], $serializerContext);
+    }
+
+    public function testApplyWithPropertiesInPropertyFilterAttribute(): void
+    {
+        $context = ['request_attributes' => ['_api_filters' => ['properties' => ['fooz']]], 'request_query' => ['properties' => ['foo', 'bar', 'baz']]];
+        $serializerContext = ['attributes' => ['foo', 'qux']];
+
+        $propertyFilter = new PropertyFilter();
+        $propertyFilter->applyToSerializerContext('Foo', 'get', true, $context, $serializerContext);
+
+        $this->assertEquals(['attributes' => ['foo', 'qux', 'fooz']], $serializerContext);
+    }
+
+    public function testApplyWithInvalidPropertiesInContext(): void
+    {
+        $context = ['request_attributes' => [], 'request_query' => ['properties' => 'foo,bar,baz']];
+        $serializerContext = ['attributes' => ['foo', 'bar']];
+
+        $propertyFilter = new PropertyFilter();
+        $propertyFilter->applyToSerializerContext('Foo', 'get', true, $context, $serializerContext);
+
+        $this->assertEquals(['attributes' => ['foo', 'bar']], $serializerContext);
+    }
+
+    public function testApplyWithNameConverter(): void
+    {
+        $context = ['request_attributes' => [], 'request_query' => ['properties' => ['foo', 'bar', 'name_converted']]];
+        $serializerContext = ['attributes' => ['foo', 'name_converted']];
+
+        $propertyFilter = new PropertyFilter('properties', false, null, new CustomConverter());
+        $propertyFilter->applyToSerializerContext('Foo', 'get', true, $context, $serializerContext);
+
+        $this->assertEquals(['attributes' => ['foo', 'name_converted', 'foo', 'bar', 'nameConverted']], $serializerContext);
+    }
+
+    public function testApplyWithOverridingAndNameConverter(): void
+    {
+        $context = ['request_attributes' => [], 'request_query' => ['custom_properties' => ['foo', 'bar', 'name_converted']]];
+        $serializerContext = ['attributes' => ['foo', 'qux']];
+
+        $propertyFilter = new PropertyFilter('custom_properties', true, null, new CustomConverter());
+        $propertyFilter->applyToSerializerContext('Foo', 'get', false, $context, $serializerContext);
+
+        $this->assertEquals(['attributes' => ['foo', 'bar', 'nameConverted']], $serializerContext);
+    }
+
+    public function testApplyWithoutPropertiesInContextAndNameConverter(): void
+    {
+        $context = [];
+        $serializerContext = ['attributes' => ['foo', 'name_converted']];
+
+        $propertyFilter = new PropertyFilter('properties', false, null, new CustomConverter());
+        $propertyFilter->applyToSerializerContext('Foo', 'get', false, $context, $serializerContext);
+
+        $this->assertEquals(['attributes' => ['foo', 'name_converted']], $serializerContext);
+    }
+
+    public function testApplyWithPropertiesWhitelistAndNameConverter(): void
+    {
+        $context = ['request_attributes' => [], 'request_query' => ['properties' => ['foo', 'name_converted', 'baz']]];
+        $serializerContext = ['attributes' => ['qux']];
+
+        $propertyFilter = new PropertyFilter('properties', false, ['nameConverted', 'fuz', 'foo'], new CustomConverter());
+        $propertyFilter->applyToSerializerContext('Foo', 'get', true, $context, $serializerContext);
+
+        $this->assertEquals(['attributes' => ['qux', 'foo', 'nameConverted']], $serializerContext);
+    }
+
+    public function testApplyWithPropertiesWhitelistWithNestedPropertyAndNameConverter(): void
+    {
+        $context = ['request_attributes' => [], 'request_query' => ['properties' => ['foo', 'bar', 'name_converted' => ['baz' => ['baz', 'name_converted'], 'qux']]]];
+        $serializerContext = ['attributes' => ['qux']];
+
+        $propertyFilter = new PropertyFilter('properties', false, ['foo' => null, 'nameConverted' => ['baz' => ['nameConverted']]], new CustomConverter());
+        $propertyFilter->applyToSerializerContext('Foo', 'get', true, $context, $serializerContext);
+
+        $this->assertEquals(['attributes' => ['qux', 'foo', 'nameConverted' => ['baz' => ['nameConverted']]]], $serializerContext);
+    }
+
+    public function testApplyWithPropertiesWhitelistNotMatchingAnyPropertyAndNameConverter(): void
+    {
+        $context = ['request_attributes' => [], 'request_query' => ['properties' => ['foo', 'bar', 'name_converted' => ['baz' => ['baz', 'name_converted'], 'qux']]]];
+        $serializerContext = ['attributes' => ['qux']];
+
+        $propertyFilter = new PropertyFilter('properties', false, ['fuz', 'fiz'], new CustomConverter());
+        $propertyFilter->applyToSerializerContext('Foo', 'get', true, $context, $serializerContext);
+
+        $this->assertEquals(['attributes' => ['qux']], $serializerContext);
+    }
+
+    public function testApplyWithPropertiesWhitelistAndOverridingAndNameConverter(): void
+    {
+        $context = ['request_attributes' => [], 'request_query' => ['properties' => ['foo', 'bar', 'name_converted']]];
+        $serializerContext = ['attributes' => ['qux']];
+
+        $propertyFilter = new PropertyFilter('properties', true, ['foo', 'nameConverted'], new CustomConverter());
+        $propertyFilter->applyToSerializerContext('Foo', 'get', true, $context, $serializerContext);
+
+        $this->assertEquals(['attributes' => ['foo', 'nameConverted']], $serializerContext);
+    }
+
+    public function testApplyWithPropertiesInPropertyFilterAttributeAndNameConverter(): void
+    {
+        $context = ['request_attributes' => ['_api_filters' => ['properties' => ['name_converted']]], 'request_query' => ['properties' => ['foo', 'bar', 'baz']]];
+        $serializerContext = ['attributes' => ['foo', 'qux']];
+
+        $propertyFilter = new PropertyFilter('properties', false, null, new CustomConverter());
+        $propertyFilter->applyToSerializerContext('Foo', 'get', true, $context, $serializerContext);
+
+        $this->assertEquals(['attributes' => ['foo', 'qux', 'nameConverted']], $serializerContext);
+    }
+
+    public function testGetDescription(): void
     {
         $propertyFilter = new PropertyFilter('custom_properties');
         $expectedDescription = [

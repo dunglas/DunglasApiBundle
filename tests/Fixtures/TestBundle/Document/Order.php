@@ -48,6 +48,12 @@ class Order
      */
     public $recipient;
 
+    /**
+     * @ODM\Field
+     * @Groups({"order_admin"})
+     */
+    public $customerIp;
+
     public function getId()
     {
         return $this->id;

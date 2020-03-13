@@ -34,6 +34,8 @@ use ApiPlatform\Core\Metadata\Resource\Factory\ResourceMetadataFactoryInterface;
 use ApiPlatform\Core\Metadata\Resource\ResourceMetadata;
 use ApiPlatform\Core\Operation\Factory\SubresourceOperationFactoryInterface;
 use ApiPlatform\Core\PathResolver\OperationPathResolverInterface;
+use ApiPlatform\Core\Serializer\PropertyFactoryOptionsTrait;
+use ApiPlatform\Core\Serializer\SerializerContextFactoryInterface;
 use Psr\Container\ContainerInterface;
 use Symfony\Component\PropertyInfo\Type;
 use Symfony\Component\Serializer\NameConverter\NameConverterInterface;
@@ -51,6 +53,7 @@ use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 final class DocumentationNormalizer implements NormalizerInterface, CacheableSupportsMethodInterface
 {
     use FilterLocatorTrait;
+    use PropertyFactoryOptionsTrait;
 
     public const FORMAT = 'json';
     public const BASE_URL = 'base_url';
@@ -97,6 +100,7 @@ final class DocumentationNormalizer implements NormalizerInterface, CacheableSup
         self::BASE_URL => '/',
         ApiGatewayNormalizer::API_GATEWAY => false,
     ];
+    private $serializerContextFactory;
 
     /**
      * @param SchemaFactoryInterface|ResourceClassResolverInterface|null $jsonSchemaFactory
@@ -105,7 +109,7 @@ final class DocumentationNormalizer implements NormalizerInterface, CacheableSup
      * @param mixed|null                                                 $jsonSchemaTypeFactory
      * @param int[]                                                      $swaggerVersions
      */
-    public function __construct(ResourceMetadataFactoryInterface $resourceMetadataFactory, PropertyNameCollectionFactoryInterface $propertyNameCollectionFactory, PropertyMetadataFactoryInterface $propertyMetadataFactory, $jsonSchemaFactory = null, $jsonSchemaTypeFactory = null, OperationPathResolverInterface $operationPathResolver, UrlGeneratorInterface $urlGenerator = null, $filterLocator = null, NameConverterInterface $nameConverter = null, bool $oauthEnabled = false, string $oauthType = '', string $oauthFlow = '', string $oauthTokenUrl = '', string $oauthAuthorizationUrl = '', array $oauthScopes = [], array $apiKeys = [], SubresourceOperationFactoryInterface $subresourceOperationFactory = null, bool $paginationEnabled = true, string $paginationPageParameterName = 'page', bool $clientItemsPerPage = false, string $itemsPerPageParameterName = 'itemsPerPage', $formats = [], bool $paginationClientEnabled = false, string $paginationClientEnabledParameterName = 'pagination', array $defaultContext = [], array $swaggerVersions = [2, 3])
+    public function __construct(ResourceMetadataFactoryInterface $resourceMetadataFactory, PropertyNameCollectionFactoryInterface $propertyNameCollectionFactory, PropertyMetadataFactoryInterface $propertyMetadataFactory, $jsonSchemaFactory = null, $jsonSchemaTypeFactory = null, OperationPathResolverInterface $operationPathResolver, UrlGeneratorInterface $urlGenerator = null, $filterLocator = null, NameConverterInterface $nameConverter = null, bool $oauthEnabled = false, string $oauthType = '', string $oauthFlow = '', string $oauthTokenUrl = '', string $oauthAuthorizationUrl = '', array $oauthScopes = [], array $apiKeys = [], SubresourceOperationFactoryInterface $subresourceOperationFactory = null, bool $paginationEnabled = true, string $paginationPageParameterName = 'page', bool $clientItemsPerPage = false, string $itemsPerPageParameterName = 'itemsPerPage', $formats = [], bool $paginationClientEnabled = false, string $paginationClientEnabledParameterName = 'pagination', array $defaultContext = [], array $swaggerVersions = [2, 3], SerializerContextFactoryInterface $serializerContextFactory = null)
     {
         if ($jsonSchemaTypeFactory instanceof OperationMethodResolverInterface) {
             @trigger_error(sprintf('Passing an instance of %s to %s() is deprecated since version 2.5 and will be removed in 3.0.', OperationMethodResolverInterface::class, __METHOD__), E_USER_DEPRECATED);
@@ -166,6 +170,8 @@ final class DocumentationNormalizer implements NormalizerInterface, CacheableSup
         $this->defaultContext[self::SPEC_VERSION] = $swaggerVersions[0] ?? 2;
 
         $this->defaultContext = array_merge($this->defaultContext, $defaultContext);
+
+        $this->serializerContextFactory = $serializerContextFactory;
     }
 
     /**
@@ -784,8 +790,10 @@ final class DocumentationNormalizer implements NormalizerInterface, CacheableSup
     private function getLinkObject(string $resourceClass, string $operationId, string $path): array
     {
         $linkObject = $identifiers = [];
-        foreach ($this->propertyNameCollectionFactory->create($resourceClass) as $propertyName) {
-            $propertyMetadata = $this->propertyMetadataFactory->create($resourceClass, $propertyName);
+        $propertyOptions = $this->getPropertyFactoryOptions($resourceClass);
+        $splitPropertyOptions = $this->getPropertyFactoryOptions($resourceClass, true);
+        foreach ($this->propertyNameCollectionFactory->create($resourceClass, $propertyOptions) as $propertyName) {
+            $propertyMetadata = $this->propertyMetadataFactory->create($resourceClass, $propertyName, $splitPropertyOptions);
             if (!$propertyMetadata->isIdentifier()) {
                 continue;
             }

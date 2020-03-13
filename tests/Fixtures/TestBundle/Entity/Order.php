@@ -53,6 +53,12 @@ class Order
      */
     public $recipient;
 
+    /**
+     * @ORM\Column
+     * @Groups({"order_admin"})
+     */
+    public $customerIp;
+
     public function getId()
     {
         return $this->id;

@@ -114,6 +114,7 @@ class ConfigurationTest extends TestCase
             'enable_entrypoint' => true,
             'enable_re_doc' => true,
             'enable_docs' => true,
+            'enable_serialization_context_doc' => false,
             'enable_profiler' => true,
             'graphql' => [
                 'enabled' => true,

@@ -18,5 +18,6 @@ final class OperationType
     public const ITEM = 'item';
     public const COLLECTION = 'collection';
     public const SUBRESOURCE = 'subresource';
+    public const RESOURCE = 'resource';
     public const TYPES = [self::ITEM, self::COLLECTION, self::SUBRESOURCE];
 }

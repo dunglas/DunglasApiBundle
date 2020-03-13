@@ -82,13 +82,27 @@
 
         <service id="api_platform.serializer.context_builder" class="ApiPlatform\Core\Serializer\SerializerContextBuilder" public="false">
             <argument type="service" id="api_platform.metadata.resource.metadata_factory" />
+            <argument type="service" id="api_platform.serializer.context_factory" on-invalid="ignore" />
+            <deprecated>The "%service_id%" service is deprecated since API Platform 2.6, use "api_platform.serializer.context_factory" instead.</deprecated>
         </service>
         <service id="ApiPlatform\Core\Serializer\SerializerContextBuilderInterface" alias="api_platform.serializer.context_builder" />
+
+        <service id="api_platform.serializer.context_factory" class="ApiPlatform\Core\Serializer\SerializerContextFactory" public="false">
+            <argument type="service" id="api_platform.metadata.resource.metadata_factory" />
+        </service>
+        <service id="ApiPlatform\Core\Serializer\SerializerContextFactoryInterface" alias="api_platform.serializer.context_factory" />
 
         <service id="api_platform.serializer.context_builder.filter" class="ApiPlatform\Core\Serializer\SerializerFilterContextBuilder" decorates="api_platform.serializer.context_builder" public="false">
             <argument type="service" id="api_platform.metadata.resource.metadata_factory" />
             <argument type="service" id="api_platform.filter_locator" />
             <argument type="service" id="api_platform.serializer.context_builder.filter.inner" />
+            <deprecated>The "%service_id%" service is deprecated since API Platform 2.6, use "api_platform.serializer.context_factory.filter" instead.</deprecated>
+        </service>
+
+        <service id="api_platform.serializer.context_factory.filter" class="ApiPlatform\Core\Serializer\SerializerFilterContextFactory" decorates="api_platform.serializer.context_factory" public="false">
+            <argument type="service" id="api_platform.metadata.resource.metadata_factory" />
+            <argument type="service" id="api_platform.filter_locator" />
+            <argument type="service" id="api_platform.serializer.context_factory.filter.inner" />
         </service>
 
         <service id="api_platform.serializer.property_filter" class="ApiPlatform\Core\Serializer\Filter\PropertyFilter" public="false" abstract="true">
@@ -167,7 +181,7 @@
             <argument type="service" id="api_platform.collection_data_provider" />
             <argument type="service" id="api_platform.item_data_provider" />
             <argument type="service" id="api_platform.subresource_data_provider" />
-            <argument type="service" id="api_platform.serializer.context_builder" />
+            <argument type="service" id="api_platform.serializer.context_factory" />
             <argument type="service" id="api_platform.identifier.converter" />
             <argument type="service" id="api_platform.metadata.resource.metadata_factory" />
 
@@ -185,7 +199,7 @@
 
         <service id="api_platform.listener.request.deserialize" class="ApiPlatform\Core\EventListener\DeserializeListener">
             <argument type="service" id="api_platform.serializer" />
-            <argument type="service" id="api_platform.serializer.context_builder" />
+            <argument type="service" id="api_platform.serializer.context_factory" />
             <argument type="service" id="api_platform.metadata.resource.metadata_factory" />
 
             <tag name="kernel.event_listener" event="kernel.request" method="onKernelRequest" priority="2" />
@@ -193,7 +207,7 @@
 
         <service id="api_platform.listener.view.serialize" class="ApiPlatform\Core\EventListener\SerializeListener">
             <argument type="service" id="api_platform.serializer" />
-            <argument type="service" id="api_platform.serializer.context_builder" />
+            <argument type="service" id="api_platform.serializer.context_factory" />
             <argument type="service" id="api_platform.metadata.resource.metadata_factory" />
 
             <tag name="kernel.event_listener" event="kernel.view" method="onKernelView" priority="16" />

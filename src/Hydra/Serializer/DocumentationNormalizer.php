@@ -26,9 +26,10 @@ use ApiPlatform\Core\Metadata\Property\SubresourceMetadata;
 use ApiPlatform\Core\Metadata\Resource\Factory\ResourceMetadataFactoryInterface;
 use ApiPlatform\Core\Metadata\Resource\ResourceMetadata;
 use ApiPlatform\Core\Operation\Factory\SubresourceOperationFactoryInterface;
+use ApiPlatform\Core\Serializer\PropertyFactoryOptionsTrait;
+use ApiPlatform\Core\Serializer\SerializerContextFactoryInterface;
 use Symfony\Component\PropertyInfo\Type;
 use Symfony\Component\Serializer\NameConverter\NameConverterInterface;
-use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 use Symfony\Component\Serializer\Normalizer\CacheableSupportsMethodInterface;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 
@@ -39,6 +40,8 @@ use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
  */
 final class DocumentationNormalizer implements NormalizerInterface, CacheableSupportsMethodInterface
 {
+    use PropertyFactoryOptionsTrait;
+
     public const FORMAT = 'jsonld';
 
     private $resourceMetadataFactory;
@@ -49,8 +52,9 @@ final class DocumentationNormalizer implements NormalizerInterface, CacheableSup
     private $urlGenerator;
     private $subresourceOperationFactory;
     private $nameConverter;
+    private $serializerContextFactory;
 
-    public function __construct(ResourceMetadataFactoryInterface $resourceMetadataFactory, PropertyNameCollectionFactoryInterface $propertyNameCollectionFactory, PropertyMetadataFactoryInterface $propertyMetadataFactory, ResourceClassResolverInterface $resourceClassResolver, OperationMethodResolverInterface $operationMethodResolver = null, UrlGeneratorInterface $urlGenerator, SubresourceOperationFactoryInterface $subresourceOperationFactory = null, NameConverterInterface $nameConverter = null)
+    public function __construct(ResourceMetadataFactoryInterface $resourceMetadataFactory, PropertyNameCollectionFactoryInterface $propertyNameCollectionFactory, PropertyMetadataFactoryInterface $propertyMetadataFactory, ResourceClassResolverInterface $resourceClassResolver, OperationMethodResolverInterface $operationMethodResolver = null, UrlGeneratorInterface $urlGenerator, SubresourceOperationFactoryInterface $subresourceOperationFactory = null, NameConverterInterface $nameConverter = null, SerializerContextFactoryInterface $serializerContextFactory = null)
     {
         if ($operationMethodResolver) {
             @trigger_error(sprintf('Passing an instance of %s to %s() is deprecated since version 2.5 and will be removed in 3.0.', OperationMethodResolverInterface::class, __METHOD__), E_USER_DEPRECATED);
@@ -64,6 +68,7 @@ final class DocumentationNormalizer implements NormalizerInterface, CacheableSup
         $this->urlGenerator = $urlGenerator;
         $this->subresourceOperationFactory = $subresourceOperationFactory;
         $this->nameConverter = $nameConverter;
+        $this->serializerContextFactory = $serializerContextFactory;
     }
 
     /**
@@ -152,35 +157,6 @@ final class DocumentationNormalizer implements NormalizerInterface, CacheableSup
     }
 
     /**
-     * Gets the context for the property name factory.
-     */
-    private function getPropertyNameCollectionFactoryContext(ResourceMetadata $resourceMetadata): array
-    {
-        $attributes = $resourceMetadata->getAttributes();
-        $context = [];
-
-        if (isset($attributes['normalization_context'][AbstractNormalizer::GROUPS])) {
-            $context['serializer_groups'] = (array) $attributes['normalization_context'][AbstractNormalizer::GROUPS];
-        }
-
-        if (!isset($attributes['denormalization_context'][AbstractNormalizer::GROUPS])) {
-            return $context;
-        }
-
-        if (isset($context['serializer_groups'])) {
-            foreach ((array) $attributes['denormalization_context'][AbstractNormalizer::GROUPS] as $groupName) {
-                $context['serializer_groups'][] = $groupName;
-            }
-
-            return $context;
-        }
-
-        $context['serializer_groups'] = (array) $attributes['denormalization_context'][AbstractNormalizer::GROUPS];
-
-        return $context;
-    }
-
-    /**
      * Gets Hydra properties.
      */
     private function getHydraProperties(string $resourceClass, ResourceMetadata $resourceMetadata, string $shortName, string $prefixedShortName, array $context): array
@@ -202,8 +178,10 @@ final class DocumentationNormalizer implements NormalizerInterface, CacheableSup
         $classes = array_keys($classes);
         $properties = [];
         foreach ($classes as $class) {
-            foreach ($this->propertyNameCollectionFactory->create($class, $this->getPropertyNameCollectionFactoryContext($resourceMetadata)) as $propertyName) {
-                $propertyMetadata = $this->propertyMetadataFactory->create($class, $propertyName);
+            $propertyOptions = $this->getPropertyFactoryOptions($resourceClass);
+            $splitPropertyOptions = $this->getPropertyFactoryOptions($resourceClass, true);
+            foreach ($this->propertyNameCollectionFactory->create($class, $propertyOptions) as $propertyName) {
+                $propertyMetadata = $this->propertyMetadataFactory->create($class, $propertyName, $splitPropertyOptions);
                 if (true === $propertyMetadata->isIdentifier() && false === $propertyMetadata->isWritable()) {
                     continue;
                 }

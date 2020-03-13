@@ -27,6 +27,7 @@ use ApiPlatform\Core\Metadata\Resource\Factory\ResourceMetadataFactoryInterface;
 use ApiPlatform\Core\Metadata\Resource\ResourceMetadata;
 use ApiPlatform\Core\Metadata\Resource\ResourceNameCollection;
 use ApiPlatform\Core\Operation\Factory\SubresourceOperationFactoryInterface;
+use ApiPlatform\Core\Serializer\SerializerContextFactoryInterface;
 use ApiPlatform\Core\Tests\Fixtures\TestBundle\Serializer\NameConverter\CustomConverter;
 use PHPUnit\Framework\TestCase;
 use Prophecy\Argument;
@@ -61,7 +62,7 @@ class DocumentationNormalizerTest extends TestCase
         $documentation = new Documentation(new ResourceNameCollection(['dummy' => 'dummy']), $title, $desc, $version);
 
         $propertyNameCollectionFactoryProphecy = $this->prophesize(PropertyNameCollectionFactoryInterface::class);
-        $propertyNameCollectionFactoryProphecy->create('dummy', [])->shouldBeCalled()->willReturn(new PropertyNameCollection(['name', 'description', 'nameConverted', 'relatedDummy']));
+        $propertyNameCollectionFactoryProphecy->create('dummy', ['serializer_groups' => ['serialization_groups', 'deserialization_groups']])->shouldBeCalled()->willReturn(new PropertyNameCollection(['name', 'description', 'nameConverted', 'relatedDummy']));
 
         $dummyMetadata = new ResourceMetadata('dummy', 'dummy', '#dummy', ['get' => ['method' => 'GET', 'hydra_context' => ['hydra:foo' => 'bar', 'hydra:title' => 'foobar']], 'put' => ['method' => 'PUT']], ['get' => ['method' => 'GET'], 'post' => ['method' => 'POST']], []);
         $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
@@ -69,11 +70,12 @@ class DocumentationNormalizerTest extends TestCase
         $resourceMetadataFactoryProphecy->create('relatedDummy')->shouldBeCalled()->willReturn(new ResourceMetadata('relatedDummy'));
 
         $propertyMetadataFactoryProphecy = $this->prophesize(PropertyMetadataFactoryInterface::class);
-        $propertyMetadataFactoryProphecy->create('dummy', 'name')->shouldBeCalled()->willReturn(new PropertyMetadata(new Type(Type::BUILTIN_TYPE_STRING), 'name', true, true, true, true, false, false, null, null, []));
-        $propertyMetadataFactoryProphecy->create('dummy', 'description')->shouldBeCalled()->willReturn(new PropertyMetadata(new Type(Type::BUILTIN_TYPE_STRING), 'description', true, true, true, true, false, false, null, null, ['jsonld_context' => ['@type' => '@id']]));
-        $propertyMetadataFactoryProphecy->create('dummy', 'nameConverted')->shouldBeCalled()->willReturn(new PropertyMetadata(new Type(Type::BUILTIN_TYPE_STRING), 'name converted', true, true, true, true, false, false, null, null, []));
+        $propertyMetadataFactoryProphecy->create('dummy', 'name', ['serializer_groups' => ['serialization_groups'], 'deserializer_groups' => ['deserialization_groups']])->shouldBeCalled()->willReturn(new PropertyMetadata(new Type(Type::BUILTIN_TYPE_STRING), 'name', true, true, true, true, false, false, null, null, []));
+        $propertyMetadataFactoryProphecy->create('dummy', 'description', ['serializer_groups' => ['serialization_groups'], 'deserializer_groups' => ['deserialization_groups']])->shouldBeCalled()->willReturn(new PropertyMetadata(new Type(Type::BUILTIN_TYPE_STRING), 'description', true, true, true, true, false, false, null, null, ['jsonld_context' => ['@type' => '@id']]));
+        $propertyMetadataFactoryProphecy->create('dummy', 'nameConverted', ['serializer_groups' => ['serialization_groups'], 'deserializer_groups' => ['deserialization_groups']])->shouldBeCalled()->willReturn(new PropertyMetadata(new Type(Type::BUILTIN_TYPE_STRING), 'name converted', true, true, true, true, false, false, null, null, []));
         $subresourceMetadata = new SubresourceMetadata('relatedDummy', false);
         $propertyMetadataFactoryProphecy->create('dummy', 'relatedDummy')->shouldBeCalled()->willReturn(new PropertyMetadata(new Type(Type::BUILTIN_TYPE_OBJECT, false, 'dummy', true, null, new Type(Type::BUILTIN_TYPE_OBJECT, false, 'relatedDummy')), 'This is a name.', true, true, true, true, false, false, null, null, [], $subresourceMetadata));
+        $propertyMetadataFactoryProphecy->create('dummy', 'relatedDummy', ['serializer_groups' => ['serialization_groups'], 'deserializer_groups' => ['deserialization_groups']])->shouldBeCalled()->willReturn(new PropertyMetadata(new Type(Type::BUILTIN_TYPE_OBJECT, false, 'dummy', true, null, new Type(Type::BUILTIN_TYPE_OBJECT, false, 'relatedDummy')), 'This is a name.', true, true, true, true, false, false, null, null, [], $subresourceMetadata));
 
         $resourceClassResolverProphecy = $this->prophesize(ResourceClassResolverInterface::class);
         $resourceClassResolverProphecy->isResourceClass(Argument::type('string'))->willReturn(true);
@@ -99,6 +101,14 @@ class DocumentationNormalizerTest extends TestCase
             ],
         ]);
 
+        $serializerContextFactoryProphecy = $this->prophesize(SerializerContextFactoryInterface::class);
+        $serializerContextFactoryProphecy->create('dummy', 'resource', true, [
+            'resource_operation_name' => 'resource',
+        ])->willReturn(['groups' => ['serialization_groups']]);
+        $serializerContextFactoryProphecy->create('dummy', 'resource', false, [
+            'resource_operation_name' => 'resource',
+        ])->willReturn(['groups' => 'deserialization_groups']);
+
         $documentationNormalizer = new DocumentationNormalizer(
             $resourceMetadataFactoryProphecy->reveal(),
             $propertyNameCollectionFactoryProphecy->reveal(),
@@ -107,7 +117,8 @@ class DocumentationNormalizerTest extends TestCase
             $operationMethodResolver,
             $urlGenerator->reveal(),
             $subresourceOperationFactoryProphecy->reveal(),
-            new CustomConverter()
+            new CustomConverter(),
+            $serializerContextFactoryProphecy->reveal()
         );
 
         $expected = [
@@ -394,10 +405,10 @@ class DocumentationNormalizerTest extends TestCase
         $resourceMetadataFactoryProphecy->create('dummy')->shouldBeCalled()->willReturn($dummyMetadata);
 
         $propertyMetadataFactoryProphecy = $this->prophesize(PropertyMetadataFactoryInterface::class);
-        $propertyMetadataFactoryProphecy->create('inputClass', 'a')->shouldBeCalled()->willReturn(new PropertyMetadata(new Type(Type::BUILTIN_TYPE_STRING), 'a', true, true, true, true, false, false, null, null, []));
-        $propertyMetadataFactoryProphecy->create('inputClass', 'b')->shouldBeCalled()->willReturn(new PropertyMetadata(new Type(Type::BUILTIN_TYPE_STRING), 'b', true, true, true, true, false, false, null, null, []));
-        $propertyMetadataFactoryProphecy->create('outputClass', 'c')->shouldBeCalled()->willReturn(new PropertyMetadata(new Type(Type::BUILTIN_TYPE_STRING), 'c', true, true, true, true, false, false, null, null, []));
-        $propertyMetadataFactoryProphecy->create('outputClass', 'd')->shouldBeCalled()->willReturn(new PropertyMetadata(new Type(Type::BUILTIN_TYPE_STRING), 'd', true, true, true, true, false, false, null, null, []));
+        $propertyMetadataFactoryProphecy->create('inputClass', 'a', [])->shouldBeCalled()->willReturn(new PropertyMetadata(new Type(Type::BUILTIN_TYPE_STRING), 'a', true, true, true, true, false, false, null, null, []));
+        $propertyMetadataFactoryProphecy->create('inputClass', 'b', [])->shouldBeCalled()->willReturn(new PropertyMetadata(new Type(Type::BUILTIN_TYPE_STRING), 'b', true, true, true, true, false, false, null, null, []));
+        $propertyMetadataFactoryProphecy->create('outputClass', 'c', [])->shouldBeCalled()->willReturn(new PropertyMetadata(new Type(Type::BUILTIN_TYPE_STRING), 'c', true, true, true, true, false, false, null, null, []));
+        $propertyMetadataFactoryProphecy->create('outputClass', 'd', [])->shouldBeCalled()->willReturn(new PropertyMetadata(new Type(Type::BUILTIN_TYPE_STRING), 'd', true, true, true, true, false, false, null, null, []));
 
         $resourceClassResolverProphecy = $this->prophesize(ResourceClassResolverInterface::class);
         $resourceClassResolverProphecy->isResourceClass(Argument::type('string'))->willReturn(true);
@@ -407,13 +418,21 @@ class DocumentationNormalizerTest extends TestCase
         $urlGenerator->generate('api_doc', ['_format' => 'jsonld'])->willReturn('/doc')->shouldBeCalledTimes(1);
         $urlGenerator->generate('api_doc', ['_format' => 'jsonld'], 0)->willReturn('/doc')->shouldBeCalledTimes(1);
 
+        $serializerContextFactoryProphecy = $this->prophesize(SerializerContextFactoryInterface::class);
+        $serializerContextFactoryProphecy->create('dummy', 'resource', Argument::type('bool'), [
+            'resource_operation_name' => 'resource',
+        ])->willReturn([]);
+
         $documentationNormalizer = new DocumentationNormalizer(
             $resourceMetadataFactoryProphecy->reveal(),
             $propertyNameCollectionFactoryProphecy->reveal(),
             $propertyMetadataFactoryProphecy->reveal(),
             $resourceClassResolverProphecy->reveal(),
             null,
-            $urlGenerator->reveal()
+            $urlGenerator->reveal(),
+            null,
+            null,
+            $serializerContextFactoryProphecy->reveal()
         );
 
         $expected = [

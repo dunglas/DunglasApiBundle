@@ -18,6 +18,7 @@ use ApiPlatform\Core\Metadata\Resource\Factory\ResourceMetadataFactoryInterface;
 use ApiPlatform\Core\Metadata\Resource\ResourceMetadata;
 use ApiPlatform\Core\Serializer\ResourceList;
 use ApiPlatform\Core\Serializer\SerializerContextBuilderInterface;
+use ApiPlatform\Core\Serializer\SerializerContextFactoryInterface;
 use ApiPlatform\Core\Tests\Fixtures\TestBundle\Entity\Dummy;
 use PHPUnit\Framework\TestCase;
 use Prophecy\Argument;
@@ -43,10 +44,10 @@ class SerializeListenerTest extends TestCase
         $eventProphecy->getControllerResult()->willReturn(new Response());
         $eventProphecy->getRequest()->willReturn($request);
 
-        $serializerContextBuilderProphecy = $this->prophesize(SerializerContextBuilderInterface::class);
-        $serializerContextBuilderProphecy->createFromRequest(Argument::cetera());
+        $serializerContextFactoryProphecy = $this->prophesize(SerializerContextFactoryInterface::class);
+        $serializerContextFactoryProphecy->create(Argument::cetera());
 
-        $listener = new SerializeListener($serializerProphecy->reveal(), $serializerContextBuilderProphecy->reveal());
+        $listener = new SerializeListener($serializerProphecy->reveal(), $serializerContextFactoryProphecy->reveal());
         $listener->onKernelView($eventProphecy->reveal());
     }
 
@@ -55,7 +56,7 @@ class SerializeListenerTest extends TestCase
         $serializerProphecy = $this->prophesize(SerializerInterface::class);
         $serializerProphecy->serialize(Argument::cetera())->shouldNotBeCalled();
 
-        $serializerContextBuilderProphecy = $this->prophesize(SerializerContextBuilderInterface::class);
+        $serializerContextFactoryProphecy = $this->prophesize(SerializerContextFactoryInterface::class);
 
         $dummy = new Dummy();
 
@@ -67,7 +68,7 @@ class SerializeListenerTest extends TestCase
         $eventProphecy->getRequest()->willReturn($request);
         $eventProphecy->setControllerResult(Argument::any())->shouldNotBeCalled();
 
-        $listener = new SerializeListener($serializerProphecy->reveal(), $serializerContextBuilderProphecy->reveal());
+        $listener = new SerializeListener($serializerProphecy->reveal(), $serializerContextFactoryProphecy->reveal());
         $listener->onKernelView($eventProphecy->reveal());
     }
 
@@ -76,7 +77,7 @@ class SerializeListenerTest extends TestCase
         $serializerProphecy = $this->prophesize(SerializerInterface::class);
         $serializerProphecy->serialize(Argument::cetera())->shouldNotBeCalled();
 
-        $serializerContextBuilderProphecy = $this->prophesize(SerializerContextBuilderInterface::class);
+        $serializerContextFactoryProphecy = $this->prophesize(SerializerContextFactoryInterface::class);
 
         $resourceMetadata = new ResourceMetadata('Dummy', null, null, [], [
             'post' => [
@@ -97,13 +98,35 @@ class SerializeListenerTest extends TestCase
         $eventProphecy->getRequest()->willReturn($request);
         $eventProphecy->setControllerResult(Argument::any())->shouldNotBeCalled();
 
-        $listener = new SerializeListener($serializerProphecy->reveal(), $serializerContextBuilderProphecy->reveal(), $resourceMetadataFactoryProphecy->reveal());
+        $listener = new SerializeListener($serializerProphecy->reveal(), $serializerContextFactoryProphecy->reveal(), $resourceMetadataFactoryProphecy->reveal());
         $listener->onKernelView($eventProphecy->reveal());
     }
 
-    public function testSerializeCollectionOperation()
+    /**
+     * @group legacy
+     */
+    public function testLegacySerializeCollectionOperation(): void
     {
         $expectedContext = ['request_uri' => '', 'resource_class' => 'Foo', 'collection_operation_name' => 'get'];
+
+        $serializerContextBuilderProphecy = $this->prophesize(SerializerContextBuilderInterface::class);
+        $serializerContextBuilderProphecy->createFromRequest(Argument::type(Request::class), true, Argument::type('array'))->willReturn($expectedContext)->shouldBeCalled();
+
+        $this->doTestSerializeCollectionOperation($serializerContextBuilderProphecy->reveal());
+    }
+
+    public function testSerializeCollectionOperation(): void
+    {
+        $expectedContext = ['request_uri' => '', 'resource_class' => 'Foo', 'collection_operation_name' => 'get'];
+
+        $serializerContextFactoryProphecy = $this->prophesize(SerializerContextFactoryInterface::class);
+        $serializerContextFactoryProphecy->create('Foo', 'get', true, Argument::type('array'))->willReturn($expectedContext)->shouldBeCalled();
+
+        $this->doTestSerializeCollectionOperation($serializerContextFactoryProphecy->reveal());
+    }
+
+    private function doTestSerializeCollectionOperation($serializerContextFactory): void
+    {
         $serializerProphecy = $this->prophesize(SerializerInterface::class);
 
         $serializerProphecy
@@ -130,10 +153,7 @@ class SerializeListenerTest extends TestCase
         $eventProphecy->getRequest()->willReturn($request)->shouldBeCalled();
         $eventProphecy->setControllerResult('bar')->shouldBeCalled();
 
-        $serializerContextBuilderProphecy = $this->prophesize(SerializerContextBuilderInterface::class);
-        $serializerContextBuilderProphecy->createFromRequest(Argument::type(Request::class), true, Argument::type('array'))->willReturn($expectedContext)->shouldBeCalled();
-
-        $listener = new SerializeListener($serializerProphecy->reveal(), $serializerContextBuilderProphecy->reveal());
+        $listener = new SerializeListener($serializerProphecy->reveal(), $serializerContextFactory);
         $listener->onKernelView($eventProphecy->reveal());
     }
 
@@ -150,10 +170,10 @@ class SerializeListenerTest extends TestCase
         $eventProphecy->getRequest()->willReturn($request);
         $eventProphecy->setControllerResult(null)->shouldBeCalled();
 
-        $serializerContextBuilderProphecy = $this->prophesize(SerializerContextBuilderInterface::class);
-        $serializerContextBuilderProphecy->createFromRequest(Argument::type(Request::class), true, Argument::type('array'))->willReturn($expectedContext)->shouldBeCalled();
+        $serializerContextFactoryProphecy = $this->prophesize(SerializerContextFactoryInterface::class);
+        $serializerContextFactoryProphecy->create('Foo', 'get', true, Argument::type('array'))->willReturn($expectedContext)->shouldBeCalled();
 
-        $listener = new SerializeListener($serializerProphecy->reveal(), $serializerContextBuilderProphecy->reveal());
+        $listener = new SerializeListener($serializerProphecy->reveal(), $serializerContextFactoryProphecy->reveal());
         $listener->onKernelView($eventProphecy->reveal());
     }
 
@@ -185,10 +205,10 @@ class SerializeListenerTest extends TestCase
         $eventProphecy->getRequest()->willReturn($request)->shouldBeCalled();
         $eventProphecy->setControllerResult('bar')->shouldBeCalled();
 
-        $serializerContextBuilderProphecy = $this->prophesize(SerializerContextBuilderInterface::class);
-        $serializerContextBuilderProphecy->createFromRequest(Argument::type(Request::class), true, Argument::type('array'))->willReturn($expectedContext)->shouldBeCalled();
+        $serializerContextFactoryProphecy = $this->prophesize(SerializerContextFactoryInterface::class);
+        $serializerContextFactoryProphecy->create('Foo', 'get', true, Argument::type('array'))->willReturn($expectedContext)->shouldBeCalled();
 
-        $listener = new SerializeListener($serializerProphecy->reveal(), $serializerContextBuilderProphecy->reveal());
+        $listener = new SerializeListener($serializerProphecy->reveal(), $serializerContextFactoryProphecy->reveal());
         $listener->onKernelView($eventProphecy->reveal());
     }
 
@@ -207,9 +227,9 @@ class SerializeListenerTest extends TestCase
         $eventProphecy->getRequest()->willReturn($request)->shouldBeCalled();
         $eventProphecy->setControllerResult('bar')->shouldBeCalled();
 
-        $serializerContextBuilderProphecy = $this->prophesize(SerializerContextBuilderInterface::class);
+        $serializerContextFactoryProphecy = $this->prophesize(SerializerContextFactoryInterface::class);
 
-        $listener = new SerializeListener($serializerProphecy->reveal(), $serializerContextBuilderProphecy->reveal());
+        $listener = new SerializeListener($serializerProphecy->reveal(), $serializerContextFactoryProphecy->reveal());
         $listener->onKernelView($eventProphecy->reveal());
     }
 }

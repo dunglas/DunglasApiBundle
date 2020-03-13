@@ -141,7 +141,7 @@ final class SerializerPropertyMetadataFactory implements PropertyMetadataFactory
      *
      * Groups are extracted in the following order:
      *
-     * - From the "serializer_groups" key of the $options array.
+     * - From the "serializer_groups" and/or "deserializer_groups" key of the $options array.
      * - From metadata of the given operation ("collection_operation_name" and "item_operation_name" keys).
      * - From metadata of the current resource.
      *
@@ -151,10 +151,16 @@ final class SerializerPropertyMetadataFactory implements PropertyMetadataFactory
      */
     private function getEffectiveSerializerGroups(array $options, string $resourceClass): array
     {
+        $groups = null;
+        $deserializerGroups = null;
         if (isset($options['serializer_groups'])) {
             $groups = (array) $options['serializer_groups'];
-
-            return [$groups, $groups];
+        }
+        if (isset($options['deserializer_groups'])) {
+            $deserializerGroups = (array) $options['deserializer_groups'];
+        }
+        if (null !== $groups) {
+            return [$groups, $deserializerGroups ?? $groups];
         }
 
         $resourceMetadata = $this->resourceMetadataFactory->create($resourceClass);

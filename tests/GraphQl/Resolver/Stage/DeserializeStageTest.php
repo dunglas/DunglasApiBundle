@@ -15,9 +15,9 @@ namespace ApiPlatform\Core\Tests\GraphQl\Resolver\Stage;
 
 use ApiPlatform\Core\GraphQl\Resolver\Stage\DeserializeStage;
 use ApiPlatform\Core\GraphQl\Serializer\ItemNormalizer;
-use ApiPlatform\Core\GraphQl\Serializer\SerializerContextBuilderInterface;
 use ApiPlatform\Core\Metadata\Resource\Factory\ResourceMetadataFactoryInterface;
 use ApiPlatform\Core\Metadata\Resource\ResourceMetadata;
+use ApiPlatform\Core\Serializer\SerializerContextFactoryInterface;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
 
@@ -30,7 +30,7 @@ class DeserializeStageTest extends TestCase
     private $deserializeStage;
     private $resourceMetadataFactoryProphecy;
     private $denormalizerProphecy;
-    private $serializerContextBuilderProphecy;
+    private $serializerContextFactoryProphecy;
 
     /**
      * {@inheritdoc}
@@ -39,12 +39,12 @@ class DeserializeStageTest extends TestCase
     {
         $this->resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
         $this->denormalizerProphecy = $this->prophesize(DenormalizerInterface::class);
-        $this->serializerContextBuilderProphecy = $this->prophesize(SerializerContextBuilderInterface::class);
+        $this->serializerContextFactoryProphecy = $this->prophesize(SerializerContextFactoryInterface::class);
 
         $this->deserializeStage = new DeserializeStage(
             $this->resourceMetadataFactoryProphecy->reveal(),
             $this->denormalizerProphecy->reveal(),
-            $this->serializerContextBuilderProphecy->reveal()
+            $this->serializerContextFactoryProphecy->reveal()
         );
     }
 
@@ -79,7 +79,7 @@ class DeserializeStageTest extends TestCase
         $context = ['args' => ['input' => 'myInput']];
         $this->resourceMetadataFactoryProphecy->create($resourceClass)->willReturn(new ResourceMetadata());
 
-        $this->serializerContextBuilderProphecy->create($resourceClass, $operationName, $context, false)->shouldBeCalled()->willReturn($denormalizationContext);
+        $this->serializerContextFactoryProphecy->create($resourceClass, $operationName, false, $context)->shouldBeCalled()->willReturn($denormalizationContext);
 
         $denormalizedData = new \stdClass();
         $this->denormalizerProphecy->denormalize($context['args']['input'], $resourceClass, ItemNormalizer::FORMAT, $denormalizationContext)->shouldBeCalled()->willReturn($denormalizedData);

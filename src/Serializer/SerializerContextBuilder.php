@@ -13,26 +13,29 @@ declare(strict_types=1);
 
 namespace ApiPlatform\Core\Serializer;
 
-use ApiPlatform\Core\Api\OperationType;
 use ApiPlatform\Core\Exception\RuntimeException;
 use ApiPlatform\Core\Metadata\Resource\Factory\ResourceMetadataFactoryInterface;
-use ApiPlatform\Core\Swagger\Serializer\DocumentationNormalizer;
 use ApiPlatform\Core\Util\RequestAttributesExtractor;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\Serializer\Encoder\CsvEncoder;
 
 /**
  * {@inheritdoc}
  *
  * @author Kévin Dunglas <dunglas@gmail.com>
+ *
+ * @deprecated since API Platform 2.6, use {@see \ApiPlatform\Core\Serializer\SerializerContextFactory} class instead
  */
 final class SerializerContextBuilder implements SerializerContextBuilderInterface
 {
-    private $resourceMetadataFactory;
+    use ContextTrait;
 
-    public function __construct(ResourceMetadataFactoryInterface $resourceMetadataFactory)
+    private $serializerContextFactory;
+
+    public function __construct(ResourceMetadataFactoryInterface $resourceMetadataFactory, SerializerContextFactoryInterface $serializerContextFactory = null)
     {
-        $this->resourceMetadataFactory = $resourceMetadataFactory;
+        trigger_deprecation('API Platform', '2.6', 'Using "%s" class is deprecated, use "%s" class instead.', __CLASS__, SerializerContextFactory::class);
+
+        $this->serializerContextFactory = $serializerContextFactory ?? new SerializerContextFactory($resourceMetadataFactory);
     }
 
     /**
@@ -40,74 +43,15 @@ final class SerializerContextBuilder implements SerializerContextBuilderInterfac
      */
     public function createFromRequest(Request $request, bool $normalization, array $attributes = null): array
     {
+        trigger_deprecation('API Platform', '2.6', 'Using "%s()" method is deprecated, use "%s::create()" method instead.', __METHOD__, SerializerContextFactory::class);
+
         if (null === $attributes && !$attributes = RequestAttributesExtractor::extractAttributes($request)) {
             throw new RuntimeException('Request attributes are not valid.');
         }
 
-        $resourceMetadata = $this->resourceMetadataFactory->create($attributes['resource_class']);
-        $key = $normalization ? 'normalization_context' : 'denormalization_context';
-        if (isset($attributes['collection_operation_name'])) {
-            $operationKey = 'collection_operation_name';
-            $operationType = OperationType::COLLECTION;
-        } elseif (isset($attributes['item_operation_name'])) {
-            $operationKey = 'item_operation_name';
-            $operationType = OperationType::ITEM;
-        } else {
-            $operationKey = 'subresource_operation_name';
-            $operationType = OperationType::SUBRESOURCE;
-        }
+        $context = $this->addRequestContext($request, $attributes);
+        $operationName = $this->getOperationNameFromContext($context);
 
-        $context = $resourceMetadata->getTypedOperationAttribute($operationType, $attributes[$operationKey], $key, [], true);
-        $context['operation_type'] = $operationType;
-        $context[$operationKey] = $attributes[$operationKey];
-
-        if (!$normalization) {
-            if (!isset($context['api_allow_update'])) {
-                $context['api_allow_update'] = \in_array($request->getMethod(), ['PUT', 'PATCH'], true);
-            }
-
-            if ('csv' === $request->getContentType()) {
-                $context[CsvEncoder::AS_COLLECTION_KEY] = false;
-            }
-        }
-
-        $context['resource_class'] = $attributes['resource_class'];
-        $context['input'] = $resourceMetadata->getTypedOperationAttribute($operationType, $attributes[$operationKey], 'input', null, true);
-        $context['output'] = $resourceMetadata->getTypedOperationAttribute($operationType, $attributes[$operationKey], 'output', null, true);
-        $context['request_uri'] = $request->getRequestUri();
-        $context['uri'] = $request->getUri();
-
-        if (isset($attributes['subresource_context'])) {
-            $context['subresource_identifiers'] = [];
-
-            foreach ($attributes['subresource_context']['identifiers'] as $key => [$id, $resourceClass]) {
-                if (!isset($context['subresource_resources'][$resourceClass])) {
-                    $context['subresource_resources'][$resourceClass] = [];
-                }
-
-                $context['subresource_identifiers'][$id] = $context['subresource_resources'][$resourceClass][$id] = $request->attributes->get($id);
-            }
-        }
-
-        if (isset($attributes['subresource_property'])) {
-            $context['subresource_property'] = $attributes['subresource_property'];
-            $context['subresource_resource_class'] = $attributes['subresource_resource_class'] ?? null;
-        }
-
-        unset($context[DocumentationNormalizer::SWAGGER_DEFINITION_NAME]);
-
-        if (isset($context['skip_null_values'])) {
-            return $context;
-        }
-
-        foreach ($resourceMetadata->getItemOperations() as $operation) {
-            if ('PATCH' === ($operation['method'] ?? '') && \in_array('application/merge-patch+json', $operation['input_formats']['json'] ?? [], true)) {
-                $context['skip_null_values'] = true;
-
-                break;
-            }
-        }
-
-        return $context;
+        return $this->serializerContextFactory->create($context['resource_class'], $operationName, $normalization, $context);
     }
 }

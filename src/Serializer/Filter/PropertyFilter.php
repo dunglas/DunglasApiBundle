@@ -22,7 +22,7 @@ use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
  *
  * @author Baptiste Meyer <baptiste.meyer@gmail.com>
  */
-final class PropertyFilter implements FilterInterface
+final class PropertyFilter implements FilterInterface, SerializerContextFilterInterface
 {
     private $overrideDefaultProperties;
     private $parameterName;
@@ -39,9 +39,13 @@ final class PropertyFilter implements FilterInterface
 
     /**
      * {@inheritdoc}
+     *
+     * @deprecated since API Platform 2.6, use {@see applyToSerializerContext()} method instead
      */
     public function apply(Request $request, bool $normalization, array $attributes, array &$context)
     {
+        trigger_deprecation('API Platform', '2.6', 'Using "%s()" method is deprecated, use "applyToSerializerContext()" method instead.', __METHOD__);
+
         if (null !== $propertyAttribute = $request->attributes->get('_api_filter_property')) {
             $properties = $propertyAttribute;
         } elseif (\array_key_exists($this->parameterName, $commonAttribute = $request->attributes->get('_api_filters', []))) {
@@ -65,6 +69,36 @@ final class PropertyFilter implements FilterInterface
         }
 
         $context[AbstractNormalizer::ATTRIBUTES] = $properties;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function applyToSerializerContext(string $resourceClass, string $operationName, bool $normalization, array $context, array &$serializerContext): void
+    {
+        if (null !== $propertyAttribute = ($context['request_attributes']['_api_filter_property'] ?? null)) {
+            $properties = $propertyAttribute;
+        } elseif (\array_key_exists($this->parameterName, $commonAttribute = ($context['request_attributes']['_api_filters'] ?? []))) {
+            $properties = $commonAttribute[$this->parameterName];
+        } else {
+            $properties = $context['request_query'][$this->parameterName] ?? null;
+        }
+
+        if (!\is_array($properties)) {
+            return;
+        }
+
+        $properties = $this->denormalizeProperties($properties);
+
+        if (null !== $this->whitelist) {
+            $properties = $this->getProperties($properties, $this->whitelist);
+        }
+
+        if (!$this->overrideDefaultProperties && isset($serializerContext[AbstractNormalizer::ATTRIBUTES])) {
+            $properties = array_merge_recursive((array) $serializerContext[AbstractNormalizer::ATTRIBUTES], $properties);
+        }
+
+        $serializerContext[AbstractNormalizer::ATTRIBUTES] = $properties;
     }
 
     /**

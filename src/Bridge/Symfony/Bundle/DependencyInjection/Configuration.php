@@ -119,6 +119,7 @@ final class Configuration implements ConfigurationInterface
                 ->booleanNode('enable_re_doc')->defaultValue(class_exists(TwigBundle::class))->info('Enable ReDoc')->end()
                 ->booleanNode('enable_entrypoint')->defaultTrue()->info('Enable the entrypoint')->end()
                 ->booleanNode('enable_docs')->defaultTrue()->info('Enable the docs')->end()
+                ->booleanNode('enable_serialization_context_doc')->defaultFalse()->info('Enable the documentation to vary according to the serialization context')->end()
                 ->booleanNode('enable_profiler')->defaultTrue()->info('Enable the data collector and the WebProfilerBundle integration.')->end()
                 ->arrayNode('collection')
                     ->addDefaultsIfNotSet()

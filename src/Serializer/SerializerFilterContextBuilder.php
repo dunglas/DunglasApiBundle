@@ -24,6 +24,8 @@ use Symfony\Component\HttpFoundation\Request;
  * {@inheritdoc}
  *
  * @author Baptiste Meyer <baptiste.meyer@gmail.com>
+ *
+ * @deprecated since API Platform 2.6, use {@see \ApiPlatform\Core\Serializer\SerializerFilterContextFactory} class instead
  */
 final class SerializerFilterContextBuilder implements SerializerContextBuilderInterface
 {
@@ -33,6 +35,8 @@ final class SerializerFilterContextBuilder implements SerializerContextBuilderIn
 
     public function __construct(ResourceMetadataFactoryInterface $resourceMetadataFactory, ContainerInterface $filterLocator, SerializerContextBuilderInterface $decorated)
     {
+        trigger_deprecation('API Platform', '2.6', 'Using "%s" class is deprecated, use "%s" class instead.', __CLASS__, SerializerFilterContextFactory::class);
+
         $this->decorated = $decorated;
         $this->filterLocator = $filterLocator;
         $this->resourceMetadataFactory = $resourceMetadataFactory;
@@ -43,6 +47,8 @@ final class SerializerFilterContextBuilder implements SerializerContextBuilderIn
      */
     public function createFromRequest(Request $request, bool $normalization, array $attributes = null): array
     {
+        trigger_deprecation('API Platform', '2.6', 'Using "%s()" method is deprecated, use "%s::create()" method instead.', __METHOD__, SerializerFilterContextFactory::class);
+
         if (null === $attributes && !$attributes = RequestAttributesExtractor::extractAttributes($request)) {
             throw new RuntimeException('Request attributes are not valid.');
         }

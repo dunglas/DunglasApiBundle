@@ -17,7 +17,9 @@ use ApiPlatform\Core\Api\FormatMatcher;
 use ApiPlatform\Core\Api\FormatsProviderInterface;
 use ApiPlatform\Core\Metadata\Resource\Factory\ResourceMetadataFactoryInterface;
 use ApiPlatform\Core\Metadata\Resource\ToggleableOperationAttributeTrait;
+use ApiPlatform\Core\Serializer\ContextTrait;
 use ApiPlatform\Core\Serializer\SerializerContextBuilderInterface;
+use ApiPlatform\Core\Serializer\SerializerContextFactoryInterface;
 use ApiPlatform\Core\Util\RequestAttributesExtractor;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
@@ -32,22 +34,24 @@ use Symfony\Component\Serializer\SerializerInterface;
  */
 final class DeserializeListener
 {
+    use ContextTrait;
     use ToggleableOperationAttributeTrait;
 
     public const OPERATION_ATTRIBUTE_KEY = 'deserialize';
 
     private $serializer;
-    private $serializerContextBuilder;
+    private $serializerContextFactory;
     private $formats;
     private $formatsProvider;
 
     /**
-     * @param ResourceMetadataFactoryInterface|FormatsProviderInterface|array $resourceMetadataFactory
+     * @param SerializerContextBuilderInterface|SerializerContextFactoryInterface $serializerContextBuilder
+     * @param ResourceMetadataFactoryInterface|FormatsProviderInterface|array     $resourceMetadataFactory
      */
-    public function __construct(SerializerInterface $serializer, SerializerContextBuilderInterface $serializerContextBuilder, $resourceMetadataFactory, ResourceMetadataFactoryInterface $legacyResourceMetadataFactory = null)
+    public function __construct(SerializerInterface $serializer, /* SerializerContextFactoryInterface $serializerContextFactory */$serializerContextBuilder, $resourceMetadataFactory, ResourceMetadataFactoryInterface $legacyResourceMetadataFactory = null)
     {
         $this->serializer = $serializer;
-        $this->serializerContextBuilder = $serializerContextBuilder;
+        $this->serializerContextFactory = $serializerContextBuilder;
         $this->resourceMetadataFactory = $resourceMetadataFactory instanceof ResourceMetadataFactoryInterface ? $resourceMetadataFactory : $legacyResourceMetadataFactory;
 
         if (!$resourceMetadataFactory instanceof ResourceMetadataFactoryInterface) {
@@ -81,7 +85,13 @@ final class DeserializeListener
             return;
         }
 
-        $context = $this->serializerContextBuilder->createFromRequest($request, false, $attributes);
+        if ($this->serializerContextFactory instanceof SerializerContextBuilderInterface) {
+            $context = $this->serializerContextFactory->createFromRequest($request, false, $attributes);
+        } else {
+            $operationName = $this->getOperationNameFromContext($attributes);
+            $context = $this->addRequestContext($request, $attributes);
+            $context = $this->serializerContextFactory->create($attributes['resource_class'], $operationName, false, $context);
+        }
 
         // BC check to be removed in 3.0
         if ($this->resourceMetadataFactory) {

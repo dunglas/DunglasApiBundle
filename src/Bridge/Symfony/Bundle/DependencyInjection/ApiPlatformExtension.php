@@ -101,9 +101,9 @@ final class ApiPlatformExtension extends Extension implements PrependExtensionIn
         $this->registerCommonConfiguration($container, $config, $loader, $formats, $patchFormats, $errorFormats);
         $this->registerMetadataConfiguration($container, $config, $loader);
         $this->registerOAuthConfiguration($container, $config);
-        $this->registerSwaggerConfiguration($container, $config, $loader);
+        $this->registerSwaggerConfiguration($container, $config, $loader, $config['enable_serialization_context_doc']);
         $this->registerJsonApiConfiguration($formats, $loader);
-        $this->registerJsonLdHydraConfiguration($container, $formats, $loader, $config['enable_docs']);
+        $this->registerJsonLdHydraConfiguration($container, $formats, $loader, $config['enable_docs'], $config['enable_serialization_context_doc']);
         $this->registerJsonHalConfiguration($formats, $loader);
         $this->registerJsonProblemConfiguration($errorFormats, $loader);
         $this->registerGraphQlConfiguration($container, $config, $loader);
@@ -336,7 +336,7 @@ final class ApiPlatformExtension extends Extension implements PrependExtensionIn
     /**
      * Registers the Swagger, ReDoc and Swagger UI configuration.
      */
-    private function registerSwaggerConfiguration(ContainerBuilder $container, array $config, XmlFileLoader $loader): void
+    private function registerSwaggerConfiguration(ContainerBuilder $container, array $config, XmlFileLoader $loader, bool $useSerializationContext): void
     {
         $container->setParameter('api_platform.swagger.versions', $config['swagger']['versions']);
 
@@ -356,6 +356,11 @@ final class ApiPlatformExtension extends Extension implements PrependExtensionIn
         $container->setParameter('api_platform.enable_swagger_ui', $config['enable_swagger_ui']);
         $container->setParameter('api_platform.enable_re_doc', $config['enable_re_doc']);
         $container->setParameter('api_platform.swagger.api_keys', $config['swagger']['api_keys']);
+
+        if (!$useSerializationContext) {
+            $container->getDefinition('api_platform.json_schema.schema_factory')->replaceArgument(6, null);
+            $container->getDefinition('api_platform.swagger.normalizer.documentation')->replaceArgument(26, null);
+        }
     }
 
     private function registerJsonApiConfiguration(array $formats, XmlFileLoader $loader): void
@@ -367,7 +372,7 @@ final class ApiPlatformExtension extends Extension implements PrependExtensionIn
         $loader->load('jsonapi.xml');
     }
 
-    private function registerJsonLdHydraConfiguration(ContainerBuilder $container, array $formats, XmlFileLoader $loader, bool $docEnabled): void
+    private function registerJsonLdHydraConfiguration(ContainerBuilder $container, array $formats, XmlFileLoader $loader, bool $docEnabled, bool $useSerializationContext): void
     {
         if (!isset($formats['jsonld'])) {
             return;
@@ -382,6 +387,10 @@ final class ApiPlatformExtension extends Extension implements PrependExtensionIn
 
         if (!$docEnabled) {
             $container->removeDefinition('api_platform.hydra.listener.response.add_link_header');
+        }
+
+        if (!$useSerializationContext) {
+            $container->getDefinition('api_platform.hydra.normalizer.documentation')->replaceArgument(8, null);
         }
     }
 

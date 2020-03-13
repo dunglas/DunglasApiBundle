@@ -14,8 +14,8 @@ declare(strict_types=1);
 namespace ApiPlatform\Core\GraphQl\Resolver\Stage;
 
 use ApiPlatform\Core\GraphQl\Serializer\ItemNormalizer;
-use ApiPlatform\Core\GraphQl\Serializer\SerializerContextBuilderInterface;
 use ApiPlatform\Core\Metadata\Resource\Factory\ResourceMetadataFactoryInterface;
+use ApiPlatform\Core\Serializer\SerializerContextFactoryInterface;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
 
@@ -30,13 +30,13 @@ final class DeserializeStage implements DeserializeStageInterface
 {
     private $resourceMetadataFactory;
     private $denormalizer;
-    private $serializerContextBuilder;
+    private $serializerContextFactory;
 
-    public function __construct(ResourceMetadataFactoryInterface $resourceMetadataFactory, DenormalizerInterface $denormalizer, SerializerContextBuilderInterface $serializerContextBuilder)
+    public function __construct(ResourceMetadataFactoryInterface $resourceMetadataFactory, DenormalizerInterface $denormalizer, SerializerContextFactoryInterface $serializerContextFactory)
     {
         $this->resourceMetadataFactory = $resourceMetadataFactory;
         $this->denormalizer = $denormalizer;
-        $this->serializerContextBuilder = $serializerContextBuilder;
+        $this->serializerContextFactory = $serializerContextFactory;
     }
 
     /**
@@ -49,7 +49,7 @@ final class DeserializeStage implements DeserializeStageInterface
             return $objectToPopulate;
         }
 
-        $denormalizationContext = $this->serializerContextBuilder->create($resourceClass, $operationName, $context, false);
+        $denormalizationContext = $this->serializerContextFactory->create($resourceClass, $operationName, false, $context);
         if (null !== $objectToPopulate) {
             $denormalizationContext[AbstractNormalizer::OBJECT_TO_POPULATE] = $objectToPopulate;
         }

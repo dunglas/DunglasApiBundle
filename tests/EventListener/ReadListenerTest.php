@@ -22,6 +22,7 @@ use ApiPlatform\Core\Exception\RuntimeException;
 use ApiPlatform\Core\Identifier\IdentifierConverterInterface;
 use ApiPlatform\Core\Metadata\Resource\Factory\ResourceMetadataFactoryInterface;
 use ApiPlatform\Core\Metadata\Resource\ResourceMetadata;
+use ApiPlatform\Core\Serializer\SerializerContextFactoryInterface;
 use ApiPlatform\Core\Tests\Fixtures\TestBundle\Entity\Dummy;
 use PHPUnit\Framework\TestCase;
 use Prophecy\Argument;
@@ -161,7 +162,7 @@ class ReadListenerTest extends TestCase
         $identifierConverter = $this->prophesize(IdentifierConverterInterface::class);
 
         $collectionDataProvider = $this->prophesize(CollectionDataProviderInterface::class);
-        $collectionDataProvider->getCollection('Foo', 'get', ['filters' => ['foo' => 'bar']])->willReturn([])->shouldBeCalled();
+        $collectionDataProvider->getCollection('Foo', 'get', ['filters' => ['foo' => 'bar'], 'context' => true])->willReturn([])->shouldBeCalled();
 
         $itemDataProvider = $this->prophesize(ItemDataProviderInterface::class);
         $itemDataProvider->getItem()->shouldNotBeCalled();
@@ -169,16 +170,20 @@ class ReadListenerTest extends TestCase
         $subresourceDataProvider = $this->prophesize(SubresourceDataProviderInterface::class);
         $subresourceDataProvider->getSubresource()->shouldNotBeCalled();
 
+        $serializerContextFactoryProphecy = $this->prophesize(SerializerContextFactoryInterface::class);
+        $serializerContextFactoryProphecy->create('Foo', 'get', false, Argument::type('array'))->willReturn(['context' => true])->shouldBeCalled();
+
         $request = new Request([], [], ['_api_resource_class' => 'Foo', '_api_collection_operation_name' => 'get', '_api_format' => 'json', '_api_mime_type' => 'application/json'], [], [], ['QUERY_STRING' => 'foo=bar']);
         $request->setMethod('GET');
 
         $event = $this->prophesize(RequestEvent::class);
         $event->getRequest()->willReturn($request)->shouldBeCalled();
 
-        $listener = new ReadListener($collectionDataProvider->reveal(), $itemDataProvider->reveal(), $subresourceDataProvider->reveal(), null, $identifierConverter->reveal());
+        $listener = new ReadListener($collectionDataProvider->reveal(), $itemDataProvider->reveal(), $subresourceDataProvider->reveal(), $serializerContextFactoryProphecy->reveal(), $identifierConverter->reveal());
         $listener->onKernelRequest($event->reveal());
 
         $this->assertSame([], $request->attributes->get('data'));
+        $this->assertSame(['context' => true], $request->attributes->get('_api_normalization_context'));
         $this->assertFalse($request->attributes->has('previous_data'));
     }
 
@@ -192,10 +197,13 @@ class ReadListenerTest extends TestCase
 
         $data = new \stdClass();
         $itemDataProvider = $this->prophesize(ItemDataProviderInterface::class);
-        $itemDataProvider->getItem('Foo', ['id' => '1'], 'get', [IdentifierConverterInterface::HAS_IDENTIFIER_CONVERTER => true])->willReturn($data)->shouldBeCalled();
+        $itemDataProvider->getItem('Foo', ['id' => '1'], 'get', [IdentifierConverterInterface::HAS_IDENTIFIER_CONVERTER => true, 'context' => true])->willReturn($data)->shouldBeCalled();
 
         $subresourceDataProvider = $this->prophesize(SubresourceDataProviderInterface::class);
         $subresourceDataProvider->getSubresource()->shouldNotBeCalled();
+
+        $serializerContextFactoryProphecy = $this->prophesize(SerializerContextFactoryInterface::class);
+        $serializerContextFactoryProphecy->create('Foo', 'get', false, Argument::type('array'))->willReturn(['context' => true])->shouldBeCalled();
 
         $request = new Request([], [], ['id' => 1, '_api_resource_class' => 'Foo', '_api_item_operation_name' => 'get', '_api_format' => 'json', '_api_mime_type' => 'application/json']);
         $request->setMethod('GET');
@@ -203,10 +211,11 @@ class ReadListenerTest extends TestCase
         $event = $this->prophesize(RequestEvent::class);
         $event->getRequest()->willReturn($request)->shouldBeCalled();
 
-        $listener = new ReadListener($collectionDataProvider->reveal(), $itemDataProvider->reveal(), $subresourceDataProvider->reveal(), null, $identifierConverter->reveal());
+        $listener = new ReadListener($collectionDataProvider->reveal(), $itemDataProvider->reveal(), $subresourceDataProvider->reveal(), $serializerContextFactoryProphecy->reveal(), $identifierConverter->reveal());
         $listener->onKernelRequest($event->reveal());
 
         $this->assertSame($data, $request->attributes->get('data'));
+        $this->assertSame(['context' => true], $request->attributes->get('_api_normalization_context'));
         $this->assertEquals($data, $request->attributes->get('previous_data'));
     }
 
@@ -248,7 +257,10 @@ class ReadListenerTest extends TestCase
 
         $data = [new \stdClass()];
         $subresourceDataProvider = $this->prophesize(SubresourceDataProviderInterface::class);
-        $subresourceDataProvider->getSubresource('Foo', ['id' => ['id' => '1']], ['identifiers' => [['id', 'Bar', true]], 'property' => 'bar', IdentifierConverterInterface::HAS_IDENTIFIER_CONVERTER => true], 'get')->willReturn($data)->shouldBeCalled();
+        $subresourceDataProvider->getSubresource('Foo', ['id' => ['id' => '1']], ['identifiers' => [['id', 'Bar', true]], 'property' => 'bar', IdentifierConverterInterface::HAS_IDENTIFIER_CONVERTER => true, 'context' => true], 'get')->willReturn($data)->shouldBeCalled();
+
+        $serializerContextFactoryProphecy = $this->prophesize(SerializerContextFactoryInterface::class);
+        $serializerContextFactoryProphecy->create('Foo', 'get', false, Argument::type('array'))->willReturn(['context' => true])->shouldBeCalled();
 
         $request = new Request([], [], ['id' => 1, '_api_resource_class' => 'Foo', '_api_subresource_operation_name' => 'get', '_api_format' => 'json', '_api_mime_type' => 'application/json', '_api_subresource_context' => ['identifiers' => [['id', 'Bar', true]], 'property' => 'bar']]);
         $request->setMethod('GET');
@@ -256,10 +268,11 @@ class ReadListenerTest extends TestCase
         $event = $this->prophesize(RequestEvent::class);
         $event->getRequest()->willReturn($request)->shouldBeCalled();
 
-        $listener = new ReadListener($collectionDataProvider->reveal(), $itemDataProvider->reveal(), $subresourceDataProvider->reveal(), null, $identifierConverter->reveal());
+        $listener = new ReadListener($collectionDataProvider->reveal(), $itemDataProvider->reveal(), $subresourceDataProvider->reveal(), $serializerContextFactoryProphecy->reveal(), $identifierConverter->reveal());
         $listener->onKernelRequest($event->reveal());
 
         $this->assertSame($data, $request->attributes->get('data'));
+        $this->assertSame(['context' => true], $request->attributes->get('_api_normalization_context'));
         $this->assertSame($data, $request->attributes->get('previous_data'));
     }
 

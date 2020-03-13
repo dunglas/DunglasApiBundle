@@ -19,7 +19,8 @@ use ApiPlatform\Core\Metadata\Property\Factory\PropertyMetadataFactoryInterface;
 use ApiPlatform\Core\Metadata\Property\Factory\PropertyNameCollectionFactoryInterface;
 use ApiPlatform\Core\Metadata\Property\PropertyMetadata;
 use ApiPlatform\Core\Metadata\Resource\Factory\ResourceMetadataFactoryInterface;
-use ApiPlatform\Core\Metadata\Resource\ResourceMetadata;
+use ApiPlatform\Core\Serializer\PropertyFactoryOptionsTrait;
+use ApiPlatform\Core\Serializer\SerializerContextFactoryInterface;
 use ApiPlatform\Core\Swagger\Serializer\DocumentationNormalizer;
 use ApiPlatform\Core\Util\ResourceClassInfoTrait;
 use Symfony\Component\PropertyInfo\Type;
@@ -35,6 +36,7 @@ use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
  */
 final class SchemaFactory implements SchemaFactoryInterface
 {
+    use PropertyFactoryOptionsTrait;
     use ResourceClassInfoTrait;
 
     private $typeFactory;
@@ -42,8 +44,9 @@ final class SchemaFactory implements SchemaFactoryInterface
     private $propertyMetadataFactory;
     private $nameConverter;
     private $distinctFormats = [];
+    private $serializerContextFactory;
 
-    public function __construct(TypeFactoryInterface $typeFactory, ResourceMetadataFactoryInterface $resourceMetadataFactory, PropertyNameCollectionFactoryInterface $propertyNameCollectionFactory, PropertyMetadataFactoryInterface $propertyMetadataFactory, NameConverterInterface $nameConverter = null, ResourceClassResolverInterface $resourceClassResolver = null)
+    public function __construct(TypeFactoryInterface $typeFactory, ResourceMetadataFactoryInterface $resourceMetadataFactory, PropertyNameCollectionFactoryInterface $propertyNameCollectionFactory, PropertyMetadataFactoryInterface $propertyMetadataFactory, NameConverterInterface $nameConverter = null, ResourceClassResolverInterface $resourceClassResolver = null, SerializerContextFactoryInterface $serializerContextFactory = null)
     {
         $this->typeFactory = $typeFactory;
         $this->resourceMetadataFactory = $resourceMetadataFactory;
@@ -51,6 +54,7 @@ final class SchemaFactory implements SchemaFactoryInterface
         $this->propertyMetadataFactory = $propertyMetadataFactory;
         $this->nameConverter = $nameConverter;
         $this->resourceClassResolver = $resourceClassResolver;
+        $this->serializerContextFactory = $serializerContextFactory;
     }
 
     /**
@@ -131,9 +135,10 @@ final class SchemaFactory implements SchemaFactoryInterface
             $definition['externalDocs'] = ['url' => $iri];
         }
 
-        $options = isset($serializerContext[AbstractNormalizer::GROUPS]) ? ['serializer_groups' => (array) $serializerContext[AbstractNormalizer::GROUPS]] : [];
-        foreach ($this->propertyNameCollectionFactory->create($inputOrOutputClass, $options) as $propertyName) {
-            $propertyMetadata = $this->propertyMetadataFactory->create($inputOrOutputClass, $propertyName);
+        $propertyOptions = isset($serializerContext[AbstractNormalizer::GROUPS]) ? ['serializer_groups' => (array) $serializerContext[AbstractNormalizer::GROUPS]] : [];
+        $splitPropertyOptions = $this->getPropertyFactoryOptions($className, true);
+        foreach ($this->propertyNameCollectionFactory->create($inputOrOutputClass, $propertyOptions) as $propertyName) {
+            $propertyMetadata = $this->propertyMetadataFactory->create($inputOrOutputClass, $propertyName, $splitPropertyOptions);
             if (!$propertyMetadata->isReadable() && !$propertyMetadata->isWritable()) {
                 continue;
             }
@@ -278,19 +283,8 @@ final class SchemaFactory implements SchemaFactoryInterface
 
         return [
             $resourceMetadata,
-            $serializerContext ?? $this->getSerializerContext($resourceMetadata, $type, $operationType, $operationName),
+            $serializerContext ?? $this->getSerializationContext($className, Schema::TYPE_OUTPUT === $type, $operationType, $operationName),
             $inputOrOutput['class'],
         ];
-    }
-
-    private function getSerializerContext(ResourceMetadata $resourceMetadata, string $type = Schema::TYPE_OUTPUT, ?string $operationType, ?string $operationName): array
-    {
-        $attribute = Schema::TYPE_OUTPUT === $type ? 'normalization_context' : 'denormalization_context';
-
-        if (null === $operationType || null === $operationName) {
-            return $resourceMetadata->getAttribute($attribute, []);
-        }
-
-        return $resourceMetadata->getTypedOperationAttribute($operationType, $operationName, $attribute, [], true);
     }
 }

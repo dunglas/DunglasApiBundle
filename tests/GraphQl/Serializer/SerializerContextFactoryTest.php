@@ -13,7 +13,7 @@ declare(strict_types=1);
 
 namespace ApiPlatform\Core\Tests\GraphQl\Serializer;
 
-use ApiPlatform\Core\GraphQl\Serializer\SerializerContextBuilder;
+use ApiPlatform\Core\GraphQl\Serializer\SerializerContextFactory;
 use ApiPlatform\Core\Metadata\Resource\Factory\ResourceMetadataFactoryInterface;
 use ApiPlatform\Core\Metadata\Resource\ResourceMetadata;
 use ApiPlatform\Core\Tests\Fixtures\TestBundle\Serializer\NameConverter\CustomConverter;
@@ -23,10 +23,10 @@ use PHPUnit\Framework\TestCase;
 /**
  * @author Alan Poulain <contact@alanpoulain.eu>
  */
-class SerializerContextBuilderTest extends TestCase
+class SerializerContextFactoryTest extends TestCase
 {
-    /** @var SerializerContextBuilder */
-    private $serializerContextBuilder;
+    /** @var SerializerContextFactory */
+    private $serializerContextFactory;
     private $resourceMetadataFactoryProphecy;
 
     /**
@@ -36,7 +36,7 @@ class SerializerContextBuilderTest extends TestCase
     {
         $this->resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
 
-        $this->serializerContextBuilder = new SerializerContextBuilder(
+        $this->serializerContextFactory = new SerializerContextFactory(
             $this->resourceMetadataFactoryProphecy->reveal(),
             new CustomConverter()
         );
@@ -76,7 +76,7 @@ class SerializerContextBuilderTest extends TestCase
             $this->expectExceptionMessage($expectedExceptionMessage);
         }
 
-        $context = $this->serializerContextBuilder->create($resourceClass, $operationName, $resolverContext, true);
+        $context = $this->serializerContextFactory->create($resourceClass, $operationName, true, $resolverContext);
 
         $this->assertSame($expectedContext, $context);
     }
@@ -205,7 +205,7 @@ class SerializerContextBuilderTest extends TestCase
                 ])
         );
 
-        $context = $this->serializerContextBuilder->create($resourceClass, $operationName, [], false);
+        $context = $this->serializerContextFactory->create($resourceClass, $operationName, false, []);
 
         $this->assertSame($expectedContext, $context);
     }

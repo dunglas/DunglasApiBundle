@@ -16,8 +16,10 @@ namespace ApiPlatform\Core\EventListener;
 use ApiPlatform\Core\Exception\RuntimeException;
 use ApiPlatform\Core\Metadata\Resource\Factory\ResourceMetadataFactoryInterface;
 use ApiPlatform\Core\Metadata\Resource\ToggleableOperationAttributeTrait;
+use ApiPlatform\Core\Serializer\ContextTrait;
 use ApiPlatform\Core\Serializer\ResourceList;
 use ApiPlatform\Core\Serializer\SerializerContextBuilderInterface;
+use ApiPlatform\Core\Serializer\SerializerContextFactoryInterface;
 use ApiPlatform\Core\Util\RequestAttributesExtractor;
 use Fig\Link\GenericLinkProvider;
 use Fig\Link\Link;
@@ -35,17 +37,21 @@ use Symfony\Component\Serializer\SerializerInterface;
  */
 final class SerializeListener
 {
+    use ContextTrait;
     use ToggleableOperationAttributeTrait;
 
     public const OPERATION_ATTRIBUTE_KEY = 'serialize';
 
     private $serializer;
-    private $serializerContextBuilder;
+    private $serializerContextFactory;
 
-    public function __construct(SerializerInterface $serializer, SerializerContextBuilderInterface $serializerContextBuilder, ResourceMetadataFactoryInterface $resourceMetadataFactory = null)
+    /**
+     * @param SerializerContextBuilderInterface|SerializerContextFactoryInterface $serializerContextBuilder
+     */
+    public function __construct(SerializerInterface $serializer, /* SerializerContextFactoryInterface $serializerContextFactory */$serializerContextBuilder, ResourceMetadataFactoryInterface $resourceMetadataFactory = null)
     {
         $this->serializer = $serializer;
-        $this->serializerContextBuilder = $serializerContextBuilder;
+        $this->serializerContextFactory = $serializerContextBuilder;
         $this->resourceMetadataFactory = $resourceMetadataFactory;
     }
 
@@ -71,7 +77,13 @@ final class SerializeListener
             return;
         }
 
-        $context = $this->serializerContextBuilder->createFromRequest($request, true, $attributes);
+        if ($this->serializerContextFactory instanceof SerializerContextBuilderInterface) {
+            $context = $this->serializerContextFactory->createFromRequest($request, true, $attributes);
+        } else {
+            $operationName = $this->getOperationNameFromContext($attributes);
+            $context = $this->addRequestContext($request, $attributes);
+            $context = $this->serializerContextFactory->create($attributes['resource_class'], $operationName, true, $context);
+        }
 
         if (isset($context['output']) && \array_key_exists('class', $context['output']) && null === $context['output']['class']) {
             $event->setControllerResult(null);

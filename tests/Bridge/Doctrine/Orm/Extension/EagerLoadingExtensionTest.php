@@ -604,7 +604,18 @@ class EagerLoadingExtensionTest extends TestCase
         $orderExtensionTest->applyToItem($queryBuilderProphecy->reveal(), new QueryNameGenerator(), Dummy::class, []);
     }
 
-    public function testApplyToCollectionWithSerializerContextBuilder()
+    /**
+     * @group legacy
+     */
+    public function testLegacyApplyToCollectionWithSerializerContextBuilder(): void
+    {
+        $serializerContextBuilderProphecy = $this->prophesize(SerializerContextBuilderInterface::class);
+        $serializerContextBuilderProphecy->createFromRequest(Argument::type(Request::class), true)->shouldBeCalled()->willReturn([AbstractNormalizer::GROUPS => ['foo']]);
+
+        $this->doTestApplyToCollectionWithSerializerContext($serializerContextBuilderProphecy->reveal());
+    }
+
+    private function doTestApplyToCollectionWithSerializerContext($serializerContextFactory): void
     {
         $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
         $resourceMetadataFactoryProphecy->create(Dummy::class)->willReturn(new ResourceMetadata());
@@ -656,23 +667,46 @@ class EagerLoadingExtensionTest extends TestCase
         $queryBuilderProphecy->addSelect('partial relatedDummy_a1.{id,name}')->shouldBeCalledTimes(1);
 
         $request = Request::create('/api/dummies', 'GET', []);
+        $request->attributes->set('_api_resource_class', 'Foo');
+        $request->attributes->set('_api_collection_operation_name', 'get');
+
+        $requestStack = new RequestStack();
+        $requestStack->push($request);
+
+        $queryBuilder = $queryBuilderProphecy->reveal();
+        $eagerExtensionTest = new EagerLoadingExtension($propertyNameCollectionFactoryProphecy->reveal(), $propertyMetadataFactoryProphecy->reveal(), $resourceMetadataFactoryProphecy->reveal(), 30, false, $requestStack, $serializerContextFactory, true);
+        $eagerExtensionTest->applyToCollection($queryBuilder, new QueryNameGenerator(), Dummy::class);
+    }
+
+    /**
+     * @group legacy
+     */
+    public function testLegacyAttributes(): void
+    {
+        $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
+        $resourceMetadataFactoryProphecy->create(Dummy::class)->willReturn(new ResourceMetadata());
+
+        $request = Request::create('/api/dummies', 'GET', []);
 
         $requestStack = new RequestStack();
         $requestStack->push($request);
 
         $serializerContextBuilderProphecy = $this->prophesize(SerializerContextBuilderInterface::class);
-        $serializerContextBuilderProphecy->createFromRequest($request, true)->shouldBeCalled()->willReturn([AbstractNormalizer::GROUPS => ['foo']]);
+        $serializerContextBuilderProphecy->createFromRequest($request, true)->shouldBeCalled()->willReturn([AbstractNormalizer::GROUPS => ['foo'], AbstractNormalizer::ATTRIBUTES => ['relatedDummy' => ['id', 'name']]]);
 
-        $queryBuilder = $queryBuilderProphecy->reveal();
-        $eagerExtensionTest = new EagerLoadingExtension($propertyNameCollectionFactoryProphecy->reveal(), $propertyMetadataFactoryProphecy->reveal(), $resourceMetadataFactoryProphecy->reveal(), 30, false, $requestStack, $serializerContextBuilderProphecy->reveal(), true);
-        $eagerExtensionTest->applyToCollection($queryBuilder, new QueryNameGenerator(), Dummy::class);
+        $this->doTestAttributes($resourceMetadataFactoryProphecy->reveal(), $serializerContextBuilderProphecy->reveal(), $requestStack);
     }
 
-    public function testAttributes()
+    public function testAttributes(): void
     {
         $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
-        $resourceMetadataFactoryProphecy->create(Dummy::class)->willReturn(new ResourceMetadata());
+        $resourceMetadataFactoryProphecy->create(Dummy::class)->willReturn((new ResourceMetadata())->withAttributes(['normalization_context' => ['groups' => ['foo'], 'attributes' => ['relatedDummy' => ['id', 'name']]]]));
 
+        $this->doTestAttributes($resourceMetadataFactoryProphecy->reveal());
+    }
+
+    private function doTestAttributes($resourceMetadataFactory, $serializerContextBuilder = null, ?RequestStack $requestStack = null): void
+    {
         $propertyNameCollectionFactoryProphecy = $this->prophesize(PropertyNameCollectionFactoryInterface::class);
 
         $relatedNameCollection = new PropertyNameCollection(['id', 'name']);
@@ -719,24 +753,40 @@ class EagerLoadingExtensionTest extends TestCase
         $queryBuilderProphecy->leftJoin('o.relatedDummy', 'relatedDummy_a1')->shouldBeCalledTimes(1);
         $queryBuilderProphecy->addSelect('partial relatedDummy_a1.{id,name}')->shouldBeCalledTimes(1);
 
+        $queryBuilder = $queryBuilderProphecy->reveal();
+        $eagerExtensionTest = new EagerLoadingExtension($propertyNameCollectionFactoryProphecy->reveal(), $propertyMetadataFactoryProphecy->reveal(), $resourceMetadataFactory, 30, false, $requestStack, $serializerContextBuilder, true);
+        $eagerExtensionTest->applyToCollection($queryBuilder, new QueryNameGenerator(), Dummy::class);
+    }
+
+    /**
+     * @group legacy
+     */
+    public function testLegacyNotInAttributes(): void
+    {
+        $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
+        $resourceMetadataFactoryProphecy->create(Dummy::class)->willReturn(new ResourceMetadata());
+
         $request = Request::create('/api/dummies', 'GET', []);
 
         $requestStack = new RequestStack();
         $requestStack->push($request);
 
         $serializerContextBuilderProphecy = $this->prophesize(SerializerContextBuilderInterface::class);
-        $serializerContextBuilderProphecy->createFromRequest($request, true)->shouldBeCalled()->willReturn([AbstractNormalizer::GROUPS => ['foo'], AbstractNormalizer::ATTRIBUTES => ['relatedDummy' => ['id', 'name']]]);
+        $serializerContextBuilderProphecy->createFromRequest($request, true)->shouldBeCalled()->willReturn([AbstractNormalizer::GROUPS => ['foo'], AbstractNormalizer::ATTRIBUTES => ['relatedDummy']]);
 
-        $queryBuilder = $queryBuilderProphecy->reveal();
-        $eagerExtensionTest = new EagerLoadingExtension($propertyNameCollectionFactoryProphecy->reveal(), $propertyMetadataFactoryProphecy->reveal(), $resourceMetadataFactoryProphecy->reveal(), 30, false, $requestStack, $serializerContextBuilderProphecy->reveal(), true);
-        $eagerExtensionTest->applyToCollection($queryBuilder, new QueryNameGenerator(), Dummy::class);
+        $this->doTestNotInAttributes($resourceMetadataFactoryProphecy->reveal(), $serializerContextBuilderProphecy->reveal(), $requestStack);
     }
 
-    public function testNotInAttributes()
+    public function testNotInAttributes(): void
     {
         $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
-        $resourceMetadataFactoryProphecy->create(Dummy::class)->willReturn(new ResourceMetadata());
+        $resourceMetadataFactoryProphecy->create(Dummy::class)->willReturn((new ResourceMetadata())->withAttributes(['normalization_context' => ['groups' => ['foo'], 'attributes' => ['relatedDummy']]]));
 
+        $this->doTestNotInAttributes($resourceMetadataFactoryProphecy->reveal());
+    }
+
+    private function doTestNotInAttributes($resourceMetadataFactory, $serializerContextBuilder = null, ?RequestStack $requestStack = null): void
+    {
         $propertyNameCollectionFactoryProphecy = $this->prophesize(PropertyNameCollectionFactoryInterface::class);
         $propertyMetadataFactoryProphecy = $this->prophesize(PropertyMetadataFactoryInterface::class);
         $relationPropertyMetadata = new PropertyMetadata();
@@ -760,24 +810,40 @@ class EagerLoadingExtensionTest extends TestCase
         $queryBuilderProphecy->getRootAliases()->willReturn(['o']);
         $queryBuilderProphecy->getEntityManager()->willReturn($emProphecy);
 
+        $queryBuilder = $queryBuilderProphecy->reveal();
+        $eagerExtensionTest = new EagerLoadingExtension($propertyNameCollectionFactoryProphecy->reveal(), $propertyMetadataFactoryProphecy->reveal(), $resourceMetadataFactory, 30, false, $requestStack, $serializerContextBuilder, true);
+        $eagerExtensionTest->applyToCollection($queryBuilder, new QueryNameGenerator(), Dummy::class);
+    }
+
+    /**
+     * @group legacy
+     */
+    public function testLegacyOnlyOneRelationNotInAttributes(): void
+    {
+        $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
+        $resourceMetadataFactoryProphecy->create(Dummy::class)->willReturn(new ResourceMetadata());
+
         $request = Request::create('/api/dummies', 'GET', []);
 
         $requestStack = new RequestStack();
         $requestStack->push($request);
 
         $serializerContextBuilderProphecy = $this->prophesize(SerializerContextBuilderInterface::class);
-        $serializerContextBuilderProphecy->createFromRequest($request, true)->shouldBeCalled()->willReturn([AbstractNormalizer::GROUPS => ['foo'], AbstractNormalizer::ATTRIBUTES => ['relatedDummy']]);
+        $serializerContextBuilderProphecy->createFromRequest($request, true)->shouldBeCalled()->willReturn([AbstractNormalizer::GROUPS => ['foo'], AbstractNormalizer::ATTRIBUTES => ['relatedDummy' => ['id', 'name']]]);
 
-        $queryBuilder = $queryBuilderProphecy->reveal();
-        $eagerExtensionTest = new EagerLoadingExtension($propertyNameCollectionFactoryProphecy->reveal(), $propertyMetadataFactoryProphecy->reveal(), $resourceMetadataFactoryProphecy->reveal(), 30, false, $requestStack, $serializerContextBuilderProphecy->reveal(), true);
-        $eagerExtensionTest->applyToCollection($queryBuilder, new QueryNameGenerator(), Dummy::class);
+        $this->doTestOnlyOneRelationNotInAttributes($resourceMetadataFactoryProphecy->reveal(), $serializerContextBuilderProphecy->reveal(), $requestStack);
     }
 
-    public function testOnlyOneRelationNotInAttributes()
+    public function testOnlyOneRelationNotInAttributes(): void
     {
         $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
-        $resourceMetadataFactoryProphecy->create(Dummy::class)->willReturn(new ResourceMetadata());
+        $resourceMetadataFactoryProphecy->create(Dummy::class)->willReturn((new ResourceMetadata())->withAttributes(['normalization_context' => ['groups' => ['foo'], 'attributes' => ['relatedDummy' => ['id', 'name']]]]));
 
+        $this->doTestOnlyOneRelationNotInAttributes($resourceMetadataFactoryProphecy->reveal());
+    }
+
+    private function doTestOnlyOneRelationNotInAttributes($resourceMetadataFactory, $serializerContextBuilder = null, ?RequestStack $requestStack = null): void
+    {
         $propertyNameCollectionFactoryProphecy = $this->prophesize(PropertyNameCollectionFactoryInterface::class);
 
         $relatedNameCollection = new PropertyNameCollection(['id', 'name']);
@@ -826,16 +892,8 @@ class EagerLoadingExtensionTest extends TestCase
         $queryBuilderProphecy->leftJoin('o.relatedDummy', 'relatedDummy_a1')->shouldBeCalledTimes(1);
         $queryBuilderProphecy->addSelect('partial relatedDummy_a1.{id,name}')->shouldBeCalledTimes(1);
 
-        $request = Request::create('/api/dummies', 'GET', []);
-
-        $requestStack = new RequestStack();
-        $requestStack->push($request);
-
-        $serializerContextBuilderProphecy = $this->prophesize(SerializerContextBuilderInterface::class);
-        $serializerContextBuilderProphecy->createFromRequest($request, true)->shouldBeCalled()->willReturn([AbstractNormalizer::GROUPS => ['foo'], AbstractNormalizer::ATTRIBUTES => ['relatedDummy' => ['id', 'name']]]);
-
         $queryBuilder = $queryBuilderProphecy->reveal();
-        $eagerExtensionTest = new EagerLoadingExtension($propertyNameCollectionFactoryProphecy->reveal(), $propertyMetadataFactoryProphecy->reveal(), $resourceMetadataFactoryProphecy->reveal(), 30, false, $requestStack, $serializerContextBuilderProphecy->reveal(), true);
+        $eagerExtensionTest = new EagerLoadingExtension($propertyNameCollectionFactoryProphecy->reveal(), $propertyMetadataFactoryProphecy->reveal(), $resourceMetadataFactory, 30, false, $requestStack, $serializerContextBuilder, true);
         $eagerExtensionTest->applyToCollection($queryBuilder, new QueryNameGenerator(), Dummy::class);
     }
 
