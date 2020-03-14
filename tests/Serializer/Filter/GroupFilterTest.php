@@ -125,4 +125,26 @@ class GroupFilterTest extends TestCase
 
         $this->assertEquals($expectedDescription, $groupFilter->getDescription(DummyGroup::class));
     }
+
+    public function testGetDescriptionForWhitelistedGroups()
+    {
+        $groupFilter = new GroupFilter('whitlisted_groups', false, ['foo', 'bar']);
+        $expectedDescription = [
+            'whitlisted_groups[]' => [
+                'property' => null,
+                'type' => 'string',
+                'is_collection' => true,
+                'required' => false,
+                'schema' => [
+                    'type' => 'array',
+                    'items' => [
+                        'type' => 'string',
+                        'enum' => ['foo', 'bar'],
+                    ],
+                ],
+            ],
+        ];
+
+        $this->assertEquals($expectedDescription, $groupFilter->getDescription(DummyGroup::class));
+    }
 }

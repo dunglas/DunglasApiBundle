@@ -29,20 +29,17 @@ interface FilterInterface
      *   - required: if this filter is required
      *   - strategy (optional): the used strategy
      *   - is_collection (optional): is this filter is collection
-     *   - swagger (optional): additional parameters for the path operation,
-     *     e.g. 'swagger' => [
-     *       'description' => 'My Description',
-     *       'name' => 'My Name',
-     *       'type' => 'integer',
+     *   - schema (optional): additional parameters related to schema description
+     *     e.g. 'schema' => [
+     *         'type' => 'string',
+     *         'enum' => [
+     *             'value1',
+     *             'value2',
+     *         ],
      *     ]
-     *   - openapi (optional): additional parameters for the path operation in the version 3 spec,
-     *     e.g. 'openapi' => [
-     *       'description' => 'My Description',
-     *       'name' => 'My Name',
-     *       'schema' => [
-     *          'type' => 'integer',
-     *       ]
-     *     ]
+     *   - description (optional): a string describing filter usage
+     *   - swagger (optional/deprecated): additional parameters for the path operation
+     *   - openapi (optional/deprecated): additional parameters for the path operation in the version 3
      * The description can contain additional data specific to a filter.
      *
      * @see \ApiPlatform\Core\Swagger\Serializer\DocumentationNormalizer::getFiltersParameters

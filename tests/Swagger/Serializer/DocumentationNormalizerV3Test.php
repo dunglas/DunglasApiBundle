@@ -1519,6 +1519,23 @@ class DocumentationNormalizerV3Test extends TestCase
                     'enum' => ['asc', 'desc'],
                 ],
             ]]),
+            'f5' => new DummyFilter(['serializer' => [
+                'property' => 'group',
+                'type' => 'string',
+                'required' => false,
+                'strategy' => 'exact',
+                'is_collection' => true,
+                'schema' => [
+                    'type' => 'array',
+                    'items' => [
+                        'type' => 'string',
+                        'enum' => [
+                            'group1',
+                            'group2',
+                        ],
+                    ],
+                ],
+            ]]),
         ];
 
         foreach ($filters as $filterId => $filter) {
@@ -1526,7 +1543,7 @@ class DocumentationNormalizerV3Test extends TestCase
             $filterLocatorProphecy->get($filterId)->willReturn($filter)->shouldBeCalled();
         }
 
-        $filterLocatorProphecy->has('f5')->willReturn(false)->shouldBeCalled();
+        $filterLocatorProphecy->has('f6')->willReturn(false)->shouldBeCalled();
 
         $this->normalizeWithFilters($filterLocatorProphecy->reveal());
     }
@@ -1565,6 +1582,23 @@ class DocumentationNormalizerV3Test extends TestCase
                 'schema' => [
                     'type' => 'string',
                     'enum' => ['asc', 'desc'],
+                ],
+            ]]),
+            'f5' => new DummyFilter(['serializer' => [
+                'property' => 'group',
+                'type' => 'string',
+                'required' => false,
+                'strategy' => 'exact',
+                'is_collection' => true,
+                'schema' => [
+                    'type' => 'array',
+                    'items' => [
+                        'type' => 'string',
+                        'enum' => [
+                            'group1',
+                            'group2',
+                        ],
+                    ],
                 ],
             ]]),
         ]));
@@ -2041,7 +2075,7 @@ class DocumentationNormalizerV3Test extends TestCase
             'This is a dummy.',
             null,
             [],
-            ['get' => ['method' => 'GET', 'filters' => ['f1', 'f2', 'f3', 'f4', 'f5']] + self::OPERATION_FORMATS]
+            ['get' => ['method' => 'GET', 'filters' => ['f1', 'f2', 'f3', 'f4', 'f5', 'f6']] + self::OPERATION_FORMATS]
         );
         $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
         $resourceMetadataFactoryProphecy->create(Dummy::class)->shouldBeCalled()->willReturn($dummyMetadata);
@@ -2139,6 +2173,23 @@ class DocumentationNormalizerV3Test extends TestCase
                                     'type' => 'string',
                                     'enum' => ['asc', 'desc'],
                                 ],
+                            ],
+                            [
+                                'name' => 'serializer',
+                                'in' => 'query',
+                                'required' => false,
+                                'schema' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'string',
+                                        'enum' => [
+                                            'group1',
+                                            'group2',
+                                        ],
+                                    ],
+                                ],
+                                'style' => 'form',
+                                'explode' => true,
                             ],
                             [
                                 'name' => 'page',

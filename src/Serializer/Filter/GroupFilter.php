@@ -65,13 +65,17 @@ final class GroupFilter implements FilterInterface
      */
     public function getDescription(string $resourceClass): array
     {
-        return [
-            "$this->parameterName[]" => [
-                'property' => null,
-                'type' => 'string',
-                'is_collection' => true,
-                'required' => false,
-            ],
+        $description = [
+            'property' => null,
+            'type' => 'string',
+            'is_collection' => true,
+            'required' => false,
         ];
+
+        if ($this->whitelist) {
+            $description['schema'] = ['type' => 'array', 'items' => ['type' => 'string', 'enum' => $this->whitelist]];
+        }
+
+        return ["$this->parameterName[]" => $description];
     }
 }
