@@ -3,6 +3,7 @@
 ## 2.5.x-dev
 
 * GraphQL: Do not allow empty cursor values on `before` or `after`
+* OpenAPI: Fix required fields by keeping them required even if they are not writable to allow valid read types generation on client side (#3381)
 
 ## 2.5.4
 

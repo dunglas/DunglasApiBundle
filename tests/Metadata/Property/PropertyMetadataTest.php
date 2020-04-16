@@ -84,14 +84,14 @@ class PropertyMetadataTest extends TestCase
         $this->assertTrue($newMetadata->isInitializable());
     }
 
-    public function testShouldReturnRequiredFalseWhenRequiredTrueIsSetButMaskedByWritableFalse()
+    public function testShouldReturnRequiredTrueEvenIfWritableFalseSoClientCanAssumeValueCannotBeUndefinedOnReadOperation()
     {
         $metadata = new PropertyMetadata();
 
         $metadata = $metadata->withRequired(true);
         $metadata = $metadata->withWritable(false);
 
-        $this->assertFalse($metadata->isRequired());
+        $this->assertTrue($metadata->isRequired());
     }
 
     public function testShouldReturnPreviouslySetRequiredTrueWhenWritableFalseUnmasked()
