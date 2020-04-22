@@ -186,7 +186,6 @@ class ApiPlatformExtensionTest extends TestCase
     public function testPrepend()
     {
         $frameworkExtensionProphecy = $this->prophesize(ExtensionInterface::class);
-
         $containerBuilderProphecy = $this->prophesize(ContainerBuilder::class);
         $containerBuilderProphecy->getExtensions()->willReturn(['framework' => $frameworkExtensionProphecy->reveal()]);
         $containerBuilderProphecy->prependExtensionConfig('framework', [
@@ -199,7 +198,6 @@ class ApiPlatformExtensionTest extends TestCase
                 'enabled' => true,
             ],
         ])->shouldBeCalled();
-
         $this->extension->prepend($containerBuilderProphecy->reveal());
     }
 
