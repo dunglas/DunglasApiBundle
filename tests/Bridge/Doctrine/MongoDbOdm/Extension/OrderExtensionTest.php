@@ -118,37 +118,36 @@ class OrderExtensionTest extends TestCase
         $orderExtensionTest->applyToCollection($aggregationBuilder, Dummy::class);
     }
 
-    public function testApplyToCollectionWithOrderOverriddenWithAssociation()
+    public function testApplyToCollectionOrderByNestedAssociationField(): void
     {
         $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
-        $aggregationBuilderProphecy = $this->prophesize(Builder::class);
+        $resourceMetadataFactoryProphecy->create(Dummy::class)->willReturn(new ResourceMetadata(null, null, null, null, null, ['order' => ['author.name']]));
+
+        $classMetadataProphecy = $this->prophesize(ClassMetadata::class);
+        $classMetadataProphecy->getIdentifier()->willReturn(['name']);
+        $classMetadataProphecy->hasAssociation('author')->willReturn(true);
+        $classMetadataProphecy->hasAssociation('name')->willReturn(false);
+        $classMetadataProphecy->getAssociationTargetClass('author')->willReturn(Dummy::class);
+        $classMetadataProphecy->hasReference('author')->willReturn(true);
+        $classMetadataProphecy->getFieldMapping('author')->willReturn(['isOwningSide' => true, 'storeAs' => ClassMetadata::REFERENCE_STORE_AS_ID]);
+
+        $objectManagerProphecy = $this->prophesize(DocumentManager::class);
+        $objectManagerProphecy->getClassMetadata(Dummy::class)->willReturn($classMetadataProphecy);
+
+        $managerRegistryProphecy = $this->prophesize(ManagerRegistry::class);
+        $managerRegistryProphecy->getManagerForClass(Dummy::class)->willReturn($objectManagerProphecy);
 
         $lookupProphecy = $this->prophesize(Lookup::class);
         $lookupProphecy->localField('author')->shouldBeCalled()->willReturn($lookupProphecy);
         $lookupProphecy->foreignField('_id')->shouldBeCalled()->willReturn($lookupProphecy);
         $lookupProphecy->alias('author_lkup')->shouldBeCalled();
-        $aggregationBuilderProphecy->lookup(Dummy::class)->shouldBeCalled()->willReturn($lookupProphecy->reveal());
+
+        $aggregationBuilderProphecy = $this->prophesize(Builder::class);
+        $aggregationBuilderProphecy->lookup(Dummy::class)->shouldBeCalled()->willReturn($lookupProphecy);
         $aggregationBuilderProphecy->unwind('$author_lkup')->shouldBeCalled();
         $aggregationBuilderProphecy->sort(['author_lkup.name' => 'ASC'])->shouldBeCalled();
 
-        $classMetadataProphecy = $this->prophesize(ClassMetadata::class);
-        $classMetadataProphecy->getIdentifier()->shouldBeCalled()->willReturn(['name']);
-        $classMetadataProphecy->hasAssociation('author')->shouldBeCalled()->willReturn(true);
-        $classMetadataProphecy->hasAssociation('name')->shouldBeCalled()->willReturn(false);
-        $classMetadataProphecy->getAssociationTargetClass('author')->shouldBeCalled()->willReturn(Dummy::class);
-        $classMetadataProphecy->hasReference('author')->shouldBeCalled()->willReturn(true);
-        $classMetadataProphecy->getFieldMapping('author')->shouldBeCalled()->willReturn(['isOwningSide' => true, 'storeAs' => ClassMetadata::REFERENCE_STORE_AS_ID]);
-
-        $resourceMetadataFactoryProphecy->create(Dummy::class)->shouldBeCalled()->willReturn(new ResourceMetadata(null, null, null, null, null, ['order' => ['author.name']]));
-
-        $objectManagerProphecy = $this->prophesize(DocumentManager::class);
-        $objectManagerProphecy->getClassMetadata(Dummy::class)->shouldBeCalled()->willReturn($classMetadataProphecy->reveal());
-
-        $managerRegistryProphecy = $this->prophesize(ManagerRegistry::class);
-        $managerRegistryProphecy->getManagerForClass(Dummy::class)->shouldBeCalled()->willReturn($objectManagerProphecy->reveal());
-
-        $aggregationBuilder = $aggregationBuilderProphecy->reveal();
-        $orderExtensionTest = new OrderExtension('asc', $resourceMetadataFactoryProphecy->reveal(), $managerRegistryProphecy->reveal());
-        $orderExtensionTest->applyToCollection($aggregationBuilder, Dummy::class);
+        $orderExtension = new OrderExtension('asc', $resourceMetadataFactoryProphecy->reveal(), $managerRegistryProphecy->reveal());
+        $orderExtension->applyToCollection($aggregationBuilderProphecy->reveal(), Dummy::class);
     }
 }

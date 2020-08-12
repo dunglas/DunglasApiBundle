@@ -17,7 +17,7 @@ use ApiPlatform\Core\Bridge\Doctrine\Common\PropertyHelperTrait;
 use ApiPlatform\Core\Bridge\Doctrine\MongoDbOdm\PropertyHelperTrait as MongoDbOdmPropertyHelperTrait;
 use ApiPlatform\Core\Metadata\Resource\Factory\ResourceMetadataFactoryInterface;
 use Doctrine\Common\Persistence\ManagerRegistry;
-use Doctrine\ODM\MongoDB\Aggregation\Builder;
+use Doctrine\ODM\MongoDB\Aggregation\Builder as AggregationBuilder;
 
 /**
  * Applies selected ordering while querying resource collection.
@@ -31,8 +31,11 @@ use Doctrine\ODM\MongoDB\Aggregation\Builder;
  */
 final class OrderExtension implements AggregationCollectionExtensionInterface
 {
-    use PropertyHelperTrait;
     use MongoDbOdmPropertyHelperTrait;
+    use PropertyHelperTrait;
+
+    public const DIRECTION_ASC = 'ASC';
+    public const DIRECTION_DESC = 'DESC';
 
     private $order;
     private $resourceMetadataFactory;
@@ -40,33 +43,42 @@ final class OrderExtension implements AggregationCollectionExtensionInterface
 
     public function __construct(string $order = null, ResourceMetadataFactoryInterface $resourceMetadataFactory = null, ManagerRegistry $managerRegistry = null)
     {
-        $this->resourceMetadataFactory = $resourceMetadataFactory;
         $this->order = $order;
+        $this->resourceMetadataFactory = $resourceMetadataFactory;
         $this->managerRegistry = $managerRegistry;
     }
 
     /**
      * {@inheritdoc}
      */
-    public function applyToCollection(Builder $aggregationBuilder, string $resourceClass, string $operationName = null, array &$context = [])
+    public function applyToCollection(AggregationBuilder $aggregationBuilder, string $resourceClass, string $operationName = null, array &$context = [])
     {
-        $classMetaData = $this->getClassMetadata($resourceClass);
-        $identifiers = $classMetaData->getIdentifier();
         if (null !== $this->resourceMetadataFactory) {
-            $defaultOrder = $this->resourceMetadataFactory->create($resourceClass)->getAttribute('order');
-            if (null !== $defaultOrder) {
-                foreach ($defaultOrder as $field => $order) {
-                    if (\is_int($field)) {
-                        // Default direction
-                        $field = $order;
-                        $order = 'ASC';
+            if (null !== $order = $this->resourceMetadataFactory->create($resourceClass)->getAttribute('order')) {
+                if (\is_string($order)) {
+                    $direction = strtoupper($order);
+                    if (\in_array($direction, [self::DIRECTION_ASC, self::DIRECTION_DESC], true)) {
+                        $this->sortByAllIdentifiers($aggregationBuilder, $resourceClass, $direction, $context);
+
+                        return;
                     }
 
-                    if ($this->isPropertyNested($field, $resourceClass)) {
-                        [$field] = $this->addLookupsForNestedProperty($field, $aggregationBuilder, $resourceClass);
+                    $order = [$order];
+                }
+
+                foreach ($order as $property => $direction) {
+                    if (\is_int($property)) {
+                        $property = $direction;
+                        $direction = self::DIRECTION_ASC;
+                    }
+
+                    $field = $property;
+
+                    if ($this->isPropertyNested($property, $resourceClass)) {
+                        [$field] = $this->addLookupsForNestedProperty($property, $aggregationBuilder, $resourceClass);
                     }
                     $aggregationBuilder->sort(
-                        $context['mongodb_odm_sort_fields'] = ($context['mongodb_odm_sort_fields'] ?? []) + [$field => $order]
+                        $context['mongodb_odm_sort_fields'] = ($context['mongodb_odm_sort_fields'] ?? []) + [$field => $direction]
                     );
                 }
 
@@ -75,16 +87,24 @@ final class OrderExtension implements AggregationCollectionExtensionInterface
         }
 
         if (null !== $this->order) {
-            foreach ($identifiers as $identifier) {
-                $aggregationBuilder->sort(
-                    $context['mongodb_odm_sort_fields'] = ($context['mongodb_odm_sort_fields'] ?? []) + [$identifier => $this->order]
-                );
-            }
+            $this->sortByAllIdentifiers($aggregationBuilder, $resourceClass, $this->order, $context);
         }
     }
 
+    /**
+     * {@inheritdoc}
+     */
     protected function getManagerRegistry(): ManagerRegistry
     {
         return $this->managerRegistry;
+    }
+
+    private function sortByAllIdentifiers(AggregationBuilder $aggregationBuilder, string $resourceClass, string $direction, array &$context): void
+    {
+        foreach ($this->getClassMetadata($resourceClass)->getIdentifier() as $field) {
+            $aggregationBuilder->sort(
+                $context['mongodb_odm_sort_fields'] = ($context['mongodb_odm_sort_fields'] ?? []) + [$field => $direction]
+            );
+        }
     }
 }

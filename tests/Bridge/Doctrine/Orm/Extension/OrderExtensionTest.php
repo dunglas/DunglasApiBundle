@@ -116,51 +116,50 @@ class OrderExtensionTest extends TestCase
         $orderExtensionTest->applyToCollection($queryBuilder, new QueryNameGenerator(), Dummy::class);
     }
 
-    public function testApplyToCollectionWithOrderOverriddenWithAssociation()
+    public function testApplyToCollectionOrderByNestedAssociationField(): void
     {
         $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
-        $queryBuilderProphecy = $this->prophesize(QueryBuilder::class);
-
-        $queryBuilderProphecy->getDQLPart('join')->willReturn(['o' => []])->shouldBeCalled();
-        $queryBuilderProphecy->innerJoin('o.author', 'author_a1', null, null)->shouldBeCalled();
-        $queryBuilderProphecy->addOrderBy('author_a1.name', 'ASC')->shouldBeCalled();
+        $resourceMetadataFactoryProphecy->create(Dummy::class)->willReturn(new ResourceMetadata(null, null, null, null, null, ['order' => ['author.name']]));
 
         $classMetadataProphecy = $this->prophesize(ClassMetadata::class);
-        $classMetadataProphecy->getIdentifier()->shouldBeCalled()->willReturn(['name']);
+        $classMetadataProphecy->getIdentifier()->willReturn(['name']);
+        $classMetadataProphecy->hasAssociation('author')->willReturn(true);
+        $classMetadataProphecy->hasAssociation('name')->willReturn(false);
+        $classMetadataProphecy->getAssociationTargetClass('author')->willReturn(Dummy::class);
 
-        $resourceMetadataFactoryProphecy->create(Dummy::class)->shouldBeCalled()->willReturn(new ResourceMetadata(null, null, null, null, null, ['order' => ['author.name']]));
+        $entityManagerProphecy = $this->prophesize(EntityManager::class);
+        $entityManagerProphecy->getClassMetadata(Dummy::class)->willReturn($classMetadataProphecy);
 
-        $emProphecy = $this->prophesize(EntityManager::class);
-        $emProphecy->getClassMetadata(Dummy::class)->shouldBeCalled()->willReturn($classMetadataProphecy->reveal());
+        $queryBuilderProphecy = $this->prophesize(QueryBuilder::class);
+        $queryBuilderProphecy->getDQLPart('join')->willReturn(['o' => []]);
+        $queryBuilderProphecy->innerJoin('o.author', 'author_a1', null, null)->shouldBeCalled();
+        $queryBuilderProphecy->addOrderBy('author_a1.name', 'ASC')->shouldBeCalled();
+        $queryBuilderProphecy->getEntityManager()->willReturn($entityManagerProphecy);
+        $queryBuilderProphecy->getRootAliases()->willReturn(['o']);
 
-        $queryBuilderProphecy->getEntityManager()->shouldBeCalled()->willReturn($emProphecy->reveal());
-        $queryBuilderProphecy->getRootAliases()->shouldBeCalled()->willReturn(['o']);
-
-        $queryBuilder = $queryBuilderProphecy->reveal();
-        $orderExtensionTest = new OrderExtension('asc', $resourceMetadataFactoryProphecy->reveal());
-        $orderExtensionTest->applyToCollection($queryBuilder, new QueryNameGenerator(), Dummy::class);
+        $orderExtension = new OrderExtension('asc', $resourceMetadataFactoryProphecy->reveal());
+        $orderExtension->applyToCollection($queryBuilderProphecy->reveal(), new QueryNameGenerator(), Dummy::class);
     }
 
-    public function testApplyToCollectionWithOrderOverriddenWithEmbeddedAssociation()
+    public function testApplyToCollectionOrderByEmbeddedField(): void
     {
         $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
+        $resourceMetadataFactoryProphecy->create(EmbeddedDummy::class)->willReturn(new ResourceMetadata(null, null, null, null, null, ['order' => ['embeddedDummy.dummyName' => 'DESC']]));
+
+        $classMetadataProphecy = $this->prophesize(ClassMetadata::class);
+        $classMetadataProphecy->getIdentifier()->willReturn(['id']);
+        $classMetadataProphecy->embeddedClasses = ['embeddedDummy' => []];
+        $classMetadataProphecy->hasAssociation('embeddedDummy')->willReturn(false);
+
+        $entityManagerProphecy = $this->prophesize(EntityManager::class);
+        $entityManagerProphecy->getClassMetadata(EmbeddedDummy::class)->willReturn($classMetadataProphecy);
+
         $queryBuilderProphecy = $this->prophesize(QueryBuilder::class);
         $queryBuilderProphecy->getRootAliases()->willReturn(['o']);
         $queryBuilderProphecy->addOrderBy('o.embeddedDummy.dummyName', 'DESC')->shouldBeCalled();
+        $queryBuilderProphecy->getEntityManager()->willReturn($entityManagerProphecy);
 
-        $classMetadataProphecy = $this->prophesize(ClassMetadata::class);
-        $classMetadataProphecy->getIdentifier()->shouldBeCalled()->willReturn(['id']);
-        $classMetadataProphecy->embeddedClasses = ['embeddedDummy' => []];
-
-        $resourceMetadataFactoryProphecy->create(EmbeddedDummy::class)->shouldBeCalled()->willReturn(new ResourceMetadata(null, null, null, null, null, ['order' => ['embeddedDummy.dummyName' => 'DESC']]));
-
-        $emProphecy = $this->prophesize(EntityManager::class);
-        $emProphecy->getClassMetadata(EmbeddedDummy::class)->shouldBeCalled()->willReturn($classMetadataProphecy->reveal());
-
-        $queryBuilderProphecy->getEntityManager()->shouldBeCalled()->willReturn($emProphecy->reveal());
-
-        $queryBuilder = $queryBuilderProphecy->reveal();
-        $orderExtensionTest = new OrderExtension('asc', $resourceMetadataFactoryProphecy->reveal());
-        $orderExtensionTest->applyToCollection($queryBuilder, new QueryNameGenerator(), EmbeddedDummy::class);
+        $orderExtension = new OrderExtension('asc', $resourceMetadataFactoryProphecy->reveal());
+        $orderExtension->applyToCollection($queryBuilderProphecy->reveal(), new QueryNameGenerator(), EmbeddedDummy::class);
     }
 }

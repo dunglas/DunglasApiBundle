@@ -13,10 +13,14 @@ declare(strict_types=1);
 
 namespace ApiPlatform\Core\Bridge\Doctrine\Orm\Extension;
 
-use ApiPlatform\Core\Bridge\Doctrine\Orm\Util\QueryBuilderHelper;
+use ApiPlatform\Core\Bridge\Doctrine\Common\PropertyHelperTrait;
+use ApiPlatform\Core\Bridge\Doctrine\Orm\PropertyHelperTrait as OrmPropertyHelperTrait;
 use ApiPlatform\Core\Bridge\Doctrine\Orm\Util\QueryNameGeneratorInterface;
 use ApiPlatform\Core\Exception\InvalidArgumentException;
 use ApiPlatform\Core\Metadata\Resource\Factory\ResourceMetadataFactoryInterface;
+use Doctrine\Common\Persistence\ManagerRegistry;
+use Doctrine\Common\Persistence\Mapping\ClassMetadata;
+use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\QueryBuilder;
 
 /**
@@ -28,13 +32,25 @@ use Doctrine\ORM\QueryBuilder;
  */
 final class OrderExtension implements ContextAwareQueryCollectionExtensionInterface
 {
+    use OrmPropertyHelperTrait;
+    use PropertyHelperTrait;
+
+    public const DIRECTION_ASC = 'ASC';
+    public const DIRECTION_DESC = 'DESC';
+
     private $order;
     private $resourceMetadataFactory;
+    private $managerRegistry;
+    /**
+     * @var EntityManager|null
+     */
+    private $entityManager;
 
-    public function __construct(string $order = null, ResourceMetadataFactoryInterface $resourceMetadataFactory = null)
+    public function __construct(string $order = null, ResourceMetadataFactoryInterface $resourceMetadataFactory = null, ManagerRegistry $managerRegistry = null)
     {
-        $this->resourceMetadataFactory = $resourceMetadataFactory;
         $this->order = $order;
+        $this->resourceMetadataFactory = $resourceMetadataFactory;
+        $this->managerRegistry = $managerRegistry;
     }
 
     /**
@@ -46,29 +62,37 @@ final class OrderExtension implements ContextAwareQueryCollectionExtensionInterf
             throw new InvalidArgumentException('The "$resourceClass" parameter must not be null');
         }
 
-        $rootAlias = $queryBuilder->getRootAliases()[0];
+        // BC
+        if (null === $this->managerRegistry) {
+            $this->entityManager = $queryBuilder->getEntityManager();
+        }
 
-        $classMetaData = $queryBuilder->getEntityManager()->getClassMetadata($resourceClass);
-        $identifiers = $classMetaData->getIdentifier();
         if (null !== $this->resourceMetadataFactory) {
-            $defaultOrder = $this->resourceMetadataFactory->create($resourceClass)->getAttribute('order');
-            if (null !== $defaultOrder) {
-                foreach ($defaultOrder as $field => $order) {
-                    if (\is_int($field)) {
-                        // Default direction
-                        $field = $order;
-                        $order = 'ASC';
+            if (null !== $order = $this->resourceMetadataFactory->create($resourceClass)->getAttribute('order')) {
+                if (\is_string($order)) {
+                    $direction = strtoupper($order);
+                    if (\in_array($direction, [self::DIRECTION_ASC, self::DIRECTION_DESC], true)) {
+                        $this->addOrderByForAllIdentifiers($queryBuilder, $resourceClass, $direction);
+
+                        return;
                     }
 
-                    $pos = strpos($field, '.');
-                    if (false === $pos || isset($classMetaData->embeddedClasses[substr($field, 0, $pos)])) {
-                        // Configure default filter with property
-                        $field = "{$rootAlias}.{$field}";
-                    } else {
-                        $alias = QueryBuilderHelper::addJoinOnce($queryBuilder, $queryNameGenerator, $rootAlias, substr($field, 0, $pos));
-                        $field = sprintf('%s.%s', $alias, substr($field, $pos + 1));
+                    $order = [$order];
+                }
+
+                foreach ($order as $property => $direction) {
+                    if (\is_int($property)) {
+                        $property = $direction;
+                        $direction = self::DIRECTION_ASC;
                     }
-                    $queryBuilder->addOrderBy($field, $order);
+
+                    $alias = $queryBuilder->getRootAliases()[0];
+                    $field = $property;
+
+                    if ($this->isPropertyNested($property, $resourceClass)) {
+                        [$alias, $field] = $this->addJoinsForNestedProperty($property, $alias, $queryBuilder, $queryNameGenerator, $resourceClass);
+                    }
+                    $queryBuilder->addOrderBy(sprintf('%s.%s', $alias, $field), $direction);
                 }
 
                 return;
@@ -76,9 +100,44 @@ final class OrderExtension implements ContextAwareQueryCollectionExtensionInterf
         }
 
         if (null !== $this->order) {
-            foreach ($identifiers as $identifier) {
-                $queryBuilder->addOrderBy("{$rootAlias}.{$identifier}", $this->order);
+            $this->addOrderByForAllIdentifiers($queryBuilder, $resourceClass, $this->order);
+        }
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    protected function getClassMetadata(string $resourceClass): ClassMetadata
+    {
+        // BC
+        if (null === $this->managerRegistry) {
+            if (null === $this->entityManager) {
+                throw new \RuntimeException('The manager registry was not provided, and the entity manager was not set on the class.');
             }
+
+            return $this->entityManager->getClassMetadata($resourceClass);
+        }
+
+        return $this
+            ->getManagerRegistry()
+            ->getManagerForClass($resourceClass)
+            ->getClassMetadata($resourceClass);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    protected function getManagerRegistry(): ManagerRegistry
+    {
+        return $this->managerRegistry;
+    }
+
+    private function addOrderByForAllIdentifiers(QueryBuilder $queryBuilder, string $resourceClass, string $direction): void
+    {
+        $rootAlias = $queryBuilder->getRootAliases()[0];
+
+        foreach ($this->getClassMetadata($resourceClass)->getIdentifier() as $field) {
+            $queryBuilder->addOrderBy(sprintf('%s.%s', $rootAlias, $field), $direction);
         }
     }
 }

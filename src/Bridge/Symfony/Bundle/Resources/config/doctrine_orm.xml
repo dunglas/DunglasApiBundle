@@ -166,6 +166,7 @@
         <service id="api_platform.doctrine.orm.query_extension.order" class="ApiPlatform\Core\Bridge\Doctrine\Orm\Extension\OrderExtension" public="false">
             <argument>%api_platform.collection.order%</argument>
             <argument type="service" id="api_platform.metadata.resource.metadata_factory" />
+            <argument type="service" id="doctrine" />
 
             <tag name="api_platform.doctrine.orm.query_extension.collection" priority="-32" />
         </service>
