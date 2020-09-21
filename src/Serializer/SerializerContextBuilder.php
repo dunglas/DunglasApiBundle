@@ -78,6 +78,14 @@ final class SerializerContextBuilder implements SerializerContextBuilderInterfac
         $context['uri'] = $request->getUri();
 
         if (isset($attributes['subresource_context'])) {
+            if ($parentResourceClass = $attributes['subresource_context']['parent_resource_class'] ?? '') {
+                $parentSubresources = $this->resourceMetadataFactory->create($parentResourceClass)->getSubresourceOperations();
+
+                if (isset($parentSubresources[$attributes[$operationKey]]['normalization_context']['groups'])) {
+                    $context['groups'] = $parentSubresources[$attributes[$operationKey]]['normalization_context']['groups'];
+                }
+            }
+
             $context['subresource_identifiers'] = [];
 
             foreach ($attributes['subresource_context']['identifiers'] as $key => [$id, $resourceClass]) {

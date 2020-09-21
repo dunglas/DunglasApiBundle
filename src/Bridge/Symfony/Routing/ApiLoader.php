@@ -127,9 +127,10 @@ final class ApiLoader extends Loader
                         '_controller' => $controller,
                         '_format' => null,
                         '_api_resource_class' => $operation['resource_class'],
-                        '_api_subresource_operation_name' => $operation['route_name'],
+                        '_api_subresource_operation_name' => $operation['operation_name'],
                         '_api_subresource_context' => [
                             'property' => $operation['property'],
+                            'parent_resource_class' => $operation['parent_resource_class'] ?? '',
                             'identifiers' => $operation['identifiers'],
                             'collection' => $operation['collection'],
                             'operationId' => $operationId,

@@ -65,6 +65,7 @@ final class SubresourceOperationFactory implements SubresourceOperationFactoryIn
         if (null === $rootResourceClass) {
             $rootResourceClass = $resourceClass;
         }
+        $operationMethod = 'get';
 
         foreach ($this->propertyNameCollectionFactory->create($resourceClass) as $property) {
             $propertyMetadata = $this->propertyMetadataFactory->create($resourceClass, $property);
@@ -93,65 +94,79 @@ final class SubresourceOperationFactory implements SubresourceOperationFactoryIn
             }
 
             $rootResourceMetadata = $this->resourceMetadataFactory->create($rootResourceClass);
-            $operationName = 'get';
             $operation = [
                 'property' => $property,
                 'collection' => $subresource->isCollection(),
                 'resource_class' => $subresourceClass,
+                'parent_resource_class' => $subresourceClass,
                 'shortNames' => [$subresourceMetadata->getShortName()],
             ];
+            $rootShortname = $rootResourceMetadata->getShortName();
 
             if (null === $parentOperation) {
-                $rootShortname = $rootResourceMetadata->getShortName();
-                $operation['identifiers'] = [['id', $rootResourceClass, true]];
-                $operation['operation_name'] = sprintf(
-                    '%s_%s%s',
-                    RouteNameGenerator::inflector($operation['property'], $operation['collection'] ?? false),
-                    $operationName,
+                $operation['operation_name'] = RouteNameGenerator::inflector($operation['property'], $operation['collection'] ?? false).'_'.$operationMethod;
+
+                $operation['route_name'] = sprintf(
+                    '%s%s_%s%s',
+                    RouteNameGenerator::ROUTE_NAME_PREFIX,
+                    RouteNameGenerator::inflector($rootShortname),
+                    $operation['operation_name'],
                     self::SUBRESOURCE_SUFFIX
                 );
 
                 $subresourceOperation = $rootResourceMetadata->getSubresourceOperations()[$operation['operation_name']] ?? [];
 
-                $operation['route_name'] = sprintf(
-                    '%s%s_%s',
-                    RouteNameGenerator::ROUTE_NAME_PREFIX,
-                    RouteNameGenerator::inflector($rootShortname),
-                    $operation['operation_name']
-                );
+                if (isset($subresourceOperation['operation_context']['groups'])) {
+                    $operation['groups'] = $subresourceOperation['operation_context']['groups'];
+                }
 
+                $operation['parent_resource_class'] = $rootResourceClass;
+                $operation['identifiers'] = [['id', $rootResourceClass, true]];
                 $prefix = trim(trim($rootResourceMetadata->getAttribute('route_prefix', '')), '/');
                 if ('' !== $prefix) {
                     $prefix .= '/';
                 }
 
-                $operation['path'] = $subresourceOperation['path'] ?? sprintf(
-                    '/%s%s/{id}/%s%s',
-                    $prefix,
-                    $this->pathSegmentNameGenerator->getSegmentName($rootShortname),
-                    $this->pathSegmentNameGenerator->getSegmentName($operation['property'], $operation['collection']),
-                    self::FORMAT_SUFFIX
-                );
+                $operation['path'] = $subresourceOperation['path']
+                    ?? sprintf(
+                        '/%s%s/{id}/%s%s',
+                        $prefix,
+                        $this->pathSegmentNameGenerator->getSegmentName($rootShortname),
+                        $this->pathSegmentNameGenerator->getSegmentName($operation['property'], $operation['collection']),
+                        self::FORMAT_SUFFIX
+                    );
 
                 if (!\in_array($rootShortname, $operation['shortNames'], true)) {
                     $operation['shortNames'][] = $rootShortname;
                 }
             } else {
-                $resourceMetadata = $this->resourceMetadataFactory->create($resourceClass);
-                $operation['identifiers'] = $parentOperation['identifiers'];
-                $operation['identifiers'][] = [$parentOperation['property'], $resourceClass, $isLastItem ? true : $parentOperation['collection']];
+                if (false === strstr($parentOperation['operation_name'], $operationMethod)) {
+                    continue;
+                }
+
                 $operation['operation_name'] = str_replace(
-                    'get'.self::SUBRESOURCE_SUFFIX,
-                    RouteNameGenerator::inflector($isLastItem ? 'item' : $property, $operation['collection']).'_get'.self::SUBRESOURCE_SUFFIX,
+                    $operationMethod,
+                    RouteNameGenerator::inflector($isLastItem ? 'item' : $operation['property'], $operation['collection'] ?? false).'_'.$operationMethod,
                     $parentOperation['operation_name']
                 );
-                $operation['route_name'] = str_replace($parentOperation['operation_name'], $operation['operation_name'], $parentOperation['route_name']);
+
+                $operation['route_name'] = sprintf(
+                    '%s%s_%s%s',
+                    RouteNameGenerator::ROUTE_NAME_PREFIX,
+                    RouteNameGenerator::inflector($rootShortname),
+                    $operation['operation_name'],
+                    self::SUBRESOURCE_SUFFIX
+                );
+
+                $subresourceOperation = $rootResourceMetadata->getSubresourceOperations()[$operation['operation_name']] ?? [];
+                $resourceMetadata = $this->resourceMetadataFactory->create($resourceClass);
+                $operation['identifiers'] = $parentOperation['identifiers'];
+                $operation['parent_resource_class'] = $parentOperation['parent_resource_class'];
+                $operation['identifiers'][] = [$parentOperation['property'], $resourceClass, $isLastItem ? true : $parentOperation['collection']];
 
                 if (!\in_array($resourceMetadata->getShortName(), $operation['shortNames'], true)) {
                     $operation['shortNames'][] = $resourceMetadata->getShortName();
                 }
-
-                $subresourceOperation = $rootResourceMetadata->getSubresourceOperations()[$operation['operation_name']] ?? [];
 
                 if (isset($subresourceOperation['path'])) {
                     $operation['path'] = $subresourceOperation['path'];
