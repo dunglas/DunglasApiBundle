@@ -11,7 +11,7 @@
 
 declare(strict_types=1);
 
-namespace ApiPlatform\Core\Tests\Bridge\Symfony\Routing;
+namespace ApiPlatform\Core\Tests\Bridge\Symfony\Routing\Loader;
 
 use ApiPlatform\Core\Bridge\Symfony\Routing\ApiLoader;
 use ApiPlatform\Core\Exception\InvalidResourceException;
@@ -42,7 +42,7 @@ use Symfony\Component\Routing\Route;
  * @author Antoine Bluchet <soyuka@gmail.com>
  * @author Amrouche Hamza <hamza.simperfit@gmail.com>
  */
-class ApiLoaderTest extends TestCase
+class ApiLoaderTest2 extends TestCase
 {
     use ProphecyTrait;
 
@@ -223,7 +223,7 @@ class ApiLoaderTest extends TestCase
 
     private function getApiLoaderWithResourceMetadata(ResourceMetadata $resourceMetadata, $recursiveSubresource = false): ApiLoader
     {
-        $routingConfig = __DIR__.'/../../../../src/Bridge/Symfony/Bundle/Resources/config/routing';
+        $routingConfig = __DIR__.'/../../../../../src/Bridge/Symfony/Bundle/Resources/config/routing';
 
         $kernelProphecy = $this->prophesize(KernelInterface::class);
         $kernelProphecy->locateResource(Argument::any())->willReturn($routingConfig);

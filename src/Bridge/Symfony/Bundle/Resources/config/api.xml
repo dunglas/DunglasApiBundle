@@ -29,21 +29,50 @@
             <argument type="service" id="api_platform.route_name_resolver.cached.inner" />
         </service>
 
-        <service id="api_platform.route_loader" class="ApiPlatform\Core\Bridge\Symfony\Routing\ApiLoader" public="false">
+        <service id="api_platform.route_loader" class="ApiPlatform\Core\Bridge\Symfony\Routing\Loader\ApiLoader" public="false">
+            <tag name="routing.loader" />
+        </service>
+
+        <service id="ApiPlatform\Core\Bridge\Symfony\Routing\Loader\ExternalFilesAutoloader">
             <argument type="service" id="kernel" />
-            <argument type="service" id="api_platform.metadata.resource.name_collection_factory" />
-            <argument type="service" id="api_platform.metadata.resource.metadata_factory" />
-            <argument type="service" id="api_platform.operation_path_resolver.custom" />
-            <argument type="service" id="service_container" />
             <argument>%api_platform.formats%</argument>
-            <argument>%api_platform.resource_class_directories%</argument>
-            <argument type="service" id="api_platform.subresource_operation_factory" />
             <argument>%api_platform.graphql.enabled%</argument>
             <argument>%api_platform.enable_entrypoint%</argument>
             <argument>%api_platform.enable_docs%</argument>
             <argument>%api_platform.graphql.graphiql.enabled%</argument>
             <argument>%api_platform.graphql.graphql_playground.enabled%</argument>
+            <tag name="routing.loader" />
+        </service>
 
+        <service id="ApiPlatform\Core\Bridge\Symfony\Routing\Loader\DirectoryResourceAutoLoader">
+            <argument>%api_platform.resource_class_directories%</argument>
+            <tag name="routing.loader" />
+        </service>
+
+        <service id="ApiPlatform\Core\Bridge\Symfony\Routing\Loader\BundleLoader">
+            <argument type="service" id="api_platform.metadata.resource.name_collection_factory" />
+            <tag name="routing.loader" />
+        </service>
+
+        <service id="ApiPlatform\Core\Bridge\Symfony\Routing\Loader\DirectoryLoader">
+            <tag name="routing.loader" />
+        </service>
+
+        <service id="ApiPlatform\Core\Bridge\Symfony\Routing\Loader\ResourceClassAutoLoader">
+            <argument type="service" id="api_platform.metadata.resource.name_collection_factory" />
+            <tag name="routing.loader" />
+        </service>
+
+        <service id="ApiPlatform\Core\Bridge\Symfony\Routing\Loader\ResourceLoader">
+            <argument type="service" id="api_platform.metadata.resource.metadata_factory" />
+            <argument type="service" id="api_platform.operation_path_resolver.custom" />
+            <argument type="service" id="service_container" />
+            <tag name="routing.loader" />
+        </service>
+
+        <service id="ApiPlatform\Core\Bridge\Symfony\Routing\Loader\SubResourceLoader">
+            <argument type="service" id="service_container" />
+            <argument type="service" id="api_platform.subresource_operation_factory" />
             <tag name="routing.loader" />
         </service>
 

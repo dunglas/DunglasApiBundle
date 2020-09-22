@@ -104,6 +104,8 @@ final class ApiPlatformExtension extends Extension implements PrependExtensionIn
         }
 
         $this->registerCommonConfiguration($container, $config, $loader, $formats, $patchFormats, $errorFormats);
+
+        $this->registerRouterLoading($container, $config);
         $this->registerMetadataConfiguration($container, $config, $loader);
         $this->registerOAuthConfiguration($container, $config);
         $this->registerSwaggerConfiguration($container, $config, $loader);
@@ -220,6 +222,16 @@ final class ApiPlatformExtension extends Extension implements PrependExtensionIn
         $container->setParameter('api_platform.defaults', $this->normalizeDefaults($config['defaults'] ?? []));
     }
 
+    private function registerRouterLoading(ContainerBuilder $container, array $config)
+    {
+        $apiLoader = $container->getDefinition('api_platform.route_loader');
+        $apiLoader->setArguments([
+            $config['routing']['autoload']['externals'],
+            $config['routing']['autoload']['directories'],
+            $config['routing']['autoload']['resources'],
+        ]);
+    }
+
     /**
      * This method will be removed in 3.0 when "defaults" will be the regular configuration path for the pagination.
      */
@@ -291,30 +303,47 @@ final class ApiPlatformExtension extends Extension implements PrependExtensionIn
 
     private function getBundlesResourcesPaths(ContainerBuilder $container, array $config): array
     {
-        $bundlesResourcesPaths = [];
-
-        foreach ($container->getParameter('kernel.bundles_metadata') as $bundle) {
-            $paths = [];
+        $result = [];
+        $bundles = $container->getParameter('kernel.bundles_metadata');
+        foreach ($bundles as $bundle) {
             $dirname = $bundle['path'];
+            if ($config['resources']['autoload']) {
+                if (in_array($bundle['namespace'], $config['resources']['bundles']['exclude'])) {
+                    continue;
+                }
+            } else {
+                if (!in_array($bundle['namespace'], $config['resources']['bundles']['include'])) {
+                    continue;
+                }
+            }
+            $result = $this->setResourcesPath($dirname, $container, $config);
+        }
+        return $result;
+    }
+
+    private function setResourcesPath($dirname, ContainerBuilder $container, array $config): array
+    {
+        $paths = [];
+        $result = [];
+        if ($config['resources']['sources']['configs']) {
             foreach (['.yaml', '.yml', '.xml', ''] as $extension) {
                 $paths[] = "$dirname/Resources/config/api_resources$extension";
             }
-            if ($this->isConfigEnabled($container, $config['doctrine'])) {
-                $paths[] = "$dirname/Entity";
-            }
-            if ($this->isConfigEnabled($container, $config['doctrine_mongodb_odm'])) {
-                $paths[] = "$dirname/Document";
-            }
-
-            foreach ($paths as $path) {
-                if ($container->fileExists($path, false)) {
-                    $bundlesResourcesPaths[] = $path;
-                }
+        }
+        if ($config['resources']['sources']['doctrine']) {
+            $paths[] = "$dirname/Entity";
+        }
+        if ($config['resources']['sources']['mongodb']) {
+            $paths[] = "$dirname/Document";
+        }
+        foreach ($paths as $path) {
+            if ($container->fileExists($path, false)) {
+                $result[] = $path;
             }
         }
-
-        return $bundlesResourcesPaths;
+        return $result;
     }
+
 
     private function getResourcesToWatch(ContainerBuilder $container, array $config): array
     {

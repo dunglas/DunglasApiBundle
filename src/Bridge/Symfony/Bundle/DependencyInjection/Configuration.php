@@ -187,6 +187,7 @@ final class Configuration implements ConfigurationInterface
                 ->end()
             ->end();
 
+        $this->addRoutingLoaderSection($rootNode);
         $this->addDoctrineOrmSection($rootNode);
         $this->addDoctrineMongoDbOdmSection($rootNode);
         $this->addOAuthSection($rootNode);
@@ -213,6 +214,54 @@ final class Configuration implements ConfigurationInterface
         $this->addDefaultsSection($rootNode);
 
         return $treeBuilder;
+    }
+
+    private function addRoutingLoaderSection(ArrayNodeDefinition $rootNode)
+    {
+        $rootNode
+            ->children()
+                ->arrayNode('routing')
+                    ->addDefaultsIfNotSet()
+                    ->children()
+                        ->arrayNode('autoload')
+                        ->addDefaultsIfNotSet()
+                            ->children()
+                                ->booleanNode('externals')->defaultTrue()->end()
+                                ->booleanNode('directories')->defaultTrue()->end()
+                                ->booleanNode('resources')->defaultTrue()->end()
+                            ->end()
+                        ->end()
+                    ->end()
+                ->end()
+            ->end()
+            ->children()
+                ->arrayNode('resources')
+                    ->addDefaultsIfNotSet()
+                    ->children()
+                        ->booleanNode('autoload')->defaultTrue()->end()
+                        ->arrayNode('sources')
+                            ->addDefaultsIfNotSet()
+                            ->children()
+                                ->booleanNode('configs')->defaultTrue()->end()
+                                ->booleanNode('doctrine')->defaultTrue()->end()
+                                ->booleanNode('mongodb')->defaultTrue()->end()
+                            ->end()
+                        ->end()
+                        ->arrayNode('bundles')
+                            ->addDefaultsIfNotSet()
+                            ->children()
+                                ->arrayNode('include')
+                                    ->scalarPrototype()->end()
+                                ->end()
+                                ->arrayNode('exclude')
+                                    ->scalarPrototype()->end()
+                                ->end()
+                            ->end()
+                        ->end()
+                    ->end()
+                ->end()
+            ->end()
+        ;
     }
 
     private function addDoctrineOrmSection(ArrayNodeDefinition $rootNode): void
