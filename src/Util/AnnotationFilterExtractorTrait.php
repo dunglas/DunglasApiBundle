@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace ApiPlatform\Core\Util;
 
 use ApiPlatform\Core\Annotation\ApiFilter;
+use ApiPlatform\Core\Inflector\Inflector;
 use Doctrine\Common\Annotations\Reader;
 
 /**

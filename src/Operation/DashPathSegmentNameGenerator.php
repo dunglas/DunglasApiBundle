@@ -13,7 +13,7 @@ declare(strict_types=1);
 
 namespace ApiPlatform\Core\Operation;
 
-use ApiPlatform\Core\Util\Inflector;
+use ApiPlatform\Core\Inflector\Inflector;
 
 /**
  * Generate a path name with a dash separator according to a string and whether it's a collection or not.
