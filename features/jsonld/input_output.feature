@@ -319,3 +319,16 @@ Feature: JSON-LD DTO input and output
       "data": 123
     }
     """
+
+  @!mongodb
+  Scenario: Get an item with a custom output
+    When I send a "POST" request to "/dummy_dto_post_with_output_no_persist" with body:
+    """
+    {
+      "lorem": "test",
+      "ipsum": "1"
+    }
+    """
+    Then the response status code should be 201
+    And the response should be in JSON
+    And the header "Content-Type" should be equal to "application/ld+json; charset=utf-8"
