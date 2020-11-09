@@ -30,8 +30,10 @@ final class ResourceMetadata
     private $subresourceOperations;
     private $graphql;
     private $attributes;
+    private $interface;
+    private $implements;
 
-    public function __construct(string $shortName = null, string $description = null, string $iri = null, array $itemOperations = null, array $collectionOperations = null, array $attributes = null, array $subresourceOperations = null, array $graphql = null)
+    public function __construct(string $shortName = null, string $description = null, string $iri = null, array $itemOperations = null, array $collectionOperations = null, array $attributes = null, array $subresourceOperations = null, array $graphql = null, bool $interface = null, array $implements = null)
     {
         $this->shortName = $shortName;
         $this->description = $description;
@@ -41,6 +43,8 @@ final class ResourceMetadata
         $this->subresourceOperations = $subresourceOperations;
         $this->graphql = $graphql;
         $this->attributes = $attributes;
+        $this->interface = $interface;
+        $this->implements = $implements;
     }
 
     /**
@@ -87,6 +91,16 @@ final class ResourceMetadata
     public function getIri(): ?string
     {
         return $this->iri;
+    }
+
+    public function isInterface(): ?bool
+    {
+        return $this->interface;
+    }
+
+    public function getImplements(): ?array
+    {
+        return $this->implements;
     }
 
     /**

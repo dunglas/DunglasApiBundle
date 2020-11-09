@@ -117,6 +117,16 @@ final class ApiResource
     public $subresourceOperations;
 
     /**
+     * @var bool
+     */
+    public $isInterface;
+
+    /**
+     * @var array
+     */
+    public $implements;
+
+    /**
      * @see https://api-platform.com/docs/core/performance/#setting-custom-http-cache-headers
      * @see https://github.com/Haehnchen/idea-php-annotation-plugin/issues/112
      *

@@ -13,15 +13,18 @@ declare(strict_types=1);
 
 namespace ApiPlatform\Core\GraphQl\Resolver\Factory;
 
+use ApiPlatform\Core\Exception\ResourceClassNotFoundException;
 use ApiPlatform\Core\GraphQl\Resolver\QueryItemResolverInterface;
 use ApiPlatform\Core\GraphQl\Resolver\Stage\ReadStageInterface;
 use ApiPlatform\Core\GraphQl\Resolver\Stage\SecurityPostDenormalizeStageInterface;
 use ApiPlatform\Core\GraphQl\Resolver\Stage\SecurityStageInterface;
 use ApiPlatform\Core\GraphQl\Resolver\Stage\SerializeStageInterface;
+use ApiPlatform\Core\GraphQl\Type\TypeBuilder;
 use ApiPlatform\Core\Metadata\Resource\Factory\ResourceMetadataFactoryInterface;
 use ApiPlatform\Core\Util\ClassInfoTrait;
 use ApiPlatform\Core\Util\CloneTrait;
 use GraphQL\Error\Error;
+use GraphQL\Type\Definition\InterfaceType;
 use GraphQL\Type\Definition\ResolveInfo;
 use Psr\Container\ContainerInterface;
 
@@ -45,8 +48,9 @@ final class ItemResolverFactory implements ResolverFactoryInterface
     private $serializeStage;
     private $queryResolverLocator;
     private $resourceMetadataFactory;
+    private $typeBuilder;
 
-    public function __construct(ReadStageInterface $readStage, SecurityStageInterface $securityStage, SecurityPostDenormalizeStageInterface $securityPostDenormalizeStage, SerializeStageInterface $serializeStage, ContainerInterface $queryResolverLocator, ResourceMetadataFactoryInterface $resourceMetadataFactory)
+    public function __construct(ReadStageInterface $readStage, SecurityStageInterface $securityStage, SecurityPostDenormalizeStageInterface $securityPostDenormalizeStage, SerializeStageInterface $serializeStage, ContainerInterface $queryResolverLocator, ResourceMetadataFactoryInterface $resourceMetadataFactory, TypeBuilder $typeBuilder)
     {
         $this->readStage = $readStage;
         $this->securityStage = $securityStage;
@@ -54,6 +58,7 @@ final class ItemResolverFactory implements ResolverFactoryInterface
         $this->serializeStage = $serializeStage;
         $this->queryResolverLocator = $queryResolverLocator;
         $this->resourceMetadataFactory = $resourceMetadataFactory;
+        $this->typeBuilder = $typeBuilder;
     }
 
     public function __invoke(?string $resourceClass = null, ?string $rootClass = null, ?string $operationName = null): callable
@@ -84,16 +89,16 @@ final class ItemResolverFactory implements ResolverFactoryInterface
             }
 
             ($this->securityStage)($resourceClass, $operationName, $resolverContext + [
-                'extra_variables' => [
-                    'object' => $item,
-                ],
-            ]);
+                    'extra_variables' => [
+                        'object' => $item,
+                    ],
+                ]);
             ($this->securityPostDenormalizeStage)($resourceClass, $operationName, $resolverContext + [
-                'extra_variables' => [
-                    'object' => $item,
-                    'previous_object' => $this->clone($item),
-                ],
-            ]);
+                    'extra_variables' => [
+                        'object' => $item,
+                        'previous_object' => $this->clone($item),
+                    ],
+                ]);
 
             return ($this->serializeStage)($item, $resourceClass, $operationName, $resolverContext);
         };
@@ -118,6 +123,19 @@ final class ItemResolverFactory implements ResolverFactoryInterface
 
         if (null === $resourceClass) {
             return $itemClass;
+        }
+
+        if ($info->returnType instanceof InterfaceType) {
+            try {
+                $returnItemMetadata = $this->resourceMetadataFactory->create($itemClass);
+            } catch (ResourceClassNotFoundException $e) {
+                throw Error::createLocatedError(sprintf($errorMessage, (new \ReflectionClass($resourceClass))->getShortName(), (new \ReflectionClass($itemClass))->getShortName()), $info->fieldNodes, $info->path);
+            }
+
+            $returnType = $this->typeBuilder->getResourceObjectType($resourceClass, $returnItemMetadata, false, null, null);
+            if ($returnType->implementsInterface($info->returnType)) {
+                return $resourceClass;
+            }
         }
 
         if ($resourceClass !== $itemClass) {

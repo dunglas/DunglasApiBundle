@@ -54,6 +54,13 @@
             <argument type="service" id="api_platform.metadata.property.name_collection_factory.inherited.inner" />
         </service>
 
+        <service id="api_platform.metadata.property.name_collection_factory.inherited_interface" class="ApiPlatform\Core\Metadata\Property\Factory\InheritedPropertyNameInterfaceCollectionFactory" decorates="api_platform.metadata.property.name_collection_factory" decoration-priority="5" public="false">
+            <argument type="service" id="api_platform.metadata.resource.name_collection_factory" />
+            <argument type="service" id="api_platform.metadata.resource.metadata_factory"/>
+            <argument type="service" id="api_platform.metadata.property.name_collection_factory.property_info" />
+            <argument type="service" id="api_platform.metadata.property.name_collection_factory.inherited_interface.inner" />
+        </service>
+
         <service id="api_platform.metadata.property.name_collection_factory.cached" class="ApiPlatform\Core\Metadata\Property\Factory\CachedPropertyNameCollectionFactory" decorates="api_platform.metadata.property.name_collection_factory" decoration-priority="-10" public="false">
             <argument type="service" id="api_platform.cache.metadata.property" />
             <argument type="service" id="api_platform.metadata.property.name_collection_factory.cached.inner" />
