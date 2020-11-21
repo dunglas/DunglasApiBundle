@@ -27,6 +27,7 @@ use ApiPlatform\Core\Exception\InvalidArgumentException;
  *     @Attribute("accessControlMessage", type="string"),
  *     @Attribute("attributes", type="array"),
  *     @Attribute("cacheHeaders", type="array"),
+ *     @Attribute("cacheInvalidation", type="bool"),
  *     @Attribute("collectionOperations", type="array"),
  *     @Attribute("denormalizationContext", type="array"),
  *     @Attribute("deprecationReason", type="string"),
@@ -88,6 +89,7 @@ final class ApiResource
         'securityPostDenormalize',
         'securityPostDenormalizeMessage',
         'cacheHeaders',
+        'cacheInvalidation',
         'collectionOperations',
         'denormalizationContext',
         'deprecationReason',
@@ -176,6 +178,11 @@ final class ApiResource
      * @var array
      */
     private $cacheHeaders;
+
+    /**
+     * @var bool
+     */
+    private $cacheInvalidation;
 
     /**
      * @see https://api-platform.com/docs/core/serialization/#using-serialization-groups

@@ -10,7 +10,7 @@
 
         <service id="api_platform.http_cache.listener.response.add_tags" class="ApiPlatform\Core\HttpCache\EventListener\AddTagsListener">
             <argument type="service" id="api_platform.iri_converter" />
-
+            <argument type="service" id="api_platform.metadata.resource.metadata_factory" />
             <tag name="kernel.event_listener" event="kernel.response" method="onKernelResponse" priority="-2" />
         </service>
     </services>

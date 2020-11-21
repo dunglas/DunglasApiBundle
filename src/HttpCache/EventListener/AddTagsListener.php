@@ -14,6 +14,8 @@ declare(strict_types=1);
 namespace ApiPlatform\Core\HttpCache\EventListener;
 
 use ApiPlatform\Core\Api\IriConverterInterface;
+use ApiPlatform\Core\Metadata\Resource\Factory\ResourceMetadataFactoryInterface;
+use ApiPlatform\Core\Metadata\Resource\ToggleableOperationAttributeTrait;
 use ApiPlatform\Core\Util\RequestAttributesExtractor;
 use Symfony\Component\HttpKernel\Event\ResponseEvent;
 
@@ -30,11 +32,17 @@ use Symfony\Component\HttpKernel\Event\ResponseEvent;
  */
 final class AddTagsListener
 {
-    private $iriConverter;
+    use ToggleableOperationAttributeTrait;
 
-    public function __construct(IriConverterInterface $iriConverter)
+    public const OPERATION_ATTRIBUTE_KEY = 'cache_tags_invalidation';
+
+    private $iriConverter;
+    private $resourceMetadataFactory;
+
+    public function __construct(IriConverterInterface $iriConverter, ResourceMetadataFactoryInterface $resourceMetadataFactory = null)
     {
         $this->iriConverter = $iriConverter;
+        $this->resourceMetadataFactory = $resourceMetadataFactory;
     }
 
     /**
@@ -49,6 +57,8 @@ final class AddTagsListener
             !$request->isMethodCacheable()
             || !$response->isCacheable()
             || (!$attributes = RequestAttributesExtractor::extractAttributes($request))
+            || !$attributes[self::OPERATION_ATTRIBUTE_KEY]
+            || $this->isOperationAttributeDisabled($attributes, self::OPERATION_ATTRIBUTE_KEY, false)
         ) {
             return;
         }

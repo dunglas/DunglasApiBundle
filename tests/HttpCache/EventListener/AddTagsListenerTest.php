@@ -15,6 +15,8 @@ namespace ApiPlatform\Core\Tests\HttpCache\EventListener;
 
 use ApiPlatform\Core\Api\IriConverterInterface;
 use ApiPlatform\Core\HttpCache\EventListener\AddTagsListener;
+use ApiPlatform\Core\Metadata\Resource\Factory\ResourceMetadataFactoryInterface;
+use ApiPlatform\Core\Metadata\Resource\ResourceMetadata;
 use ApiPlatform\Core\Tests\Fixtures\TestBundle\Entity\Dummy;
 use ApiPlatform\Core\Tests\ProphecyTrait;
 use PHPUnit\Framework\TestCase;
@@ -111,6 +113,55 @@ class AddTagsListenerTest extends TestCase
 
         $listener = new AddTagsListener($iriConverterProphecy->reveal());
         $listener->onKernelResponse($event);
+
+        $this->assertFalse($response->headers->has('Cache-Tags'));
+    }
+
+    public function testDoNotAddTagsWhenCacheInvalidationFlagIsFalse()
+    {
+        $iriConverterProphecy = $this->prophesize(IriConverterInterface::class);
+
+        $request = new Request([], [], ['_resources' => ['/foo', '/bar'], '_api_resource_class' => Dummy::class, '_api_item_operation_name' => 'get', '_api_cache_tags_invalidation' => false]);
+
+        $response = new Response();
+        $response->setPublic();
+        $response->setEtag('foo');
+
+        $event = $this->prophesize(ResponseEvent::class);
+        $event->getRequest()->willReturn($request)->shouldBeCalled();
+        $event->getResponse()->willReturn($response)->shouldBeCalled();
+
+        $listener = new AddTagsListener($iriConverterProphecy->reveal());
+        $listener->onKernelResponse($event->reveal());
+
+        $this->assertFalse($response->headers->has('Cache-Tags'));
+    }
+
+    public function testDoNotAddTagsWhenDisabledInOperationAttribute()
+    {
+        $iriConverterProphecy = $this->prophesize(IriConverterInterface::class);
+
+        $resourceMetadata = new ResourceMetadata('Dummy', null, null, [
+            'get' => [
+                'cache_tags_invalidation' => false,
+            ],
+        ]);
+
+        $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
+        $resourceMetadataFactoryProphecy->create(Dummy::class)->willReturn($resourceMetadata);
+
+        $request = new Request([], [], ['_resources' => ['/foo', '/bar'], '_api_resource_class' => Dummy::class, '_api_item_operation_name' => 'get']);
+
+        $response = new Response();
+        $response->setPublic();
+        $response->setEtag('foo');
+
+        $event = $this->prophesize(ResponseEvent::class);
+        $event->getRequest()->willReturn($request)->shouldBeCalled();
+        $event->getResponse()->willReturn($response)->shouldBeCalled();
+
+        $listener = new AddTagsListener($iriConverterProphecy->reveal(), $resourceMetadataFactoryProphecy->reveal());
+        $listener->onKernelResponse($event->reveal());
 
         $this->assertFalse($response->headers->has('Cache-Tags'));
     }
