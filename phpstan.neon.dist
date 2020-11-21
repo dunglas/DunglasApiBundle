@@ -20,6 +20,7 @@ parameters:
 		- src/Bridge/NelmioApiDoc/*
 		- tests/Bridge/NelmioApiDoc/*
 		- src/Bridge/FosUser/*
+		- src/Bridge/Symfony/Bundle/Resources/config/nelmio_api_doc.php
 		# BC layer
 		- tests/Fixtures/TestBundle/BrowserKit/Client.php
 		# The Symfony Configuration API isn't good enough to be analysed
@@ -83,17 +84,6 @@ parameters:
 		-
 			message: '#Call to method PHPUnit\\Framework\\Assert::assertSame\(\) with array\(.+\) and array\(.+\) will always evaluate to false\.#'
 			path: tests/Util/SortTraitTest.php
-		# https://github.com/phpstan/phpstan-symfony/issues/27
-		-
-			message: '#Service "api_platform\.json_schema\.schema_factory" is private\.#'
-			path: src/Bridge/Symfony/Bundle/Test/ApiTestAssertionsTrait.php
-		-
-			message: '#Service "api_platform\.iri_converter" is private\.#'
-			path: src/Bridge/Symfony/Bundle/Test/ApiTestCase.php
-		# https://github.com/phpstan/phpstan-symfony/issues/76
-		-
-			message: '#Service "api_platform\.graphql\.fields_builder" is private\.#'
-			path: src/GraphQl/Type/TypeBuilder.php
 		-
 			message: '#Service "test" is not registered in the container\.#'
 			path: tests/GraphQl/Type/TypesContainerTest.php

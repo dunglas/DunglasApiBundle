@@ -872,8 +872,6 @@ class ApiPlatformExtensionTest extends TestCase
             $containerBuilderProphecy->addResource(Argument::type(ResourceInterface::class))->shouldBeCalled();
         }
 
-        $containerBuilderProphecy->hasExtension('http://symfony.com/schema/dic/services')->shouldBeCalled();
-
         $definitions = [
             'api_platform.action.documentation',
             'api_platform.action.entrypoint',

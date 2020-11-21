@@ -109,7 +109,8 @@
     "autoload": {
         "psr-4": {
             "ApiPlatform\\Core\\": "src/"
-        }
+        },
+        "files": ["src/Bridge/Symfony/Bundle/Resources/function.php"]
     },
     "autoload-dev": {
         "psr-4": {
