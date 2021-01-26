@@ -61,6 +61,11 @@ final class SerializerPropertyMetadataFactory implements PropertyMetadataFactory
             return $propertyMetadata;
         }
 
+        $serializerMetadataAttributes = $this->serializerClassMetadataFactory->getMetadataFor($resourceClass)->getAttributesMetadata();
+        if (!empty($serializerMetadataAttributes[$property]) && null !== ($serializedName = $serializerMetadataAttributes[$property]->getSerializedName())) {
+            $propertyMetadata = $propertyMetadata->withSerializedName($serializedName);
+        }
+
         $propertyMetadata = $this->transformReadWrite($propertyMetadata, $resourceClass, $property, $normalizationGroups, $denormalizationGroups);
 
         return $this->transformLinkStatus($propertyMetadata, $normalizationGroups, $denormalizationGroups);

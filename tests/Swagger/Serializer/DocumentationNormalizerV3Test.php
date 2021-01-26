@@ -3111,4 +3111,148 @@ class DocumentationNormalizerV3Test extends TestCase
 
         $this->assertEquals($expected, $normalizer->normalize($documentation, DocumentationNormalizer::FORMAT, ['base_url' => '/']));
     }
+
+    public function testNormalizeWithCustomSerializedName(): void
+    {
+        $documentation = new Documentation(new ResourceNameCollection([Dummy::class]), 'Test API', 'This is a test API.', '1.2.3');
+
+        $propertyNameCollectionFactoryProphecy = $this->prophesize(PropertyNameCollectionFactoryInterface::class);
+        $propertyNameCollectionFactoryProphecy->create(Dummy::class, Argument::cetera())->willReturn(new PropertyNameCollection(['id']));
+
+        $dummyMetadata = new ResourceMetadata(
+            'Dummy',
+            'This is a dummy.',
+            'http://schema.example.com/Dummy',
+            [
+                'get' => ['method' => 'GET'] + self::OPERATION_FORMATS,
+            ],
+            [
+                'post' => ['method' => 'POST'] + self::OPERATION_FORMATS,
+            ]
+        );
+        $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
+        $resourceMetadataFactoryProphecy->create(Dummy::class)->willReturn($dummyMetadata);
+
+        $propertyMetadataFactoryProphecy = $this->prophesize(PropertyMetadataFactoryInterface::class);
+        $propertyMetadataFactoryProphecy->create(Dummy::class, 'id', Argument::cetera())->willReturn(new PropertyMetadata(new Type(Type::BUILTIN_TYPE_INT), 'This is an id.', true, false, null, null, null, true, null, null, [], null, null, 'code'));
+
+        $operationPathResolver = new OperationPathResolver(new UnderscorePathSegmentNameGenerator());
+
+        $normalizer = new DocumentationNormalizer(
+            $resourceMetadataFactoryProphecy->reveal(),
+            $propertyNameCollectionFactoryProphecy->reveal(),
+            $propertyMetadataFactoryProphecy->reveal(),
+            null,
+            null,
+            $operationPathResolver,
+            null,
+            null,
+            null, false,
+            '',
+            '',
+            '',
+            '',
+            [],
+            [],
+            null,
+            false,
+            'page',
+            false,
+            'itemsPerPage',
+            [],
+            false,
+            'pagination',
+            ['spec_version' => 3]
+        );
+
+        $expected = [
+            'openapi' => '3.0.2',
+            'info' => [
+                'title' => 'Test API',
+                'description' => 'This is a test API.',
+                'version' => '1.2.3',
+            ],
+            'paths' => new \ArrayObject([
+                '/dummies' => [
+                    'post' => new \ArrayObject([
+                        'tags' => ['Dummy'],
+                        'operationId' => 'postDummyCollection',
+                        'summary' => 'Creates a Dummy resource.',
+                        'requestBody' => [
+                            'content' => [
+                                'application/ld+json' => [
+                                    'schema' => ['$ref' => '#/components/schemas/Dummy'],
+                                ],
+                            ],
+                            'description' => 'The new Dummy resource',
+                        ],
+                        'responses' => [
+                            201 => [
+                                'description' => 'Dummy resource created',
+                                'content' => [
+                                    'application/ld+json' => [
+                                        'schema' => ['$ref' => '#/components/schemas/Dummy'],
+                                    ],
+                                ],
+                                'links' => [
+                                    'GetDummyItem' => [
+                                        'operationId' => 'getDummyItem',
+                                        'parameters' => ['code' => '$response.body#/code'],
+                                        'description' => 'The `code` value returned in the response can be used as the `code` parameter in `GET /dummies/{id}`.',
+                                    ],
+                                ],
+                            ],
+                            400 => ['description' => 'Invalid input'],
+                            404 => ['description' => 'Resource not found'],
+                        ],
+                    ]),
+                ],
+                '/dummies/{id}' => [
+                    'get' => new \ArrayObject([
+                        'tags' => ['Dummy'],
+                        'operationId' => 'getDummyItem',
+                        'summary' => 'Retrieves a Dummy resource.',
+                        'parameters' => [
+                            [
+                                'name' => 'id',
+                                'in' => 'path',
+                                'schema' => ['type' => 'string'],
+                                'required' => true,
+                            ],
+                        ],
+                        'responses' => [
+                            '200' => [
+                                'description' => 'Dummy resource response',
+                                'content' => [
+                                    'application/ld+json' => [
+                                        'schema' => ['$ref' => '#/components/schemas/Dummy'],
+                                    ],
+                                ],
+                            ],
+                            '404' => ['description' => 'Resource not found'],
+                        ],
+                    ]),
+                ],
+            ]),
+            'components' => [
+                'schemas' => new \ArrayObject([
+                    'Dummy' => new \ArrayObject([
+                        'type' => 'object',
+                        'description' => 'This is a dummy.',
+                        'externalDocs' => ['url' => 'http://schema.example.com/Dummy'],
+                        'properties' => [
+                            'id' => new \ArrayObject([
+                                'type' => 'integer',
+                                'description' => 'This is an id.',
+                                'readOnly' => true,
+                            ]),
+                        ],
+                        'additionalProperties' => false,
+                    ]),
+                ]),
+            ],
+        ];
+
+        $this->assertEquals($expected, $normalizer->normalize($documentation, DocumentationNormalizer::FORMAT, ['base_url' => '/']));
+    }
 }

@@ -82,6 +82,10 @@ class PropertyMetadataTest extends TestCase
         $newMetadata = $metadata->withInitializable(true);
         $this->assertNotSame($metadata, $newMetadata);
         $this->assertTrue($newMetadata->isInitializable());
+
+        $newMetadata = $metadata->withSerializedName('foo');
+        $this->assertNotSame($metadata, $newMetadata);
+        $this->assertEquals('foo', $newMetadata->getSerializedName());
     }
 
     public function testShouldReturnRequiredFalseWhenRequiredTrueIsSetButMaskedByWritableFalse()

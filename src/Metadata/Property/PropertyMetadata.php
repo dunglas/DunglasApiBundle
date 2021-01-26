@@ -35,8 +35,9 @@ final class PropertyMetadata
     private $attributes;
     private $subresource;
     private $initializable;
+    private $serializedName;
 
-    public function __construct(Type $type = null, string $description = null, bool $readable = null, bool $writable = null, bool $readableLink = null, bool $writableLink = null, bool $required = null, bool $identifier = null, string $iri = null, $childInherited = null, array $attributes = null, SubresourceMetadata $subresource = null, bool $initializable = null)
+    public function __construct(Type $type = null, string $description = null, bool $readable = null, bool $writable = null, bool $readableLink = null, bool $writableLink = null, bool $required = null, bool $identifier = null, string $iri = null, $childInherited = null, array $attributes = null, SubresourceMetadata $subresource = null, bool $initializable = null, string $serializedName = null)
     {
         $this->type = $type;
         $this->description = $description;
@@ -51,6 +52,7 @@ final class PropertyMetadata
         $this->attributes = $attributes;
         $this->subresource = $subresource;
         $this->initializable = $initializable;
+        $this->serializedName = $serializedName;
     }
 
     /**
@@ -340,6 +342,25 @@ final class PropertyMetadata
     {
         $metadata = clone $this;
         $metadata->initializable = $initializable;
+
+        return $metadata;
+    }
+
+    /**
+     * Gets custom serialized name of this property.
+     */
+    public function getSerializedName(): ?string
+    {
+        return $this->serializedName;
+    }
+
+    /**
+     * Returns a new instance with the given serialized name.
+     */
+    public function withSerializedName(string $serializedName = null): self
+    {
+        $metadata = clone $this;
+        $metadata->serializedName = $serializedName;
 
         return $metadata;
     }

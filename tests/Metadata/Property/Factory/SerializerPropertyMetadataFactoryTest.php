@@ -83,6 +83,9 @@ class SerializerPropertyMetadataFactoryTest extends TestCase
         $dummySerializerClassMetadata->addAttributeMetadata($relatedDummySerializerAttributeMetadata);
         $nameConvertedSerializerAttributeMetadata = new SerializerAttributeMetadata('nameConverted');
         $dummySerializerClassMetadata->addAttributeMetadata($nameConvertedSerializerAttributeMetadata);
+        $nameSerializedSerializerAttributeMetadata = new SerializerAttributeMetadata('nameSerialized');
+        $nameSerializedSerializerAttributeMetadata->setSerializedName('name_serialized');
+        $dummySerializerClassMetadata->addAttributeMetadata($nameSerializedSerializerAttributeMetadata);
         $serializerClassMetadataFactoryProphecy->getMetadataFor(Dummy::class)->willReturn($dummySerializerClassMetadata);
         $relatedDummySerializerClassMetadata = new SerializerClassMetadata(RelatedDummy::class);
         $idSerializerAttributeMetadata = new SerializerAttributeMetadata('id');
@@ -105,6 +108,9 @@ class SerializerPropertyMetadataFactoryTest extends TestCase
         $nameConvertedPropertyMetadata = (new PropertyMetadata())
             ->withType(new Type(Type::BUILTIN_TYPE_STRING, true));
         $decoratedProphecy->create(Dummy::class, 'nameConverted', [])->willReturn($nameConvertedPropertyMetadata);
+        $nameSerializedPropertyMetadata = (new PropertyMetadata())
+            ->withType(new Type(Type::BUILTIN_TYPE_STRING, true));
+        $decoratedProphecy->create(Dummy::class, 'nameSerialized', [])->willReturn($nameSerializedPropertyMetadata);
 
         $resourceClassResolverProphecy = $this->prophesize(ResourceClassResolverInterface::class);
         $resourceClassResolverProphecy->isResourceClass(RelatedDummy::class)->willReturn(true);
@@ -116,6 +122,7 @@ class SerializerPropertyMetadataFactoryTest extends TestCase
         $actual[] = $serializerPropertyMetadataFactory->create(Dummy::class, 'foo');
         $actual[] = $serializerPropertyMetadataFactory->create(Dummy::class, 'relatedDummy');
         $actual[] = $serializerPropertyMetadataFactory->create(Dummy::class, 'nameConverted');
+        $actual[] = $serializerPropertyMetadataFactory->create(Dummy::class, 'nameSerialized');
 
         $this->assertInstanceOf(PropertyMetadata::class, $actual[0]);
         $this->assertFalse($actual[0]->isReadable());
@@ -130,6 +137,9 @@ class SerializerPropertyMetadataFactoryTest extends TestCase
         $this->assertInstanceOf(PropertyMetadata::class, $actual[2]);
         $this->assertFalse($actual[2]->isReadable());
         $this->assertFalse($actual[2]->isWritable());
+
+        $this->assertInstanceOf(PropertyMetadata::class, $actual[3]);
+        $this->assertEquals($actual[3]->getSerializedName(), 'name_serialized');
     }
 
     public function groupsProvider(): array

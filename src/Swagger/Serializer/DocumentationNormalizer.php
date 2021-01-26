@@ -793,6 +793,7 @@ final class DocumentationNormalizer implements NormalizerInterface, CacheableSup
                 continue;
             }
 
+            $propertyName = $propertyMetadata->getSerializedName() ?? $propertyName;
             $linkObject['parameters'][$propertyName] = sprintf('$response.body#/%s', $propertyName);
             $identifiers[] = $propertyName;
         }
