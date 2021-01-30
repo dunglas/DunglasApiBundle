@@ -107,8 +107,13 @@ final class AnnotationResourceMetadataFactory implements ResourceMetadataFactory
         $upperProperty = ucfirst($property);
         $getter = "get$upperProperty";
 
-        if (null !== $resourceMetadata->{$getter}()) {
-            return $resourceMetadata;
+        $currentValue = $resourceMetadata->{$getter}();
+        if (null !== $currentValue) {
+            if (null === $value) {
+                $value = $currentValue;
+            } elseif (is_array($currentValue)) {
+                $value = array_merge_recursive($currentValue, $value);
+            }
         }
 
         if (null === $value) {
