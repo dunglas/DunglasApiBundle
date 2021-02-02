@@ -2190,7 +2190,7 @@ class DocumentationNormalizerV3Test extends TestCase
     {
         $formatProviderProphecy = $this->prophesize(OperationAwareFormatsProviderInterface::class);
         $formatProviderProphecy->getFormatsFromOperation(Question::class, 'get', OperationType::ITEM)->willReturn(['json' => ['application/json'], 'csv' => ['text/csv']]);
-        $formatProviderProphecy->getFormatsFromOperation(Answer::class, 'get', OperationType::SUBRESOURCE)->willReturn(['xml' => ['text/xml']]);
+        $formatProviderProphecy->getFormatsFromOperation(Answer::class, 'api_questions_answer_get_subresource', OperationType::SUBRESOURCE)->willReturn(['xml' => ['text/xml']]);
 
         $this->doTestNormalizeWithSubResource($formatProviderProphecy->reveal());
     }
@@ -2216,7 +2216,7 @@ class DocumentationNormalizerV3Test extends TestCase
             [],
             ['get' => ['method' => 'GET']] + self::OPERATION_FORMATS,
             [],
-            ['get' => ['method' => 'GET', 'input_formats' => ['xml' => ['text/xml']], 'output_formats' => ['xml' => ['text/xml']]]]
+            ['api_questions_answer_get_subresource' => ['method' => 'GET', 'input_formats' => ['xml' => ['text/xml']], 'output_formats' => ['xml' => ['text/xml']]]]
         );
         $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
         $resourceMetadataFactoryProphecy->create(Question::class)->willReturn($questionMetadata);

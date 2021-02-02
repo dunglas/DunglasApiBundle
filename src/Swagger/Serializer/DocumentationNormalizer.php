@@ -416,7 +416,7 @@ final class DocumentationNormalizer implements NormalizerInterface, CacheableSup
      */
     private function addSubresourceOperation(bool $v3, array $subresourceOperation, \ArrayObject $definitions, string $operationId, ResourceMetadata $resourceMetadata): \ArrayObject
     {
-        $operationName = 'get'; // TODO: we might want to extract that at some point to also support other subresource operations
+        $operationName = $subresourceOperation['operation_name']; // TODO: we might want to extract that at some point to also support other subresource operations
         $collection = $subresourceOperation['collection'] ?? false;
 
         $subResourceMetadata = $this->resourceMetadataFactory->create($subresourceOperation['resource_class']);

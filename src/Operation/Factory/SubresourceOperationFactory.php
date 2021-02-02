@@ -104,20 +104,21 @@ final class SubresourceOperationFactory implements SubresourceOperationFactoryIn
             if (null === $parentOperation) {
                 $rootShortname = $rootResourceMetadata->getShortName();
                 $operation['identifiers'] = [['id', $rootResourceClass, true]];
-                $operation['operation_name'] = sprintf(
+
+                $suffix = sprintf(
                     '%s_%s%s',
                     RouteNameGenerator::inflector($operation['property'], $operation['collection'] ?? false),
                     $operationName,
                     self::SUBRESOURCE_SUFFIX
                 );
 
-                $subresourceOperation = $rootResourceMetadata->getSubresourceOperations()[$operation['operation_name']] ?? [];
+                $subresourceOperation = $rootResourceMetadata->getSubresourceOperations()[$suffix] ?? [];
 
-                $operation['route_name'] = sprintf(
+                $operation['operation_name'] = $operation['route_name'] = sprintf(
                     '%s%s_%s',
                     RouteNameGenerator::ROUTE_NAME_PREFIX,
                     RouteNameGenerator::inflector($rootShortname),
-                    $operation['operation_name']
+                    $suffix
                 );
 
                 $prefix = trim(trim($rootResourceMetadata->getAttribute('route_prefix', '')), '/');
