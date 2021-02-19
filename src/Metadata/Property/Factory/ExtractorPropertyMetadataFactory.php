@@ -17,6 +17,8 @@ use ApiPlatform\Core\Exception\PropertyNotFoundException;
 use ApiPlatform\Core\Metadata\Extractor\ExtractorInterface;
 use ApiPlatform\Core\Metadata\Property\PropertyMetadata;
 use ApiPlatform\Core\Metadata\Property\SubresourceMetadata;
+use Symfony\Component\PropertyInfo\Extractor\ReflectionExtractor;
+use Symfony\Component\PropertyInfo\PropertyReadInfoExtractorInterface;
 
 /**
  * Creates properties's metadata using an extractor.
@@ -27,6 +29,7 @@ final class ExtractorPropertyMetadataFactory implements PropertyMetadataFactoryI
 {
     private $extractor;
     private $decorated;
+    private $propertyReadInfoExtractor;
 
     public function __construct(ExtractorInterface $extractor, PropertyMetadataFactoryInterface $decorated = null)
     {
@@ -48,10 +51,8 @@ final class ExtractorPropertyMetadataFactory implements PropertyMetadataFactoryI
             }
         }
 
-        $isInterface = interface_exists($resourceClass);
-
         if (
-            !property_exists($resourceClass, $property) && !$isInterface ||
+            $this->doesIdentifierExist($resourceClass, $property) ||
             null === ($propertyMetadata = $this->extractor->getResources()[$resourceClass]['properties'][$property] ?? null)
         ) {
             return $this->handleNotFound($parentPropertyMetadata, $resourceClass, $property);
@@ -148,5 +149,39 @@ final class ExtractorPropertyMetadataFactory implements PropertyMetadataFactoryI
         }
 
         return new SubresourceMetadata($resourceClass, $isCollection, $maxDepth);
+    }
+
+    /**
+     * Determine if the identifier property is accessible.
+     *
+     * @param string $resourceClass
+     * @param string $property
+     *
+     * @return bool
+     */
+    private function doesIdentifierExist(string $resourceClass, string $property): bool
+    {
+        if (interface_exists($resourceClass)) {
+            return false;
+        }
+
+        return null !== $this->getPropertyReadInfoExtractor()->getReadInfo($resourceClass, $property);
+    }
+
+    private function getPropertyReadInfoExtractor(): PropertyReadInfoExtractorInterface
+    {
+        if (!isset($this->propertyReadInfoExtractor)) {
+            $this->propertyReadInfoExtractor = new ReflectionExtractor();
+        }
+
+        return $this->propertyReadInfoExtractor;
+    }
+
+    /**
+     * @param PropertyReadInfoExtractorInterface $propertyReadInfoExtractor
+     */
+    public function setPropertyReadInfoExtractor(PropertyReadInfoExtractorInterface $propertyReadInfoExtractor): void
+    {
+        $this->propertyReadInfoExtractor = $propertyReadInfoExtractor;
     }
 }
