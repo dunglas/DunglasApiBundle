@@ -108,7 +108,10 @@ final class ItemNormalizer extends AbstractItemNormalizer
     public function denormalize($data, $class, $format = null, array $context = [])
     {
         // Avoid issues with proxies if we populated the object
-        if (isset($data['@id']) && !isset($context[self::OBJECT_TO_POPULATE])) {
+        if (isset($data['@id'])
+            && !isset($context[self::OBJECT_TO_POPULATE])
+            && !$this->getResourceMetadataAttribute($class, 'messenger', false)
+        ) {
             if (true !== ($context['api_allow_update'] ?? true)) {
                 throw new NotNormalizableValueException('Update is not allowed for this operation.');
             }

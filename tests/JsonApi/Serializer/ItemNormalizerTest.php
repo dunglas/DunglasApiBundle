@@ -344,14 +344,41 @@ class ItemNormalizerTest extends TestCase
         $this->expectException(NotNormalizableValueException::class);
         $this->expectExceptionMessage('Update is not allowed for this operation.');
 
+        $propertyNameCollectionFactoryProphecy = $this->prophesize(PropertyNameCollectionFactoryInterface::class);
+        $propertyNameCollectionFactoryProphecy->create(Dummy::class, [])->willReturn(new PropertyNameCollection(['relatedDummies']));
+
+        $propertyMetadataFactoryProphecy = $this->prophesize(PropertyMetadataFactoryInterface::class);
+        $propertyMetadataFactoryProphecy->create(Dummy::class, 'relatedDummies', [])->willReturn(
+            new PropertyMetadata(
+                new Type(Type::BUILTIN_TYPE_OBJECT,
+                    false,
+                    ArrayCollection::class,
+                    true,
+                    new Type(Type::BUILTIN_TYPE_INT),
+                    new Type(Type::BUILTIN_TYPE_OBJECT, false, RelatedDummy::class)
+                ),
+                '',
+                false,
+                true,
+                false,
+                false
+            )
+        );
+
+        $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
+        $resourceMetadataFactoryProphecy->create(Dummy::class)->willReturn(new ResourceMetadata('Dummy'));
+
+        $resourceClassResolverProphecy = $this->prophesize(ResourceClassResolverInterface::class);
+        $resourceClassResolverProphecy->getResourceClass(null, Dummy::class)->willReturn(Dummy::class);
+
         $normalizer = new ItemNormalizer(
-            $this->prophesize(PropertyNameCollectionFactoryInterface::class)->reveal(),
-            $this->prophesize(PropertyMetadataFactoryInterface::class)->reveal(),
+            $propertyNameCollectionFactoryProphecy->reveal(),
+            $propertyMetadataFactoryProphecy->reveal(),
             $this->prophesize(IriConverterInterface::class)->reveal(),
-            $this->prophesize(ResourceClassResolverInterface::class)->reveal(),
+            $resourceClassResolverProphecy->reveal(),
             null,
             null,
-            $this->prophesize(ResourceMetadataFactoryInterface::class)->reveal(),
+            $resourceMetadataFactoryProphecy->reveal(),
             [],
             []
         );
@@ -369,6 +396,63 @@ class ItemNormalizerTest extends TestCase
                 'api_allow_update' => false,
             ]
         );
+    }
+
+    public function testDenormalizeMessengerUpdateOperationIsAllowed()
+    {
+        $propertyNameCollectionFactoryProphecy = $this->prophesize(PropertyNameCollectionFactoryInterface::class);
+        $propertyNameCollectionFactoryProphecy->create(Dummy::class, [])->willReturn(new PropertyNameCollection(['relatedDummies']));
+
+        $propertyMetadataFactoryProphecy = $this->prophesize(PropertyMetadataFactoryInterface::class);
+        $propertyMetadataFactoryProphecy->create(Dummy::class, 'relatedDummies', [])->willReturn(
+            new PropertyMetadata(
+                new Type(Type::BUILTIN_TYPE_OBJECT,
+                    false,
+                    ArrayCollection::class,
+                    true,
+                    new Type(Type::BUILTIN_TYPE_INT),
+                    new Type(Type::BUILTIN_TYPE_OBJECT, false, RelatedDummy::class)
+                ),
+                '',
+                false,
+                true,
+                false,
+                false
+            )
+        );
+
+        $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
+        $resourceMetadataFactoryProphecy->create(Dummy::class)->willReturn(new ResourceMetadata('Dummy', 'A dummy', '/dummy', null, null, [
+            'messenger' => true,
+        ]));
+        $resourceClassResolverProphecy = $this->prophesize(ResourceClassResolverInterface::class);
+        $resourceClassResolverProphecy->getResourceClass(null, Dummy::class)->willReturn(Dummy::class);
+
+        $normalizer = new ItemNormalizer(
+            $propertyNameCollectionFactoryProphecy->reveal(),
+            $propertyMetadataFactoryProphecy->reveal(),
+            $this->prophesize(IriConverterInterface::class)->reveal(),
+            $resourceClassResolverProphecy->reveal(),
+            null,
+            null,
+            $resourceMetadataFactoryProphecy->reveal(),
+            [],
+            []
+        );
+
+        $this->assertInstanceOf(Dummy::class, $normalizer->denormalize(
+            [
+                'data' => [
+                    'id' => 1,
+                    'type' => 'dummy',
+                ],
+            ],
+            Dummy::class,
+            ItemNormalizer::FORMAT,
+            [
+                'api_allow_update' => false,
+            ]
+        ));
     }
 
     public function testDenormalizeCollectionIsNotArray()

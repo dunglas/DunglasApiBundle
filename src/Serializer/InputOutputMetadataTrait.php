@@ -47,4 +47,18 @@ trait InputOutputMetadataTrait
 
         return $metadata->getAttribute($inputOrOutput)['class'] ?? null;
     }
+
+    protected function getResourceMetadataAttribute(string $class, string $key, $default)
+    {
+        if (null === $this->resourceMetadataFactory) {
+            return $default;
+        }
+        try {
+            $metadata = $this->resourceMetadataFactory->create($class);
+        } catch (ResourceClassNotFoundException $e) {
+            return $default;
+        }
+
+        return $metadata->getAttribute($key, $default);
+    }
 }
