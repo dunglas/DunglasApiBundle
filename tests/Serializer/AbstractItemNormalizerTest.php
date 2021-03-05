@@ -32,6 +32,8 @@ use ApiPlatform\Core\Tests\Fixtures\TestBundle\Entity\DummyForAdditionalFields;
 use ApiPlatform\Core\Tests\Fixtures\TestBundle\Entity\DummyForAdditionalFieldsInput;
 use ApiPlatform\Core\Tests\Fixtures\TestBundle\Entity\DummyTableInheritance;
 use ApiPlatform\Core\Tests\Fixtures\TestBundle\Entity\DummyTableInheritanceChild;
+use ApiPlatform\Core\Tests\Fixtures\TestBundle\Entity\DummyTableNonDoctrineInheritance;
+use ApiPlatform\Core\Tests\Fixtures\TestBundle\Entity\DummyTableNonDoctrineInheritanceRelated;
 use ApiPlatform\Core\Tests\Fixtures\TestBundle\Entity\RelatedDummy;
 use ApiPlatform\Core\Tests\ProphecyTrait;
 use Doctrine\Common\Collections\ArrayCollection;
@@ -1127,5 +1129,132 @@ class AbstractItemNormalizerTest extends TestCase
         $this->assertInstanceOf(Dummy::class, $actualDummy);
 
         $propertyAccessorProphecy->setValue($actualDummy, 'name', 'Dummy')->shouldHaveBeenCalled();
+    }
+
+    public function testNullableToManyRelationProperty()
+    {
+        $dummy = new DummyTableNonDoctrineInheritanceRelated();
+
+        $propertyNameCollectionFactoryProphecy = $this->prophesize(PropertyNameCollectionFactoryInterface::class);
+        $propertyNameCollectionFactoryProphecy->create(DummyTableNonDoctrineInheritanceRelated::class, [])->willReturn(
+            new PropertyNameCollection(['children'])
+        )->shouldBeCalled();
+
+        $propertyMetadata = new PropertyMetadata(
+            new Type(Type::BUILTIN_TYPE_ARRAY, true, DummyTableNonDoctrineInheritance::class, true,
+                new Type(Type::BUILTIN_TYPE_INT),
+                new Type(Type::BUILTIN_TYPE_OBJECT, false, DummyTableNonDoctrineInheritance::class)
+            ),
+            '',
+            true
+        );
+
+        $propertyMetadataFactoryProphecy = $this->prophesize(PropertyMetadataFactoryInterface::class);
+        $propertyMetadataFactoryProphecy
+            ->create(DummyTableNonDoctrineInheritanceRelated::class, 'children', [])
+            ->willReturn($propertyMetadata)->shouldBeCalled();
+
+        $iriConverterProphecy = $this->prophesize(IriConverterInterface::class);
+        $iriConverterProphecy->getIriFromItem($dummy)->willReturn('/dummies/1')->shouldBeCalled();
+
+        $propertyAccessorProphecy = $this->prophesize(PropertyAccessorInterface::class);
+        $propertyAccessorProphecy->getValue($dummy, 'children')->willReturn(null)->shouldBeCalled();
+
+        $resourceClassResolverProphecy = $this->prophesize(ResourceClassResolverInterface::class);
+        $resourceClassResolverProphecy->getResourceClass($dummy, DummyTableNonDoctrineInheritanceRelated::class)
+            ->willReturn(DummyTableNonDoctrineInheritanceRelated::class)->shouldBeCalled();
+        $resourceClassResolverProphecy->isResourceClass(DummyTableNonDoctrineInheritance::class)->willReturn(true)->shouldBeCalled();
+
+        $serializerProphecy = $this->prophesize(SerializerInterface::class);
+        $serializerProphecy->willImplement(NormalizerInterface::class);
+
+        $normalizer = $this->getMockForAbstractClass(
+            AbstractItemNormalizer::class,
+            [
+                $propertyNameCollectionFactoryProphecy->reveal(),
+                $propertyMetadataFactoryProphecy->reveal(),
+                $iriConverterProphecy->reveal(),
+                $resourceClassResolverProphecy->reveal(),
+                $propertyAccessorProphecy->reveal(),
+                null,
+                null,
+                null,
+                false,
+                [],
+                [],
+                null,
+                false,
+            ]
+        );
+        $normalizer->setSerializer($serializerProphecy->reveal());
+        $this->assertEquals(
+            ['children' => null],
+            $normalizer->normalize($dummy, null, ['resource_class' => DummyTableNonDoctrineInheritanceRelated::class, 'resources' => []])
+        );
+    }
+
+    public function testNotNullableToManyRelationProperty()
+    {
+        $dummy = new DummyTableNonDoctrineInheritanceRelated();
+
+        $propertyNameCollectionFactoryProphecy = $this->prophesize(PropertyNameCollectionFactoryInterface::class);
+        $propertyNameCollectionFactoryProphecy->create(DummyTableNonDoctrineInheritanceRelated::class, [])->willReturn(
+            new PropertyNameCollection(['children'])
+        )->shouldBeCalled();
+
+        $propertyMetadata = new PropertyMetadata(
+            new Type(Type::BUILTIN_TYPE_ARRAY, false, DummyTableNonDoctrineInheritance::class, true,
+                new Type(Type::BUILTIN_TYPE_INT),
+                new Type(Type::BUILTIN_TYPE_OBJECT, false, DummyTableNonDoctrineInheritance::class)
+            ),
+            '',
+            true
+        );
+
+        $propertyMetadataFactoryProphecy = $this->prophesize(PropertyMetadataFactoryInterface::class);
+        $propertyMetadataFactoryProphecy
+            ->create(DummyTableNonDoctrineInheritanceRelated::class, 'children', [])
+            ->willReturn($propertyMetadata)->shouldBeCalled();
+
+        $iriConverterProphecy = $this->prophesize(IriConverterInterface::class);
+        $iriConverterProphecy->getIriFromItem($dummy)->willReturn('/dummies/1')->shouldBeCalled();
+
+        $propertyAccessorProphecy = $this->prophesize(PropertyAccessorInterface::class);
+        $propertyAccessorProphecy->getValue($dummy, 'children')->willReturn(null)->shouldBeCalled();
+
+        $resourceClassResolverProphecy = $this->prophesize(ResourceClassResolverInterface::class);
+        $resourceClassResolverProphecy->getResourceClass($dummy, DummyTableNonDoctrineInheritanceRelated::class)
+            ->willReturn(DummyTableNonDoctrineInheritanceRelated::class)->shouldBeCalled();
+        $resourceClassResolverProphecy->isResourceClass(DummyTableNonDoctrineInheritance::class)->willReturn(true)->shouldBeCalled();
+
+        $serializerProphecy = $this->prophesize(SerializerInterface::class);
+        $serializerProphecy->willImplement(NormalizerInterface::class);
+
+        $normalizer = $this->getMockForAbstractClass(
+            AbstractItemNormalizer::class,
+            [
+                $propertyNameCollectionFactoryProphecy->reveal(),
+                $propertyMetadataFactoryProphecy->reveal(),
+                $iriConverterProphecy->reveal(),
+                $resourceClassResolverProphecy->reveal(),
+                $propertyAccessorProphecy->reveal(),
+                null,
+                null,
+                null,
+                false,
+                [],
+                [],
+                null,
+                false,
+            ]
+        );
+        $normalizer->setSerializer($serializerProphecy->reveal());
+
+        $this->expectException(UnexpectedValueException::class);
+        $normalizer->normalize(
+            $dummy,
+            null,
+            ['resource_class' => DummyTableNonDoctrineInheritanceRelated::class, 'resources' => []]
+        );
     }
 }
