@@ -356,6 +356,10 @@ final class PaginationExtension implements ContextAwareQueryResultCollectionExte
             if (null !== $useOutputWalkers = $resourceMetadata->getCollectionOperationAttribute($operationName, 'pagination_use_output_walkers', null, true)) {
                 return $useOutputWalkers;
             }
+
+            if (null !== $useOutputWalkers = $resourceMetadata->getSubresourceOperationAttribute($operationName, 'pagination_use_output_walkers', null, true)) {
+                return $useOutputWalkers;
+            }
         }
 
         /*
