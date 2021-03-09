@@ -24,10 +24,14 @@ trait CacheKeyTrait
             unset($context[$key]);
         }
         unset($context[self::EXCLUDE_FROM_CACHE_KEY]);
+        unset($context[self::OBJECT_TO_POPULATE]);
         unset($context['cache_key']); // avoid artificially different keys
 
         try {
-            return md5($format.serialize($context));
+            return md5($format.serialize([
+                'context' => $context,
+                'ignored' => $context[self::IGNORED_ATTRIBUTES] ?? $this->defaultContext[self::IGNORED_ATTRIBUTES],
+            ]));
         } catch (\Exception $exception) {
             // The context cannot be serialized, skip the cache
             return false;

@@ -50,6 +50,7 @@ use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
  */
 abstract class AbstractItemNormalizer extends AbstractObjectNormalizer
 {
+    use CacheKeyTrait;
     use ClassInfoTrait;
     use ContextTrait;
     use InputOutputMetadataTrait;
@@ -66,6 +67,7 @@ abstract class AbstractItemNormalizer extends AbstractObjectNormalizer
     protected $allowPlainIdentifiers;
     protected $dataTransformers = [];
     protected $localCache = [];
+    protected $allowedAttributesCache = [];
 
     public function __construct(PropertyNameCollectionFactoryInterface $propertyNameCollectionFactory, PropertyMetadataFactoryInterface $propertyMetadataFactory, IriConverterInterface $iriConverter, ResourceClassResolverInterface $resourceClassResolver, PropertyAccessorInterface $propertyAccessor = null, NameConverterInterface $nameConverter = null, ClassMetadataFactoryInterface $classMetadataFactory = null, ItemDataProviderInterface $itemDataProvider = null, bool $allowPlainIdentifiers = false, array $defaultContext = [], iterable $dataTransformers = [], ResourceMetadataFactoryInterface $resourceMetadataFactory = null, ResourceAccessCheckerInterface $resourceAccessChecker = null)
     {
@@ -354,6 +356,11 @@ abstract class AbstractItemNormalizer extends AbstractObjectNormalizer
     protected function getAllowedAttributes($classOrObject, array $context, $attributesAsString = false)
     {
         $options = $this->getFactoryOptions($context);
+        $cacheKey = $this->getCacheKey(null, $context);
+
+        if (isset($this->allowedAttributesCache[$cacheKey])) {
+            return $this->allowedAttributesCache[$cacheKey];
+        }
         $propertyNames = $this->propertyNameCollectionFactory->create($context['resource_class'], $options);
 
         $allowedAttributes = [];
@@ -371,7 +378,7 @@ abstract class AbstractItemNormalizer extends AbstractObjectNormalizer
             }
         }
 
-        return $allowedAttributes;
+        return $this->allowedAttributesCache[$cacheKey] = $allowedAttributes;
     }
 
     /**
