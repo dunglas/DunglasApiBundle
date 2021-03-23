@@ -228,7 +228,7 @@ final class SchemaFactory implements SchemaFactoryInterface
                 $className = $valueType->getClassName();
             }
 
-            $valueSchema = $this->typeFactory->getType(new Type($builtinType, $type->isNullable(), $className, $isCollection), $format, $propertyMetadata->isReadableLink(), $serializerContext, $schema);
+            $valueSchema = $this->typeFactory->getType(new Type($builtinType, !$propertyMetadata->isRequired() || $type->isNullable(), $className, $isCollection), $format, $propertyMetadata->isReadableLink(), $serializerContext, $schema);
         }
 
         if (\array_key_exists('type', $propertySchema) && \array_key_exists('$ref', $valueSchema)) {

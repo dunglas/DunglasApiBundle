@@ -394,14 +394,17 @@ class DocumentationNormalizerV3Test extends TestCase
                                 'minLength' => 3,
                                 'maxLength' => 20,
                                 'pattern' => '^dummyPattern$',
+                                'nullable' => true,
                             ]),
                             'name' => new \ArrayObject([
                                 'type' => 'string',
                                 'description' => 'This is a name.',
+                                'nullable' => true,
                             ]),
                             'description' => new \ArrayObject([
                                 'type' => 'string',
                                 'description' => 'This is an initializable but not writable property.',
+                                'nullable' => true,
                             ]),
                             'dummyDate' => new \ArrayObject([
                                 'nullable' => true,
@@ -567,10 +570,12 @@ class DocumentationNormalizerV3Test extends TestCase
                             'name' => new \ArrayObject([
                                 'type' => 'string',
                                 'description' => 'This is a name.',
+                                'nullable' => true,
                             ]),
                             'name_converted' => new \ArrayObject([
                                 'type' => 'string',
                                 'description' => 'This is a converted name.',
+                                'nullable' => true,
                             ]),
                         ],
                     ]),
@@ -706,6 +711,7 @@ class DocumentationNormalizerV3Test extends TestCase
                             'name' => new \ArrayObject([
                                 'type' => 'string',
                                 'description' => 'This is a name.',
+                                'nullable' => true,
                             ]),
                         ],
                     ]),
@@ -945,6 +951,7 @@ class DocumentationNormalizerV3Test extends TestCase
                             'name' => new \ArrayObject([
                                 'type' => 'string',
                                 'description' => 'This is a name.',
+                                'nullable' => true,
                             ]),
                         ],
                     ]),
@@ -956,6 +963,7 @@ class DocumentationNormalizerV3Test extends TestCase
                             'gerard' => new \ArrayObject([
                                 'type' => 'string',
                                 'description' => 'This is a gerard.',
+                                'nullable' => true,
                             ]),
                         ],
                     ]),
@@ -1073,6 +1081,7 @@ class DocumentationNormalizerV3Test extends TestCase
                                 'type' => 'integer',
                                 'description' => 'This is an id.',
                                 'readOnly' => true,
+                                'nullable' => true,
                             ]),
                         ],
                     ]),
@@ -1290,6 +1299,7 @@ class DocumentationNormalizerV3Test extends TestCase
                             'name' => new \ArrayObject([
                                 'type' => 'string',
                                 'description' => 'This is a name.',
+                                'nullable' => true,
                             ]),
                         ],
                     ]),
@@ -1301,6 +1311,7 @@ class DocumentationNormalizerV3Test extends TestCase
                             'gerard' => new \ArrayObject([
                                 'type' => 'string',
                                 'description' => 'This is a gerard.',
+                                'nullable' => true,
                             ]),
                         ],
                     ]),
@@ -1520,6 +1531,7 @@ class DocumentationNormalizerV3Test extends TestCase
                             'name' => new \ArrayObject([
                                 'type' => 'string',
                                 'description' => 'This is a name.',
+                                'nullable' => true,
                             ]),
                         ],
                     ]),
@@ -1531,6 +1543,7 @@ class DocumentationNormalizerV3Test extends TestCase
                             'gerard' => new \ArrayObject([
                                 'type' => 'string',
                                 'description' => 'This is a gerard.',
+                                'nullable' => true,
                             ]),
                         ],
                     ]),
@@ -2072,6 +2085,7 @@ class DocumentationNormalizerV3Test extends TestCase
                             'name' => new \ArrayObject([
                                 'type' => 'string',
                                 'description' => 'This is a name.',
+                                'nullable' => true,
                             ]),
                         ],
                     ]),
@@ -2083,6 +2097,7 @@ class DocumentationNormalizerV3Test extends TestCase
                             'name' => new \ArrayObject([
                                 'type' => 'string',
                                 'description' => 'This is a name.',
+                                'nullable' => true,
                             ]),
                             'relatedDummy' => new \ArrayObject([
                                 'description' => 'This is a related dummy \o/.',
@@ -2101,6 +2116,7 @@ class DocumentationNormalizerV3Test extends TestCase
                             'name' => new \ArrayObject([
                                 'type' => 'string',
                                 'description' => 'This is a name.',
+                                'nullable' => true,
                             ]),
                         ],
                     ]),
@@ -2250,6 +2266,7 @@ class DocumentationNormalizerV3Test extends TestCase
                             'name' => new \ArrayObject([
                                 'description' => 'This is a name.',
                                 'type' => 'string',
+                                'nullable' => true,
                             ]),
                         ],
                     ]),
@@ -2432,6 +2449,7 @@ class DocumentationNormalizerV3Test extends TestCase
                                 'type' => 'array',
                                 'description' => 'This is a name.',
                                 'items' => ['$ref' => '#/components/schemas/Answer'],
+                                'nullable' => true,
                             ]),
                         ],
                     ]),
@@ -2444,6 +2462,7 @@ class DocumentationNormalizerV3Test extends TestCase
                                 'type' => 'array',
                                 'description' => 'This is a name.',
                                 'items' => ['$ref' => '#/components/schemas/Answer'],
+                                'nullable' => true,
                             ]),
                         ],
                     ]),
@@ -2556,12 +2575,14 @@ class DocumentationNormalizerV3Test extends TestCase
                                 'type' => 'integer',
                                 'description' => 'This is an id.',
                                 'readOnly' => true,
+                                'nullable' => true,
                             ]),
                             'name' => new \ArrayObject([
                                 'type' => 'string',
                                 'description' => 'This is a name.',
                                 'enum' => ['one', 'two'],
                                 'example' => 'one',
+                                'nullable' => true,
                             ]),
                         ],
                     ]),
@@ -2688,12 +2709,14 @@ class DocumentationNormalizerV3Test extends TestCase
                                 'type' => 'integer',
                                 'description' => 'This is an id.',
                                 'readOnly' => true,
+                                'nullable' => true,
                             ]),
                             'name' => new \ArrayObject([
                                 'type' => 'string',
                                 'description' => 'This is a name.',
                                 'enum' => ['one', 'two'],
                                 'example' => 'one',
+                                'nullable' => true,
                             ]),
                         ],
                     ]),
@@ -2826,12 +2849,14 @@ class DocumentationNormalizerV3Test extends TestCase
                                 'type' => 'integer',
                                 'description' => 'This is an id.',
                                 'readOnly' => true,
+                                'nullable' => true,
                             ]),
                             'name' => new \ArrayObject([
                                 'type' => 'string',
                                 'description' => 'This is a name.',
                                 'enum' => ['one', 'two'],
                                 'example' => 'one',
+                                'nullable' => true,
                             ]),
                         ],
                     ]),
@@ -2968,12 +2993,14 @@ class DocumentationNormalizerV3Test extends TestCase
                                 'type' => 'integer',
                                 'description' => 'This is an id.',
                                 'readOnly' => true,
+                                'nullable' => true,
                             ]),
                             'name' => new \ArrayObject([
                                 'type' => 'string',
                                 'description' => 'This is a name.',
                                 'enum' => ['one', 'two'],
                                 'example' => 'one',
+                                'nullable' => true,
                             ]),
                         ],
                     ]),
@@ -3212,10 +3239,12 @@ class DocumentationNormalizerV3Test extends TestCase
                                 'type' => 'integer',
                                 'description' => 'This is an id.',
                                 'readOnly' => true,
+                                'nullable' => true,
                             ]),
                             'name' => new \ArrayObject([
                                 'type' => 'string',
                                 'description' => 'This is a name.',
+                                'nullable' => true,
                             ]),
                         ],
                     ]),
