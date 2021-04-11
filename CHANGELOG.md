@@ -82,10 +82,12 @@
 * DTO: Improve Input/Output support (#3231)
 * Data Persisters: Add `previous_data` to the context passed to persisters when available (#3752)
 * Data Persister: Add a `ResumableDataPersisterInterface` that allows to call multiple persisters (#3912)
+* Data Providers: Add `PaginatorFactoryInterface` interface.
 * Debug: Display API Platform's version in the debug bar (#3235)
 * Docs: Make `asset_package` configurable (#3764)
 * Doctrine: Allow searching on multiple values on every strategies (#3786)
 * Elasticsearch: The `Paginator` class constructor now receives the denormalization context to support denormalizing documents using serialization groups. This change may cause potential **BC** breaks for existing applications as denormalization was previously done without serialization groups.
+* Elasticsearch: The `CollectionDataProvider` class constructor now receives a concrete `PaginatorFactoryInterface` instance that is responsible for creating the concrete `PaginatorInterface` instance. This change enables more flexibility allowing applications to inject their custom implementation of `PaginatorFactoryInterface` dependency to produce a custom implementation of the `PaginatorInterface` interface. 
 * GraphQL: **BC** New syntax for the filters' arguments to preserve the order: `order: [{foo: 'asc'}, {bar: 'desc'}]` (#3468)
 * GraphQL: **BC** `operation` is now `operationName` to follow the standard (#3568)
 * GraphQL: **BC** `paginationType` is now `pagination_type` (#3614)

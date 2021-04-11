@@ -667,6 +667,7 @@ class ApiPlatformExtensionTest extends TestCase
         $containerBuilderProphecy->setDefinition('api_platform.elasticsearch.normalizer.item', Argument::type(Definition::class))->shouldBeCalled();
         $containerBuilderProphecy->setDefinition('api_platform.elasticsearch.item_data_provider', Argument::type(Definition::class))->shouldBeCalled();
         $containerBuilderProphecy->setDefinition('api_platform.elasticsearch.collection_data_provider', Argument::type(Definition::class))->shouldBeCalled();
+        $containerBuilderProphecy->setDefinition('api_platform.elasticsearch.paginator_factory', Argument::type(Definition::class))->shouldBeCalled();
         $containerBuilderProphecy->setDefinition('api_platform.elasticsearch.request_body_search_extension.filter', Argument::type(Definition::class))->shouldBeCalled();
         $containerBuilderProphecy->setDefinition('api_platform.elasticsearch.request_body_search_extension.constant_score_filter', Argument::type(Definition::class))->shouldBeCalled();
         $containerBuilderProphecy->setDefinition('api_platform.elasticsearch.request_body_search_extension.sort_filter', Argument::type(Definition::class))->shouldBeCalled();

@@ -20,6 +20,7 @@ use ApiPlatform\Core\Bridge\Elasticsearch\Exception\NonUniqueIdentifierException
 use ApiPlatform\Core\Bridge\Elasticsearch\Metadata\Document\Factory\DocumentMetadataFactoryInterface;
 use ApiPlatform\Core\DataProvider\ContextAwareCollectionDataProviderInterface;
 use ApiPlatform\Core\DataProvider\Pagination;
+use ApiPlatform\Core\DataProvider\PaginatorFactoryInterface;
 use ApiPlatform\Core\DataProvider\RestrictedDataProviderInterface;
 use ApiPlatform\Core\Exception\ResourceClassNotFoundException;
 use ApiPlatform\Core\Metadata\Resource\Factory\ResourceMetadataFactoryInterface;
@@ -38,7 +39,7 @@ final class CollectionDataProvider implements ContextAwareCollectionDataProvider
     private $client;
     private $documentMetadataFactory;
     private $identifierExtractor;
-    private $denormalizer;
+    private $paginatorFactory;
     private $pagination;
     private $resourceMetadataFactory;
     private $collectionExtensions;
@@ -46,12 +47,16 @@ final class CollectionDataProvider implements ContextAwareCollectionDataProvider
     /**
      * @param RequestBodySearchCollectionExtensionInterface[] $collectionExtensions
      */
-    public function __construct(Client $client, DocumentMetadataFactoryInterface $documentMetadataFactory, IdentifierExtractorInterface $identifierExtractor, DenormalizerInterface $denormalizer, Pagination $pagination, ResourceMetadataFactoryInterface $resourceMetadataFactory, iterable $collectionExtensions = [])
+    public function __construct(Client $client, DocumentMetadataFactoryInterface $documentMetadataFactory, IdentifierExtractorInterface $identifierExtractor, DenormalizerInterface $denormalizer, Pagination $pagination, ResourceMetadataFactoryInterface $resourceMetadataFactory, iterable $collectionExtensions = [], ?PaginatorFactoryInterface $paginatorFactory = null)
     {
+        if (null === $paginatorFactory) {
+            $paginatorFactory = new PaginatorFactory($denormalizer);
+        }
+
         $this->client = $client;
         $this->documentMetadataFactory = $documentMetadataFactory;
         $this->identifierExtractor = $identifierExtractor;
-        $this->denormalizer = $denormalizer;
+        $this->paginatorFactory = $paginatorFactory;
         $this->pagination = $pagination;
         $this->resourceMetadataFactory = $resourceMetadataFactory;
         $this->collectionExtensions = $collectionExtensions;
@@ -111,13 +116,6 @@ final class CollectionDataProvider implements ContextAwareCollectionDataProvider
             'body' => $body,
         ]);
 
-        return new Paginator(
-            $this->denormalizer,
-            $documents,
-            $resourceClass,
-            $limit,
-            $offset,
-            $context
-        );
+        return $this->paginatorFactory->createPaginator($documents, $limit, $offset, $context + ['resource_class' => $resourceClass]);
     }
 }

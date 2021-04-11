@@ -78,8 +78,13 @@
             <argument type="service" id="api_platform.pagination" />
             <argument type="service" id="api_platform.metadata.resource.metadata_factory" />
             <argument type="tagged" tag="api_platform.elasticsearch.request_body_search_extension.collection" />
+            <argument type="service" id="api_platform.elasticsearch.paginator_factory" />
 
             <tag name="api_platform.collection_data_provider" priority="5" />
+        </service>
+
+        <service id="api_platform.elasticsearch.paginator_factory" class="ApiPlatform\Core\Bridge\Elasticsearch\DataProvider\PaginatorFactory" public="false">
+            <argument type="service" id="serializer" />
         </service>
 
         <service id="api_platform.elasticsearch.request_body_search_extension.filter" public="false" abstract="true">
