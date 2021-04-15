@@ -20,6 +20,7 @@ use ApiPlatform\Core\Tests\Fixtures\DummyEntity;
 use ApiPlatform\Core\Tests\ProphecyTrait;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
+use Symfony\Component\Validator\Constraints\NotBlank;
 use Symfony\Component\Validator\ConstraintViolationListInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface as SymfonyValidatorInterface;
 
@@ -141,5 +142,24 @@ class ValidatorTest extends TestCase
 
         $validator = new Validator($symfonyValidator, $containerProphecy->reveal());
         $validator->validate(new DummyEntity(), ['groups' => 'foo']);
+    }
+
+    public function testValidateCustomConstraints()
+    {
+        $this->expectException(ValidationException::class);
+
+        $data = new DummyEntity();
+
+        $constraintViolationListProphecy = $this->prophesize(ConstraintViolationListInterface::class);
+        $constraintViolationListProphecy->rewind()->shouldBeCalled();
+        $constraintViolationListProphecy->valid()->shouldBeCalled();
+        $constraintViolationListProphecy->count()->willReturn(1)->shouldBeCalled();
+
+        $symfonyValidatorProphecy = $this->prophesize(SymfonyValidatorInterface::class);
+        $symfonyValidatorProphecy->validate($data, [new NotBlank()], null)->willReturn($constraintViolationListProphecy->reveal())->shouldBeCalled();
+        $symfonyValidator = $symfonyValidatorProphecy->reveal();
+
+        $validator = new Validator($symfonyValidator);
+        $validator->validate($data, [], [new NotBlank()]);
     }
 }

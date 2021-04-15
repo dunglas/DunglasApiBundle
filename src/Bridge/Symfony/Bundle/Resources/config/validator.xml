@@ -10,6 +10,7 @@
             <argument type="service" id="service_container" />
         </service>
         <service id="ApiPlatform\Core\Validator\ValidatorInterface" alias="api_platform.validator" />
+        <service id="ApiPlatform\Core\Validator\ConstraintValidatorInterface" alias="api_platform.validator" />
 
         <service id="api_platform.metadata.property.metadata_factory.validator" class="ApiPlatform\Core\Bridge\Symfony\Validator\Metadata\Property\ValidatorPropertyMetadataFactory" decorates="api_platform.metadata.property.metadata_factory" decoration-priority="20" public="false">
             <argument type="service" id="validator" />

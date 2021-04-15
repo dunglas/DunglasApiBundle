@@ -14,7 +14,7 @@ declare(strict_types=1);
 namespace ApiPlatform\Core\Bridge\Symfony\Validator;
 
 use ApiPlatform\Core\Bridge\Symfony\Validator\Exception\ValidationException;
-use ApiPlatform\Core\Validator\ValidatorInterface;
+use ApiPlatform\Core\Validator\ConstraintValidatorInterface;
 use Psr\Container\ContainerInterface;
 use Symfony\Component\Validator\Constraints\GroupSequence;
 use Symfony\Component\Validator\Validator\ValidatorInterface as SymfonyValidatorInterface;
@@ -26,7 +26,7 @@ use Symfony\Component\Validator\Validator\ValidatorInterface as SymfonyValidator
  *
  * @final
  */
-class Validator implements ValidatorInterface
+class Validator implements ConstraintValidatorInterface
 {
     private $validator;
     private $container;
@@ -40,7 +40,7 @@ class Validator implements ValidatorInterface
     /**
      * {@inheritdoc}
      */
-    public function validate($data, array $context = [])
+    public function validate($data, array $context = [], ?array $constraints = null)
     {
         if (null !== $validationGroups = $context['groups'] ?? null) {
             if (
@@ -64,7 +64,7 @@ class Validator implements ValidatorInterface
             }
         }
 
-        $violations = $this->validator->validate($data, null, $validationGroups);
+        $violations = $this->validator->validate($data, $constraints, $validationGroups);
         if (0 !== \count($violations)) {
             throw new ValidationException($violations);
         }

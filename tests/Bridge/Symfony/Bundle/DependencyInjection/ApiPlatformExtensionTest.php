@@ -88,6 +88,7 @@ use ApiPlatform\Core\Serializer\Filter\PropertyFilter;
 use ApiPlatform\Core\Serializer\SerializerContextBuilderInterface;
 use ApiPlatform\Core\Tests\Fixtures\TestBundle\TestBundle;
 use ApiPlatform\Core\Tests\ProphecyTrait;
+use ApiPlatform\Core\Validator\ConstraintValidatorInterface;
 use ApiPlatform\Core\Validator\ValidatorInterface;
 use Doctrine\Bundle\DoctrineBundle\DoctrineBundle;
 use Doctrine\ORM\OptimisticLockException;
@@ -1474,6 +1475,7 @@ class ApiPlatformExtensionTest extends TestCase
             PaginationExtension::class => 'api_platform.doctrine.orm.query_extension.pagination',
             OrderExtension::class => 'api_platform.doctrine.orm.query_extension.order',
             ValidatorInterface::class => 'api_platform.validator',
+            ConstraintValidatorInterface::class => 'api_platform.validator',
             SearchFilter::class => 'api_platform.doctrine.orm.search_filter',
             OrderFilter::class => 'api_platform.doctrine.orm.order_filter',
             RangeFilter::class => 'api_platform.doctrine.orm.range_filter',
