@@ -384,7 +384,7 @@ jobs:
       - name: Clear test app cache
         run: tests/Fixtures/app/console cache:clear --ansi
       - name: Run Behat tests
-        run: vendor/bin/behat --out=std --format=progress --profile=default --no-interaction
+        run: vendor/bin/behat --out=std --format=progress --profile=default --no-interaction --tags '~@!lowest'
 
   postgresql:
     name: Behat (PHP ${{ matrix.php }}) (PostgreSQL)

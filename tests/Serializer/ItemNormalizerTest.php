@@ -78,13 +78,15 @@ class ItemNormalizerTest extends TestCase
         $dummy = new Dummy();
         $dummy->setName('hello');
 
+        $defaultOptions = ['enable_getter_setter_extraction' => true];
+
         $propertyNameCollection = new PropertyNameCollection(['name']);
         $propertyNameCollectionFactoryProphecy = $this->prophesize(PropertyNameCollectionFactoryInterface::class);
-        $propertyNameCollectionFactoryProphecy->create(Dummy::class, [])->willReturn($propertyNameCollection);
+        $propertyNameCollectionFactoryProphecy->create(Dummy::class, $defaultOptions)->willReturn($propertyNameCollection);
 
         $propertyMetadata = new PropertyMetadata(null, null, true);
         $propertyMetadataFactoryProphecy = $this->prophesize(PropertyMetadataFactoryInterface::class);
-        $propertyMetadataFactoryProphecy->create(Dummy::class, 'name', [])->willReturn($propertyMetadata);
+        $propertyMetadataFactoryProphecy->create(Dummy::class, 'name', $defaultOptions)->willReturn($propertyMetadata);
 
         $iriConverterProphecy = $this->prophesize(IriConverterInterface::class);
         $iriConverterProphecy->getIriFromItem($dummy)->willReturn('/dummies/1');
@@ -119,13 +121,15 @@ class ItemNormalizerTest extends TestCase
     {
         $context = ['resource_class' => Dummy::class, 'api_allow_update' => true];
 
+        $defaultOptions = ['enable_getter_setter_extraction' => true];
+
         $propertyNameCollection = new PropertyNameCollection(['name']);
         $propertyNameCollectionFactoryProphecy = $this->prophesize(PropertyNameCollectionFactoryInterface::class);
-        $propertyNameCollectionFactoryProphecy->create(Dummy::class, [])->willReturn($propertyNameCollection)->shouldBeCalled();
+        $propertyNameCollectionFactoryProphecy->create(Dummy::class, $defaultOptions)->willReturn($propertyNameCollection)->shouldBeCalled();
 
         $propertyMetadata = new PropertyMetadata(null, null, true, true);
         $propertyMetadataFactoryProphecy = $this->prophesize(PropertyMetadataFactoryInterface::class);
-        $propertyMetadataFactoryProphecy->create(Dummy::class, 'name', [])->willReturn($propertyMetadata)->shouldBeCalled();
+        $propertyMetadataFactoryProphecy->create(Dummy::class, 'name', $defaultOptions)->willReturn($propertyMetadata)->shouldBeCalled();
 
         $iriConverterProphecy = $this->prophesize(IriConverterInterface::class);
 
@@ -158,13 +162,15 @@ class ItemNormalizerTest extends TestCase
     {
         $context = ['resource_class' => Dummy::class, 'api_allow_update' => true];
 
+        $defaultOptions = ['enable_getter_setter_extraction' => true];
+
         $propertyNameCollection = new PropertyNameCollection(['name']);
         $propertyNameCollectionFactoryProphecy = $this->prophesize(PropertyNameCollectionFactoryInterface::class);
-        $propertyNameCollectionFactoryProphecy->create(Dummy::class, [])->willReturn($propertyNameCollection)->shouldBeCalled();
+        $propertyNameCollectionFactoryProphecy->create(Dummy::class, $defaultOptions)->willReturn($propertyNameCollection)->shouldBeCalled();
 
         $propertyMetadata = new PropertyMetadata(null, null, true, true);
         $propertyMetadataFactoryProphecy = $this->prophesize(PropertyMetadataFactoryInterface::class);
-        $propertyMetadataFactoryProphecy->create(Dummy::class, 'name', [])->willReturn($propertyMetadata)->shouldBeCalled();
+        $propertyMetadataFactoryProphecy->create(Dummy::class, 'name', $defaultOptions)->willReturn($propertyMetadata)->shouldBeCalled();
 
         $iriConverterProphecy = $this->prophesize(IriConverterInterface::class);
         $iriConverterProphecy->getItemFromIri('/dummies/12', ['resource_class' => Dummy::class, 'api_allow_update' => true, 'fetch_data' => true])->shouldBeCalled();
@@ -234,14 +240,16 @@ class ItemNormalizerTest extends TestCase
     {
         $context = [];
 
+        $defaultOptions = ['enable_getter_setter_extraction' => true];
+
         $propertyNameCollection = new PropertyNameCollection(['id', 'name']);
         $propertyNameCollectionFactoryProphecy = $this->prophesize(PropertyNameCollectionFactoryInterface::class);
-        $propertyNameCollectionFactoryProphecy->create(Dummy::class, [])->willReturn($propertyNameCollection)->shouldBeCalled();
+        $propertyNameCollectionFactoryProphecy->create(Dummy::class, $defaultOptions)->willReturn($propertyNameCollection)->shouldBeCalled();
 
         $propertyMetadata = new PropertyMetadata(null, null, true, true);
         $propertyMetadataFactoryProphecy = $this->prophesize(PropertyMetadataFactoryInterface::class);
-        $propertyMetadataFactoryProphecy->create(Dummy::class, 'id', [])->willReturn($propertyMetadata)->shouldBeCalled();
-        $propertyMetadataFactoryProphecy->create(Dummy::class, 'name', [])->willReturn($propertyMetadata)->shouldBeCalled();
+        $propertyMetadataFactoryProphecy->create(Dummy::class, 'id', $defaultOptions)->willReturn($propertyMetadata)->shouldBeCalled();
+        $propertyMetadataFactoryProphecy->create(Dummy::class, 'name', $defaultOptions)->willReturn($propertyMetadata)->shouldBeCalled();
 
         $iriConverterProphecy = $this->prophesize(IriConverterInterface::class);
 

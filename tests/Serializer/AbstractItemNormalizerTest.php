@@ -138,18 +138,19 @@ class AbstractItemNormalizerTest extends TestCase
         $dummy->relatedDummies->add(new RelatedDummy());
 
         $relatedDummies = new ArrayCollection([$relatedDummy]);
+        $defaultOptions = ['enable_getter_setter_extraction' => true];
 
         $propertyNameCollectionFactoryProphecy = $this->prophesize(PropertyNameCollectionFactoryInterface::class);
-        $propertyNameCollectionFactoryProphecy->create(Dummy::class, [])->willReturn(new PropertyNameCollection(['name', 'alias', 'relatedDummy', 'relatedDummies']));
+        $propertyNameCollectionFactoryProphecy->create(Dummy::class, $defaultOptions)->willReturn(new PropertyNameCollection(['name', 'alias', 'relatedDummy', 'relatedDummies']));
 
         $relatedDummyType = new Type(Type::BUILTIN_TYPE_OBJECT, false, RelatedDummy::class);
         $relatedDummiesType = new Type(Type::BUILTIN_TYPE_OBJECT, false, ArrayCollection::class, true, new Type(Type::BUILTIN_TYPE_INT), $relatedDummyType);
 
         $propertyMetadataFactoryProphecy = $this->prophesize(PropertyMetadataFactoryInterface::class);
-        $propertyMetadataFactoryProphecy->create(Dummy::class, 'name', [])->willReturn(new PropertyMetadata(new Type(Type::BUILTIN_TYPE_STRING), '', true));
-        $propertyMetadataFactoryProphecy->create(Dummy::class, 'alias', [])->willReturn(new PropertyMetadata(new Type(Type::BUILTIN_TYPE_STRING), '', true));
-        $propertyMetadataFactoryProphecy->create(Dummy::class, 'relatedDummy', [])->willReturn(new PropertyMetadata($relatedDummyType, '', true, false, false));
-        $propertyMetadataFactoryProphecy->create(Dummy::class, 'relatedDummies', [])->willReturn(new PropertyMetadata($relatedDummiesType, '', true, false, false));
+        $propertyMetadataFactoryProphecy->create(Dummy::class, 'name', $defaultOptions)->willReturn(new PropertyMetadata(new Type(Type::BUILTIN_TYPE_STRING), '', true));
+        $propertyMetadataFactoryProphecy->create(Dummy::class, 'alias', $defaultOptions)->willReturn(new PropertyMetadata(new Type(Type::BUILTIN_TYPE_STRING), '', true));
+        $propertyMetadataFactoryProphecy->create(Dummy::class, 'relatedDummy', $defaultOptions)->willReturn(new PropertyMetadata($relatedDummyType, '', true, false, false));
+        $propertyMetadataFactoryProphecy->create(Dummy::class, 'relatedDummies', $defaultOptions)->willReturn(new PropertyMetadata($relatedDummiesType, '', true, false, false));
 
         $iriConverterProphecy = $this->prophesize(IriConverterInterface::class);
         $iriConverterProphecy->getIriFromItem($dummy)->willReturn('/dummies/1');
@@ -209,12 +210,14 @@ class AbstractItemNormalizerTest extends TestCase
         $dummy->setTitle('myPublicTitle');
         $dummy->setAdminOnlyProperty('secret');
 
+        $defaultOptions = ['enable_getter_setter_extraction' => true];
+
         $propertyNameCollectionFactoryProphecy = $this->prophesize(PropertyNameCollectionFactoryInterface::class);
-        $propertyNameCollectionFactoryProphecy->create(SecuredDummy::class, [])->willReturn(new PropertyNameCollection(['title', 'adminOnlyProperty']));
+        $propertyNameCollectionFactoryProphecy->create(SecuredDummy::class, $defaultOptions)->willReturn(new PropertyNameCollection(['title', 'adminOnlyProperty']));
 
         $propertyMetadataFactoryProphecy = $this->prophesize(PropertyMetadataFactoryInterface::class);
-        $propertyMetadataFactoryProphecy->create(SecuredDummy::class, 'title', [])->willReturn(new PropertyMetadata(new Type(Type::BUILTIN_TYPE_STRING), '', true));
-        $propertyMetadataFactoryProphecy->create(SecuredDummy::class, 'adminOnlyProperty', [])->willReturn(new PropertyMetadata(new Type(Type::BUILTIN_TYPE_STRING), '', true, null, null, null, null, null, null, null, ['security' => 'is_granted(\'ROLE_ADMIN\')']));
+        $propertyMetadataFactoryProphecy->create(SecuredDummy::class, 'title', $defaultOptions)->willReturn(new PropertyMetadata(new Type(Type::BUILTIN_TYPE_STRING), '', true));
+        $propertyMetadataFactoryProphecy->create(SecuredDummy::class, 'adminOnlyProperty', $defaultOptions)->willReturn(new PropertyMetadata(new Type(Type::BUILTIN_TYPE_STRING), '', true, null, null, null, null, null, null, null, ['security' => 'is_granted(\'ROLE_ADMIN\')']));
 
         $iriConverterProphecy = $this->prophesize(IriConverterInterface::class);
         $iriConverterProphecy->getIriFromItem($dummy)->willReturn('/secured_dummies/1');
@@ -276,15 +279,17 @@ class AbstractItemNormalizerTest extends TestCase
 
         $relatedDummies = new ArrayCollection([$relatedDummy]);
 
+        $defaultOptions = ['enable_getter_setter_extraction' => true];
+
         $propertyNameCollectionFactoryProphecy = $this->prophesize(PropertyNameCollectionFactoryInterface::class);
-        $propertyNameCollectionFactoryProphecy->create(Dummy::class, [])->willReturn(new PropertyNameCollection(['relatedDummy', 'relatedDummies']));
+        $propertyNameCollectionFactoryProphecy->create(Dummy::class, $defaultOptions)->willReturn(new PropertyNameCollection(['relatedDummy', 'relatedDummies']));
 
         $relatedDummyType = new Type(Type::BUILTIN_TYPE_OBJECT, false, RelatedDummy::class);
         $relatedDummiesType = new Type(Type::BUILTIN_TYPE_OBJECT, false, ArrayCollection::class, true, new Type(Type::BUILTIN_TYPE_INT), $relatedDummyType);
 
         $propertyMetadataFactoryProphecy = $this->prophesize(PropertyMetadataFactoryInterface::class);
-        $propertyMetadataFactoryProphecy->create(Dummy::class, 'relatedDummy', [])->willReturn(new PropertyMetadata($relatedDummyType, '', true, false, true));
-        $propertyMetadataFactoryProphecy->create(Dummy::class, 'relatedDummies', [])->willReturn(new PropertyMetadata($relatedDummiesType, '', true, false, true));
+        $propertyMetadataFactoryProphecy->create(Dummy::class, 'relatedDummy', $defaultOptions)->willReturn(new PropertyMetadata($relatedDummyType, '', true, false, true));
+        $propertyMetadataFactoryProphecy->create(Dummy::class, 'relatedDummies', $defaultOptions)->willReturn(new PropertyMetadata($relatedDummiesType, '', true, false, true));
 
         $iriConverterProphecy = $this->prophesize(IriConverterInterface::class);
         $iriConverterProphecy->getIriFromItem($dummy)->willReturn('/dummies/1');
@@ -347,16 +352,18 @@ class AbstractItemNormalizerTest extends TestCase
         $relatedDummy1 = new RelatedDummy();
         $relatedDummy2 = new RelatedDummy();
 
+        $defaultOptions = ['enable_getter_setter_extraction' => true];
+
         $propertyNameCollectionFactoryProphecy = $this->prophesize(PropertyNameCollectionFactoryInterface::class);
-        $propertyNameCollectionFactoryProphecy->create(Dummy::class, [])->willReturn(new PropertyNameCollection(['name', 'relatedDummy', 'relatedDummies']));
+        $propertyNameCollectionFactoryProphecy->create(Dummy::class, $defaultOptions)->willReturn(new PropertyNameCollection(['name', 'relatedDummy', 'relatedDummies']));
 
         $relatedDummyType = new Type(Type::BUILTIN_TYPE_OBJECT, false, RelatedDummy::class);
         $relatedDummiesType = new Type(Type::BUILTIN_TYPE_OBJECT, false, ArrayCollection::class, true, new Type(Type::BUILTIN_TYPE_INT), $relatedDummyType);
 
         $propertyMetadataFactoryProphecy = $this->prophesize(PropertyMetadataFactoryInterface::class);
-        $propertyMetadataFactoryProphecy->create(Dummy::class, 'name', [])->willReturn(new PropertyMetadata(new Type(Type::BUILTIN_TYPE_STRING), '', false, true));
-        $propertyMetadataFactoryProphecy->create(Dummy::class, 'relatedDummy', [])->willReturn(new PropertyMetadata($relatedDummyType, '', false, true, false, false));
-        $propertyMetadataFactoryProphecy->create(Dummy::class, 'relatedDummies', [])->willReturn(new PropertyMetadata($relatedDummiesType, '', false, true, false, false));
+        $propertyMetadataFactoryProphecy->create(Dummy::class, 'name', $defaultOptions)->willReturn(new PropertyMetadata(new Type(Type::BUILTIN_TYPE_STRING), '', false, true));
+        $propertyMetadataFactoryProphecy->create(Dummy::class, 'relatedDummy', $defaultOptions)->willReturn(new PropertyMetadata($relatedDummyType, '', false, true, false, false));
+        $propertyMetadataFactoryProphecy->create(Dummy::class, 'relatedDummies', $defaultOptions)->willReturn(new PropertyMetadata($relatedDummiesType, '', false, true, false, false));
 
         $iriConverterProphecy = $this->prophesize(IriConverterInterface::class);
         $iriConverterProphecy->getItemFromIri('/dummies/1', Argument::type('array'))->willReturn($relatedDummy1);
@@ -464,16 +471,18 @@ class AbstractItemNormalizerTest extends TestCase
         $relatedDummy1 = new RelatedDummy();
         $relatedDummy2 = new RelatedDummy();
 
+        $defaultOptions = ['enable_getter_setter_extraction' => true];
+
         $propertyNameCollectionFactoryProphecy = $this->prophesize(PropertyNameCollectionFactoryInterface::class);
-        $propertyNameCollectionFactoryProphecy->create(Dummy::class, [])->willReturn(new PropertyNameCollection(['name', 'relatedDummy', 'relatedDummies']));
+        $propertyNameCollectionFactoryProphecy->create(Dummy::class, $defaultOptions)->willReturn(new PropertyNameCollection(['name', 'relatedDummy', 'relatedDummies']));
 
         $relatedDummyType = new Type(Type::BUILTIN_TYPE_OBJECT, false, RelatedDummy::class);
         $relatedDummiesType = new Type(Type::BUILTIN_TYPE_OBJECT, false, ArrayCollection::class, true, new Type(Type::BUILTIN_TYPE_INT), $relatedDummyType);
 
         $propertyMetadataFactoryProphecy = $this->prophesize(PropertyMetadataFactoryInterface::class);
-        $propertyMetadataFactoryProphecy->create(Dummy::class, 'name', [])->willReturn(new PropertyMetadata(new Type(Type::BUILTIN_TYPE_STRING), '', false, true));
-        $propertyMetadataFactoryProphecy->create(Dummy::class, 'relatedDummy', [])->willReturn(new PropertyMetadata($relatedDummyType, '', false, true, false, true));
-        $propertyMetadataFactoryProphecy->create(Dummy::class, 'relatedDummies', [])->willReturn(new PropertyMetadata($relatedDummiesType, '', false, true, false, true));
+        $propertyMetadataFactoryProphecy->create(Dummy::class, 'name', $defaultOptions)->willReturn(new PropertyMetadata(new Type(Type::BUILTIN_TYPE_STRING), '', false, true));
+        $propertyMetadataFactoryProphecy->create(Dummy::class, 'relatedDummy', $defaultOptions)->willReturn(new PropertyMetadata($relatedDummyType, '', false, true, false, true));
+        $propertyMetadataFactoryProphecy->create(Dummy::class, 'relatedDummies', $defaultOptions)->willReturn(new PropertyMetadata($relatedDummiesType, '', false, true, false, true));
 
         $iriConverterProphecy = $this->prophesize(IriConverterInterface::class);
 
@@ -524,11 +533,13 @@ class AbstractItemNormalizerTest extends TestCase
             'relatedDummy' => 22,
         ];
 
+        $defaultOptions = ['enable_getter_setter_extraction' => true];
+
         $propertyNameCollectionFactoryProphecy = $this->prophesize(PropertyNameCollectionFactoryInterface::class);
-        $propertyNameCollectionFactoryProphecy->create(Dummy::class, [])->willReturn(new PropertyNameCollection(['relatedDummy']));
+        $propertyNameCollectionFactoryProphecy->create(Dummy::class, $defaultOptions)->willReturn(new PropertyNameCollection(['relatedDummy']));
 
         $propertyMetadataFactoryProphecy = $this->prophesize(PropertyMetadataFactoryInterface::class);
-        $propertyMetadataFactoryProphecy->create(Dummy::class, 'relatedDummy', [])->willReturn(
+        $propertyMetadataFactoryProphecy->create(Dummy::class, 'relatedDummy', $defaultOptions)->willReturn(
             new PropertyMetadata(
                 new Type(Type::BUILTIN_TYPE_OBJECT, false, RelatedDummy::class),
                 '',
@@ -582,11 +593,13 @@ class AbstractItemNormalizerTest extends TestCase
             ],
         ];
 
+        $defaultOptions = ['enable_getter_setter_extraction' => true];
+
         $propertyNameCollectionFactoryProphecy = $this->prophesize(PropertyNameCollectionFactoryInterface::class);
-        $propertyNameCollectionFactoryProphecy->create(Dummy::class, [])->willReturn(new PropertyNameCollection(['relatedDummy']));
+        $propertyNameCollectionFactoryProphecy->create(Dummy::class, $defaultOptions)->willReturn(new PropertyNameCollection(['relatedDummy']));
 
         $propertyMetadataFactoryProphecy = $this->prophesize(PropertyMetadataFactoryInterface::class);
-        $propertyMetadataFactoryProphecy->create(Dummy::class, 'relatedDummy', [])->willReturn(
+        $propertyMetadataFactoryProphecy->create(Dummy::class, 'relatedDummy', $defaultOptions)->willReturn(
             new PropertyMetadata(
                 new Type(Type::BUILTIN_TYPE_OBJECT, false, RelatedDummy::class),
                 '',
@@ -638,11 +651,13 @@ class AbstractItemNormalizerTest extends TestCase
             'foo' => 42,
         ];
 
+        $defaultOptions = ['enable_getter_setter_extraction' => true];
+
         $propertyNameCollectionFactoryProphecy = $this->prophesize(PropertyNameCollectionFactoryInterface::class);
-        $propertyNameCollectionFactoryProphecy->create(Dummy::class, [])->willReturn(new PropertyNameCollection(['foo']));
+        $propertyNameCollectionFactoryProphecy->create(Dummy::class, $defaultOptions)->willReturn(new PropertyNameCollection(['foo']));
 
         $propertyMetadataFactoryProphecy = $this->prophesize(PropertyMetadataFactoryInterface::class);
-        $propertyMetadataFactoryProphecy->create(Dummy::class, 'foo', [])->willReturn(new PropertyMetadata(new Type(Type::BUILTIN_TYPE_FLOAT), '', false, true, false, false));
+        $propertyMetadataFactoryProphecy->create(Dummy::class, 'foo', $defaultOptions)->willReturn(new PropertyMetadata(new Type(Type::BUILTIN_TYPE_FLOAT), '', false, true, false, false));
 
         $iriConverterProphecy = $this->prophesize(IriConverterInterface::class);
 
@@ -680,11 +695,13 @@ class AbstractItemNormalizerTest extends TestCase
             'foo' => 42,
         ];
 
+        $defaultOptions = ['enable_getter_setter_extraction' => true];
+
         $propertyNameCollectionFactoryProphecy = $this->prophesize(PropertyNameCollectionFactoryInterface::class);
-        $propertyNameCollectionFactoryProphecy->create(Dummy::class, [])->willReturn(new PropertyNameCollection(['foo']));
+        $propertyNameCollectionFactoryProphecy->create(Dummy::class, $defaultOptions)->willReturn(new PropertyNameCollection(['foo']));
 
         $propertyMetadataFactoryProphecy = $this->prophesize(PropertyMetadataFactoryInterface::class);
-        $propertyMetadataFactoryProphecy->create(Dummy::class, 'foo', [])->willReturn(new PropertyMetadata(new Type(Type::BUILTIN_TYPE_FLOAT), '', false, true, false, false));
+        $propertyMetadataFactoryProphecy->create(Dummy::class, 'foo', $defaultOptions)->willReturn(new PropertyMetadata(new Type(Type::BUILTIN_TYPE_FLOAT), '', false, true, false, false));
 
         $iriConverterProphecy = $this->prophesize(IriConverterInterface::class);
 
@@ -726,11 +743,13 @@ class AbstractItemNormalizerTest extends TestCase
             'foo' => 42,
         ];
 
+        $defaultOptions = ['enable_getter_setter_extraction' => true];
+
         $propertyNameCollectionFactoryProphecy = $this->prophesize(PropertyNameCollectionFactoryInterface::class);
-        $propertyNameCollectionFactoryProphecy->create(Dummy::class, [])->willReturn(new PropertyNameCollection(['foo']));
+        $propertyNameCollectionFactoryProphecy->create(Dummy::class, $defaultOptions)->willReturn(new PropertyNameCollection(['foo']));
 
         $propertyMetadataFactoryProphecy = $this->prophesize(PropertyMetadataFactoryInterface::class);
-        $propertyMetadataFactoryProphecy->create(Dummy::class, 'foo', [])->willReturn(new PropertyMetadata(new Type(Type::BUILTIN_TYPE_FLOAT), '', false, true, false, false));
+        $propertyMetadataFactoryProphecy->create(Dummy::class, 'foo', $defaultOptions)->willReturn(new PropertyMetadata(new Type(Type::BUILTIN_TYPE_FLOAT), '', false, true, false, false));
 
         $iriConverterProphecy = $this->prophesize(IriConverterInterface::class);
 
@@ -783,11 +802,13 @@ class AbstractItemNormalizerTest extends TestCase
             ],
         ];
 
+        $defaultOptions = ['enable_getter_setter_extraction' => true];
+
         $propertyNameCollectionFactoryProphecy = $this->prophesize(PropertyNameCollectionFactoryInterface::class);
-        $propertyNameCollectionFactoryProphecy->create(Dummy::class, [])->willReturn(new PropertyNameCollection(['relatedDummies']));
+        $propertyNameCollectionFactoryProphecy->create(Dummy::class, $defaultOptions)->willReturn(new PropertyNameCollection(['relatedDummies']));
 
         $propertyMetadataFactoryProphecy = $this->prophesize(PropertyMetadataFactoryInterface::class);
-        $propertyMetadataFactoryProphecy->create(Dummy::class, 'relatedDummies', [])->willReturn(
+        $propertyMetadataFactoryProphecy->create(Dummy::class, 'relatedDummies', $defaultOptions)->willReturn(
             new PropertyMetadata(
                 new Type(
                     Type::BUILTIN_TYPE_OBJECT,
@@ -843,11 +864,13 @@ class AbstractItemNormalizerTest extends TestCase
             'name' => null,
         ];
 
+        $defaultOptions = ['enable_getter_setter_extraction' => true];
+
         $propertyNameCollectionFactoryProphecy = $this->prophesize(PropertyNameCollectionFactoryInterface::class);
-        $propertyNameCollectionFactoryProphecy->create(Dummy::class, [])->willReturn(new PropertyNameCollection(['name']));
+        $propertyNameCollectionFactoryProphecy->create(Dummy::class, $defaultOptions)->willReturn(new PropertyNameCollection(['name']));
 
         $propertyMetadataFactoryProphecy = $this->prophesize(PropertyMetadataFactoryInterface::class);
-        $propertyMetadataFactoryProphecy->create(Dummy::class, 'name', [])->willReturn(new PropertyMetadata(new Type(Type::BUILTIN_TYPE_STRING, true), '', false, true, false, false));
+        $propertyMetadataFactoryProphecy->create(Dummy::class, 'name', $defaultOptions)->willReturn(new PropertyMetadata(new Type(Type::BUILTIN_TYPE_STRING, true), '', false, true, false, false));
 
         $iriConverterProphecy = $this->prophesize(IriConverterInterface::class);
 
@@ -891,16 +914,18 @@ class AbstractItemNormalizerTest extends TestCase
         $dummy = new DummyTableInheritance();
         $dummy->setName('foo');
 
+        $defaultOptions = ['enable_getter_setter_extraction' => true];
+
         $propertyNameCollectionFactoryProphecy = $this->prophesize(PropertyNameCollectionFactoryInterface::class);
-        $propertyNameCollectionFactoryProphecy->create(DummyTableInheritance::class, [])->willReturn(
+        $propertyNameCollectionFactoryProphecy->create(DummyTableInheritance::class, $defaultOptions)->willReturn(
             new PropertyNameCollection(['name', 'nickname'])
         )->shouldBeCalled();
 
         $propertyMetadataFactoryProphecy = $this->prophesize(PropertyMetadataFactoryInterface::class);
-        $propertyMetadataFactoryProphecy->create(DummyTableInheritance::class, 'name', [])->willReturn(
+        $propertyMetadataFactoryProphecy->create(DummyTableInheritance::class, 'name', $defaultOptions)->willReturn(
             new PropertyMetadata(new Type(Type::BUILTIN_TYPE_STRING), '', true)
         )->shouldBeCalled();
-        $propertyMetadataFactoryProphecy->create(DummyTableInheritance::class, 'nickname', [])->willReturn(
+        $propertyMetadataFactoryProphecy->create(DummyTableInheritance::class, 'nickname', $defaultOptions)->willReturn(
             new PropertyMetadata(new Type(Type::BUILTIN_TYPE_STRING, true), '', true, true, false, false, false, false, null, DummyTableInheritanceChild::class)
         )->shouldBeCalled();
 
@@ -950,11 +975,13 @@ class AbstractItemNormalizerTest extends TestCase
 
         $relatedDummy = new RelatedDummy();
 
+        $defaultOptions = ['enable_getter_setter_extraction' => true];
+
         $propertyNameCollectionFactoryProphecy = $this->prophesize(PropertyNameCollectionFactoryInterface::class);
-        $propertyNameCollectionFactoryProphecy->create(Dummy::class, [])->willReturn(new PropertyNameCollection(['relatedDummy']));
+        $propertyNameCollectionFactoryProphecy->create(Dummy::class, $defaultOptions)->willReturn(new PropertyNameCollection(['relatedDummy']));
 
         $propertyMetadataFactoryProphecy = $this->prophesize(PropertyMetadataFactoryInterface::class);
-        $propertyMetadataFactoryProphecy->create(Dummy::class, 'relatedDummy', [])->willReturn(new PropertyMetadata(new Type(Type::BUILTIN_TYPE_OBJECT, false, RelatedDummy::class), '', false, true, false, false));
+        $propertyMetadataFactoryProphecy->create(Dummy::class, 'relatedDummy', $defaultOptions)->willReturn(new PropertyMetadata(new Type(Type::BUILTIN_TYPE_OBJECT, false, RelatedDummy::class), '', false, true, false, false));
 
         $iriConverterProphecy = $this->prophesize(IriConverterInterface::class);
 
@@ -1004,11 +1031,13 @@ class AbstractItemNormalizerTest extends TestCase
             'relatedDummy' => 1,
         ];
 
+        $defaultOptions = ['enable_getter_setter_extraction' => true];
+
         $propertyNameCollectionFactoryProphecy = $this->prophesize(PropertyNameCollectionFactoryInterface::class);
-        $propertyNameCollectionFactoryProphecy->create(Dummy::class, [])->willReturn(new PropertyNameCollection(['relatedDummy']));
+        $propertyNameCollectionFactoryProphecy->create(Dummy::class, $defaultOptions)->willReturn(new PropertyNameCollection(['relatedDummy']));
 
         $propertyMetadataFactoryProphecy = $this->prophesize(PropertyMetadataFactoryInterface::class);
-        $propertyMetadataFactoryProphecy->create(Dummy::class, 'relatedDummy', [])->willReturn(
+        $propertyMetadataFactoryProphecy->create(Dummy::class, 'relatedDummy', $defaultOptions)->willReturn(
             new PropertyMetadata(
                 new Type(Type::BUILTIN_TYPE_OBJECT, false, RelatedDummy::class),
                 '',
@@ -1063,11 +1092,13 @@ class AbstractItemNormalizerTest extends TestCase
             'relatedDummy' => 1,
         ];
 
+        $defaultOptions = ['enable_getter_setter_extraction' => true];
+
         $propertyNameCollectionFactoryProphecy = $this->prophesize(PropertyNameCollectionFactoryInterface::class);
-        $propertyNameCollectionFactoryProphecy->create(Dummy::class, [])->willReturn(new PropertyNameCollection(['relatedDummy']));
+        $propertyNameCollectionFactoryProphecy->create(Dummy::class, $defaultOptions)->willReturn(new PropertyNameCollection(['relatedDummy']));
 
         $propertyMetadataFactoryProphecy = $this->prophesize(PropertyMetadataFactoryInterface::class);
-        $propertyMetadataFactoryProphecy->create(Dummy::class, 'relatedDummy', [])->willReturn(
+        $propertyMetadataFactoryProphecy->create(Dummy::class, 'relatedDummy', $defaultOptions)->willReturn(
             new PropertyMetadata(
                 new Type(Type::BUILTIN_TYPE_OBJECT, false, RelatedDummy::class),
                 '',

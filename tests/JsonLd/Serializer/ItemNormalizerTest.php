@@ -96,15 +96,17 @@ class ItemNormalizerTest extends TestCase
         $dummy = new Dummy();
         $dummy->setName('hello');
 
+        $defaultOptions = ['enable_getter_setter_extraction' => true];
+
         $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
         $resourceMetadataFactoryProphecy->create(Dummy::class)->willReturn(new ResourceMetadata('Dummy'));
         $propertyNameCollection = new PropertyNameCollection(['name']);
         $propertyNameCollectionFactoryProphecy = $this->prophesize(PropertyNameCollectionFactoryInterface::class);
-        $propertyNameCollectionFactoryProphecy->create(Dummy::class, [])->willReturn($propertyNameCollection);
+        $propertyNameCollectionFactoryProphecy->create(Dummy::class, $defaultOptions)->willReturn($propertyNameCollection);
 
         $propertyMetadata = new PropertyMetadata(null, null, true);
         $propertyMetadataFactoryProphecy = $this->prophesize(PropertyMetadataFactoryInterface::class);
-        $propertyMetadataFactoryProphecy->create(Dummy::class, 'name', [])->willReturn($propertyMetadata);
+        $propertyMetadataFactoryProphecy->create(Dummy::class, 'name', $defaultOptions)->willReturn($propertyMetadata);
 
         $iriConverterProphecy = $this->prophesize(IriConverterInterface::class);
         $iriConverterProphecy->getIriFromItem($dummy)->willReturn('/dummies/1988');
