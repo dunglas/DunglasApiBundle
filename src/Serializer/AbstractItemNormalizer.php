@@ -378,6 +378,14 @@ abstract class AbstractItemNormalizer extends AbstractObjectNormalizer
             }
         }
 
+        // Gets allowed attributes using serialization groups
+        $groupAllowedAttributes = parent::getAllowedAttributes($classOrObject, $context, $attributesAsString);
+
+        if (\is_array($groupAllowedAttributes)) {
+            // Attributes need to be allowed by both API Resource and serialization groups at the same time
+            return array_intersect($allowedAttributes, $groupAllowedAttributes);
+        }
+
         return $allowedAttributes;
     }
 

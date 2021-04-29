@@ -44,6 +44,9 @@ use Symfony\Component\PropertyAccess\Exception\NoSuchPropertyException;
 use Symfony\Component\PropertyAccess\PropertyAccessorInterface;
 use Symfony\Component\PropertyInfo\Type;
 use Symfony\Component\Serializer\Exception\UnexpectedValueException;
+use Symfony\Component\Serializer\Mapping\AttributeMetadata;
+use Symfony\Component\Serializer\Mapping\ClassMetadata;
+use Symfony\Component\Serializer\Mapping\Factory\ClassMetadataFactoryInterface;
 use Symfony\Component\Serializer\NameConverter\AdvancedNameConverterInterface;
 use Symfony\Component\Serializer\Normalizer\AbstractObjectNormalizer;
 use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
@@ -263,6 +266,79 @@ class AbstractItemNormalizerTest extends TestCase
         ];
         $this->assertEquals($expected, $normalizer->normalize($dummy, null, [
             'resources' => [],
+        ]));
+    }
+
+    public function testNormalizeWithSerializationGroup()
+    {
+        $dummy = new Dummy();
+        $dummy->setName('myName'); // Available only in group "Default" (Symfony's default group name)
+        $dummy->setDescription('myDescription'); // Available only in group "dummy:write"
+
+        $propertyNameCollectionFactoryProphecy = $this->prophesize(PropertyNameCollectionFactoryInterface::class);
+        $propertyNameCollectionFactoryProphecy->create(Dummy::class, Argument::type('array'))->willReturn(new PropertyNameCollection(['name', 'description']));
+
+        $propertyMetadataFactoryProphecy = $this->prophesize(PropertyMetadataFactoryInterface::class);
+        $propertyMetadataFactoryProphecy->create(Dummy::class, 'name', Argument::type('array'))->willReturn(new PropertyMetadata(new Type(Type::BUILTIN_TYPE_STRING), '', true));
+        $propertyMetadataFactoryProphecy->create(Dummy::class, 'description', Argument::type('array'))->willReturn(new PropertyMetadata(new Type(Type::BUILTIN_TYPE_STRING), '', true));
+
+        $iriConverterProphecy = $this->prophesize(IriConverterInterface::class);
+        $iriConverterProphecy->getIriFromItem($dummy)->willReturn('/secured_dummies/1');
+
+        $propertyAccessorProphecy = $this->prophesize(PropertyAccessorInterface::class);
+        $propertyAccessorProphecy->getValue($dummy, 'name')->willReturn($dummy->getName());
+        $propertyAccessorProphecy->getValue($dummy, 'description')->willReturn($dummy->getDescription());
+
+        // Class metadata
+        $titleAttributeMetadata = new AttributeMetadata('name');
+        $titleAttributeMetadata->addGroup('Default');
+        $descriptionAttributeMetadata = new AttributeMetadata('description');
+        $descriptionAttributeMetadata->addGroup('dummy:write');
+        $classMetadata = new ClassMetadata(Dummy::class);
+        $classMetadata->addAttributeMetadata($titleAttributeMetadata);
+        $classMetadata->addAttributeMetadata($descriptionAttributeMetadata);
+
+        $classMetadataFactoryProphecy = $this->prophesize(ClassMetadataFactoryInterface::class);
+        $classMetadataFactoryProphecy->getMetadataFor($dummy)->willReturn($classMetadata);
+        $classMetadataFactoryProphecy->getMetadataFor(Dummy::class)->willReturn($classMetadata);
+
+        $resourceClassResolverProphecy = $this->prophesize(ResourceClassResolverInterface::class);
+        $resourceClassResolverProphecy->getResourceClass($dummy, null)->willReturn(Dummy::class);
+
+        $resourceAccessChecker = $this->prophesize(ResourceAccessCheckerInterface::class);
+
+        $serializerProphecy = $this->prophesize(SerializerInterface::class);
+        $serializerProphecy->willImplement(NormalizerInterface::class);
+        $serializerProphecy->normalize('myName', null, Argument::type('array'))->willReturn('myName');
+        $serializerProphecy->normalize('myDescription', null, Argument::type('array'))->willReturn('myDescription');
+
+        $normalizer = $this->getMockForAbstractClass(AbstractItemNormalizer::class, [
+            $propertyNameCollectionFactoryProphecy->reveal(),
+            $propertyMetadataFactoryProphecy->reveal(),
+            $iriConverterProphecy->reveal(),
+            $resourceClassResolverProphecy->reveal(),
+            $propertyAccessorProphecy->reveal(),
+            null,
+            $classMetadataFactoryProphecy->reveal(),
+            null,
+            false,
+            [],
+            [],
+            null,
+            $resourceAccessChecker->reveal(),
+        ]);
+        $normalizer->setSerializer($serializerProphecy->reveal());
+
+        if (!interface_exists(AdvancedNameConverterInterface::class) && method_exists($normalizer, 'setIgnoredAttributes')) {
+            $normalizer->setIgnoredAttributes(['alias']);
+        }
+
+        $expected = [
+            'name' => 'myName',
+        ];
+        $this->assertEquals($expected, $normalizer->normalize($dummy, null, [
+            'resources' => [],
+            'groups' => ['Default'],
         ]));
     }
 
