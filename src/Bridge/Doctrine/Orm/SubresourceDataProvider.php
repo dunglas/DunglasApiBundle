@@ -116,6 +116,10 @@ final class SubresourceDataProvider implements SubresourceDataProviderInterface
             }
         }
 
+        foreach ($this->itemExtensions as $extension) {
+            $extension->applyToItem($queryBuilder, $queryNameGenerator, $resourceClass, $identifiers, $context['subresource_operation_name'], $context);
+        }
+
         $query = $queryBuilder->getQuery();
 
         return $context['collection'] ? $query->getResult() : $query->getOneOrNullResult();
