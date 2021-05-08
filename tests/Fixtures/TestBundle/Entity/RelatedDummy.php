@@ -79,6 +79,11 @@ class RelatedDummy extends ParentDummy
     public $relatedToDummyFriend;
 
     /**
+     * @ORM\ManyToOne(targetEntity="PatchDummyRelation", inversedBy="relatedDummies")
+     */
+    public $relatedPatchDummy;
+
+    /**
      * @var bool A dummy bool
      *
      * @ORM\Column(type="boolean", nullable=true)

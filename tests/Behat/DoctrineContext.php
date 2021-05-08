@@ -1836,8 +1836,14 @@ final class DoctrineContext implements Context
     public function thereIsAPatchDummyRelation()
     {
         $dummy = $this->buildPatchDummyRelation();
-        $related = $this->buildRelatedDummy();
-        $dummy->setRelated($related);
+        $related1 = $this->buildRelatedDummy();
+        $dummy->setRelated($related1);
+
+        $related2 = $this->buildRelatedDummy();
+        $dummy->addRelatedDummy($related2);
+        $related3 = $this->buildRelatedDummy();
+        $dummy->addRelatedDummy($related3);
+
         $this->manager->persist($related);
         $this->manager->persist($dummy);
         $this->manager->flush();

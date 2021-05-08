@@ -30,7 +30,7 @@ Feature: Sending PATCH requets
     Then the JSON node "name" should not exist
 
   @createSchema
-  Scenario: Patch the relation
+  Scenario: Patch 1:1 relation
     Given there is a PatchDummyRelation
     When I add "Content-Type" header equal to "application/merge-patch+json"
     And I send a "PATCH" request to "/patch_dummy_relations/1" with body:
@@ -56,5 +56,46 @@ Feature: Sending PATCH requets
         "id": 1,
         "symfony": "A new name"
       }
+    }
+    """
+
+  @createSchema
+  Scenario: Patch 1:n relation
+    Given there is a PatchDummyRelation
+    When I add "Content-Type" header equal to "application/merge-patch+json"
+    And I send a "PATCH" request to "/patch_dummy_relations/1" with body:
+    """
+    {
+      "relatedDummies": [
+        {
+          "@id": "/related_dummies/2",
+          "symfony": "A new name"
+        }
+      ]
+    }
+    """
+    Then the response status code should be 200
+    And the response should be in JSON
+    And the header "Content-Type" should be equal to "application/ld+json; charset=utf-8"
+    And the JSON should be equal to:
+    """
+    {
+      "@context": "/contexts/PatchDummyRelation",
+      "@id": "/patch_dummy_relations/1",
+      "@type": "PatchDummyRelation",
+      "relatedDummies": [
+        {
+          "@id": "/related_dummies/1",
+          "@type": "https://schema.org/Product",
+          "id": 1,
+          "symfony": "symfony"
+        },
+        {
+          "@id": "/related_dummies/2",
+          "@type": "https://schema.org/Product",
+          "id": 2,
+          "symfony": "A new name"
+        }
+      ]
     }
     """
