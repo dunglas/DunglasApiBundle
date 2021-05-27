@@ -94,9 +94,6 @@ parameters:
 		- '#UserPasswordHasherInterface#'
 
 		# Expected, due to PHP 8 attributes
-		- '#ReflectionProperty::getAttributes\(\)#'
-		- '#ReflectionMethod::getAttributes\(\)#'
-		- '#ReflectionClass<object>::getAttributes\(\)#'
 		- '#Constructor of class ApiPlatform\\Core\\Annotation\\ApiResource has an unused parameter#'
 		- '#Constructor of class ApiPlatform\\Core\\Annotation\\ApiProperty has an unused parameter#'
 

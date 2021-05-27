@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace ApiPlatform\Core\Api;
 
 use ApiPlatform\Core\Exception\InvalidArgumentException;
+use ApiPlatform\Core\Metadata\Resource\Factory\LegacyResourceNameCollectionFactoryInterface;
 use ApiPlatform\Core\Metadata\Resource\Factory\ResourceNameCollectionFactoryInterface;
 use ApiPlatform\Core\Util\ClassInfoTrait;
 
@@ -82,6 +83,18 @@ final class ResourceClassResolver implements ResourceClassResolverInterface
             }
         }
 
+        if (!$mostSpecificResourceClass && $this->resourceNameCollectionFactory instanceof LegacyResourceNameCollectionFactoryInterface) {
+            foreach ($this->resourceNameCollectionFactory->create(false) as $resourceClassName) {
+                if (!is_a($targetClass, $resourceClassName, true)) {
+                    continue;
+                }
+
+                if (null === $mostSpecificResourceClass || is_subclass_of($resourceClassName, $mostSpecificResourceClass)) {
+                    $mostSpecificResourceClass = $resourceClassName;
+                }
+            }
+        }
+
         if (null === $mostSpecificResourceClass) {
             throw new \LogicException('Unexpected execution flow.');
         }
@@ -103,6 +116,14 @@ final class ResourceClassResolver implements ResourceClassResolverInterface
         foreach ($this->resourceNameCollectionFactory->create() as $resourceClass) {
             if (is_a($type, $resourceClass, true)) {
                 return $this->localIsResourceClassCache[$type] = true;
+            }
+        }
+
+        if ($this->resourceNameCollectionFactory instanceof LegacyResourceNameCollectionFactoryInterface) {
+            foreach ($this->resourceNameCollectionFactory->create(false) as $resourceClass) {
+                if (is_a($type, $resourceClass, true)) {
+                    return $this->localIsResourceClassCache[$type] = true;
+                }
             }
         }
 

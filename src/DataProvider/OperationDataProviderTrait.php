@@ -51,7 +51,7 @@ trait OperationDataProviderTrait
      */
     private function getCollectionData(array $attributes, array $context)
     {
-        return $this->collectionDataProvider->getCollection($attributes['resource_class'], $attributes['collection_operation_name'], $context);
+        return $this->collectionDataProvider->getCollection($attributes['resource_class'], $attributes['operation_name'] ?? $attributes['collection_operation_name'], $context);
     }
 
     /**
@@ -61,7 +61,7 @@ trait OperationDataProviderTrait
      */
     private function getItemData($identifiers, array $attributes, array $context)
     {
-        return $this->itemDataProvider->getItem($attributes['resource_class'], $identifiers, $attributes['item_operation_name'], $context);
+        return $this->itemDataProvider->getItem($attributes['resource_class'], $identifiers, $attributes['operation_name'] ?? $attributes['item_operation_name'], $context);
     }
 
     /**

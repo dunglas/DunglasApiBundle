@@ -25,14 +25,17 @@ use ApiPlatform\Core\DataProvider\SubresourceDataProviderInterface;
 use ApiPlatform\Core\Exception\InvalidArgumentException;
 use ApiPlatform\Core\Exception\InvalidIdentifierException;
 use ApiPlatform\Core\Exception\ItemNotFoundException;
+use ApiPlatform\Core\Exception\ResourceClassNotFoundException;
 use ApiPlatform\Core\Exception\RuntimeException;
 use ApiPlatform\Core\Identifier\CompositeIdentifierParser;
 use ApiPlatform\Core\Identifier\IdentifierConverterInterface;
 use ApiPlatform\Core\Metadata\Property\Factory\PropertyMetadataFactoryInterface;
 use ApiPlatform\Core\Metadata\Property\Factory\PropertyNameCollectionFactoryInterface;
 use ApiPlatform\Core\Metadata\Resource\Factory\ResourceMetadataFactoryInterface;
+use ApiPlatform\Core\Metadata\ResourceCollection\Factory\ResourceCollectionMetadataFactoryInterface;
 use ApiPlatform\Core\Util\AttributesExtractor;
 use ApiPlatform\Core\Util\ResourceClassInfoTrait;
+use ApiPlatform\Metadata\Resource;
 use Symfony\Component\PropertyAccess\PropertyAccess;
 use Symfony\Component\PropertyAccess\PropertyAccessorInterface;
 use Symfony\Component\Routing\Exception\ExceptionInterface as RoutingExceptionInterface;
@@ -51,8 +54,9 @@ final class IriConverter implements IriConverterInterface
     private $routeNameResolver;
     private $router;
     private $identifiersExtractor;
+    private $resourceCollectionMetadataFactory;
 
-    public function __construct(PropertyNameCollectionFactoryInterface $propertyNameCollectionFactory, PropertyMetadataFactoryInterface $propertyMetadataFactory, ItemDataProviderInterface $itemDataProvider, RouteNameResolverInterface $routeNameResolver, RouterInterface $router, PropertyAccessorInterface $propertyAccessor = null, IdentifiersExtractorInterface $identifiersExtractor = null, SubresourceDataProviderInterface $subresourceDataProvider = null, IdentifierConverterInterface $identifierConverter = null, ResourceClassResolverInterface $resourceClassResolver = null, ResourceMetadataFactoryInterface $resourceMetadataFactory = null)
+    public function __construct(PropertyNameCollectionFactoryInterface $propertyNameCollectionFactory, PropertyMetadataFactoryInterface $propertyMetadataFactory, ItemDataProviderInterface $itemDataProvider, RouteNameResolverInterface $routeNameResolver, RouterInterface $router, PropertyAccessorInterface $propertyAccessor = null, IdentifiersExtractorInterface $identifiersExtractor = null, SubresourceDataProviderInterface $subresourceDataProvider = null, IdentifierConverterInterface $identifierConverter = null, ResourceClassResolverInterface $resourceClassResolver = null, ResourceMetadataFactoryInterface $resourceMetadataFactory = null, ResourceCollectionMetadataFactoryInterface $resourceCollectionMetadataFactory = null)
     {
         $this->itemDataProvider = $itemDataProvider;
         $this->routeNameResolver = $routeNameResolver;
@@ -62,6 +66,7 @@ final class IriConverter implements IriConverterInterface
         $this->resourceClassResolver = $resourceClassResolver;
         $this->identifiersExtractor = $identifiersExtractor ?: new IdentifiersExtractor($propertyNameCollectionFactory, $propertyMetadataFactory, $propertyAccessor ?? PropertyAccess::createPropertyAccessor());
         $this->resourceMetadataFactory = $resourceMetadataFactory;
+        $this->resourceCollectionMetadataFactory = $resourceCollectionMetadataFactory;
     }
 
     /**
@@ -131,8 +136,9 @@ final class IriConverter implements IriConverterInterface
      */
     public function getIriFromResourceClass(string $resourceClass, int $referenceType = null): string
     {
+        // TODO: use ResourceMetadataCollection somehow to fetch the correct route, this makes no sense as relying a lot on OperationType
         try {
-            return $this->router->generate($this->routeNameResolver->getRouteName($resourceClass, OperationType::COLLECTION), [], $this->getReferenceType($resourceClass, $referenceType));
+            return $this->router->generate($this->getRouteName($resourceClass, OperationType::COLLECTION), [], $this->getReferenceType($resourceClass, $referenceType));
         } catch (RoutingExceptionInterface $e) {
             throw new InvalidArgumentException(sprintf('Unable to generate an IRI for "%s".', $resourceClass), $e->getCode(), $e);
         }
@@ -143,7 +149,8 @@ final class IriConverter implements IriConverterInterface
      */
     public function getItemIriFromResourceClass(string $resourceClass, array $identifiers, int $referenceType = null): string
     {
-        $routeName = $this->routeNameResolver->getRouteName($resourceClass, OperationType::ITEM);
+        // TODO: use ResourceMetadataCollection somehow to fetch the correct route, this makes no sense as relying a lot on OperationType
+        $routeName = $this->getRouteName($resourceClass, OperationType::ITEM);
         $metadata = $this->resourceMetadataFactory->create($resourceClass);
 
         if (\count($identifiers) > 1 && true === $metadata->getAttribute('composite_identifier', true)) {
@@ -177,5 +184,31 @@ final class IriConverter implements IriConverterInterface
         }
 
         return $referenceType ?? UrlGeneratorInterface::ABS_PATH;
+    }
+
+    private function getRouteName(string $resourceClass, string $operationType)
+    {
+        if (null !== $this->resourceCollectionMetadataFactory) {
+            try {
+                $collection = $this->resourceCollectionMetadataFactory->create($resourceClass);
+
+                foreach ($collection as $resource) {
+                    foreach ($resource->operations as $key => $operation) {
+                        // TODO: This is wrong as it can happen but as we need to keep a layer with declaring every operation on a single entity we need to keep the behavior
+                        if (OperationType::COLLECTION === $operationType && $operation->identifiers) {
+                            continue;
+                        }
+
+                        if ('GET' === $operation->method) {
+                            return $key;
+                        }
+                    }
+                }
+            } catch (ResourceClassNotFoundException $e) {
+                // This is probably a pre-2.7 resource
+            }
+        }
+
+        return $this->routeNameResolver->getRouteName($resourceClass, $operationType);
     }
 }

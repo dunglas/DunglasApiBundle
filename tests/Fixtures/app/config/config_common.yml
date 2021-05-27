@@ -92,6 +92,12 @@ services:
         autowire: true
         autoconfigure: true
 
+    attribute_resources.state_provider:
+        class: 'ApiPlatform\Core\Tests\Fixtures\TestBundle\State\AttributeResourceProvider'
+        public: false
+        tags:
+            -  { name: 'api_platform.state_provider' }
+
     contain_non_resource.item_data_provider:
         class: 'ApiPlatform\Core\Tests\Fixtures\TestBundle\DataProvider\ContainNonResourceItemDataProvider'
         public: false

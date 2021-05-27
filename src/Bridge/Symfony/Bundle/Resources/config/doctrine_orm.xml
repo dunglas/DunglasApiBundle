@@ -120,6 +120,11 @@
             <argument type="service" id="api_platform.doctrine.orm.metadata.property.metadata_factory.inner" />
         </service>
 
+        <service id="api_platform.doctrine.orm.metadata.property.identifier_metadata_factory" class="ApiPlatform\Core\Bridge\Doctrine\Orm\Metadata\Property\DoctrineOrmPropertyMetadataFactory" decorates="api_platform.metadata.property.identifier_metadata_factory" decoration-priority="40" public="false">
+            <argument type="service" id="doctrine" />
+            <argument type="service" id="api_platform.doctrine.orm.metadata.property.identifier_metadata_factory.inner" />
+        </service>
+
         <!-- Doctrine Query extensions -->
 
         <service id="api_platform.doctrine.orm.query_extension.eager_loading" class="ApiPlatform\Core\Bridge\Doctrine\Orm\Extension\EagerLoadingExtension" public="false">

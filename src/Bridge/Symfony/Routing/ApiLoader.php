@@ -17,6 +17,7 @@ use ApiPlatform\Core\Api\IdentifiersExtractorInterface;
 use ApiPlatform\Core\Api\OperationType;
 use ApiPlatform\Core\Exception\InvalidResourceException;
 use ApiPlatform\Core\Exception\RuntimeException;
+use ApiPlatform\Core\Metadata\Resource\Factory\LegacyResourceNameCollectionFactoryInterface;
 use ApiPlatform\Core\Metadata\Resource\Factory\ResourceMetadataFactoryInterface;
 use ApiPlatform\Core\Metadata\Resource\Factory\ResourceNameCollectionFactoryInterface;
 use ApiPlatform\Core\Metadata\Resource\ResourceMetadata;
@@ -58,8 +59,9 @@ final class ApiLoader extends Loader
     private $entrypointEnabled;
     private $docsEnabled;
     private $identifiersExtractor;
+    private $resourceCollectionMetadataFactory;
 
-    public function __construct(KernelInterface $kernel, ResourceNameCollectionFactoryInterface $resourceNameCollectionFactory, ResourceMetadataFactoryInterface $resourceMetadataFactory, OperationPathResolverInterface $operationPathResolver, ContainerInterface $container, array $formats, array $resourceClassDirectories = [], SubresourceOperationFactoryInterface $subresourceOperationFactory = null, bool $graphqlEnabled = false, bool $entrypointEnabled = true, bool $docsEnabled = true, bool $graphiQlEnabled = false, bool $graphQlPlaygroundEnabled = false, IdentifiersExtractorInterface $identifiersExtractor = null)
+    public function __construct(KernelInterface $kernel, ResourceNameCollectionFactoryInterface $resourceNameCollectionFactory, ResourceMetadataFactoryInterface $resourceMetadataFactory, OperationPathResolverInterface $operationPathResolver, ContainerInterface $container, array $formats, array $resourceClassDirectories = [], SubresourceOperationFactoryInterface $subresourceOperationFactory = null, bool $graphqlEnabled = false, bool $entrypointEnabled = true, bool $docsEnabled = true, bool $graphiQlEnabled = false, bool $graphQlPlaygroundEnabled = false, IdentifiersExtractorInterface $identifiersExtractor = null, $resourceCollectionMetadataFactory = null)
     {
         /** @var string[]|string $paths */
         $paths = $kernel->locateResource('@ApiPlatformBundle/Resources/config/routing');
@@ -77,6 +79,7 @@ final class ApiLoader extends Loader
         $this->entrypointEnabled = $entrypointEnabled;
         $this->docsEnabled = $docsEnabled;
         $this->identifiersExtractor = $identifiersExtractor;
+        $this->resourceCollectionMetadataFactory = $resourceCollectionMetadataFactory;
     }
 
     /**
@@ -91,6 +94,37 @@ final class ApiLoader extends Loader
 
         $this->loadExternalFiles($routeCollection);
 
+        if ($this->resourceNameCollectionFactory instanceof LegacyResourceNameCollectionFactoryInterface) {
+            foreach ($this->resourceNameCollectionFactory->create(false) as $resourceClass) {
+                foreach ($this->resourceCollectionMetadataFactory->create($resourceClass) as $resourceMetadata) {
+                    foreach ($resourceMetadata->operations as $operationName => $operation) {
+                        $route = new Route(
+                            ($operation->routePrefix ?? '').$operation->uriTemplate,
+                            [
+                                '_controller' => $operation->controller,
+                                '_format' => null,
+                                '_stateless' => $operation->stateless,
+                                '_api_resource_class' => $resourceClass,
+                                '_api_identifiers' => $operation->identifiers,
+                                '_api_has_composite_identifier' => $operation->compositeIdentifier,
+                                '_api_operation_name' => $operationName,
+                            ] + ($operation->defaults ?? []),
+                            $operation->requirements ?? [],
+                            $operation->options ?? [],
+                            $operation->host ?? '',
+                            $operation->schemes ?? [],
+                            [$operation->method],
+                            $operation->condition ?? ''
+                        );
+
+                        $routeCollection->add($operationName, $route);
+                    }
+                    continue;
+                }
+            }
+        }
+
+        // Legacy resources since 2.7
         foreach ($this->resourceNameCollectionFactory->create() as $resourceClass) {
             $resourceMetadata = $this->resourceMetadataFactory->create($resourceClass);
             $resourceShortName = $resourceMetadata->getShortName();

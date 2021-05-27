@@ -44,6 +44,7 @@
             <argument>%api_platform.graphql.graphiql.enabled%</argument>
             <argument>%api_platform.graphql.graphql_playground.enabled%</argument>
             <argument type="service" id="api_platform.identifiers_extractor.cached"></argument>
+            <argument type="service" id="api_platform.metadata.resource_collection.metadata_factory"></argument>
 
             <tag name="routing.loader" />
         </service>
@@ -67,6 +68,7 @@
             <argument type="service" id="api_platform.identifier.converter" on-invalid="ignore" />
             <argument type="service" id="api_platform.resource_class_resolver" />
             <argument type="service" id="api_platform.metadata.resource.metadata_factory" />
+            <argument type="service" id="api_platform.metadata.resource_collection.metadata_factory" />
         </service>
         <service id="ApiPlatform\Core\Api\IriConverterInterface" alias="api_platform.iri_converter" />
 
@@ -167,6 +169,7 @@
             <argument type="service" id="api_platform.serializer.context_builder" />
             <argument type="service" id="api_platform.identifier.converter" />
             <argument type="service" id="api_platform.metadata.resource.metadata_factory" />
+            <argument type="service" id="api_platform.state_provider" />
 
             <tag name="kernel.event_listener" event="kernel.request" method="onKernelRequest" priority="4" />
         </service>

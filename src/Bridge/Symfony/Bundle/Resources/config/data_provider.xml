@@ -48,7 +48,6 @@
             <argument>%api_platform.collection.pagination.partial_parameter_name%</argument>
         </service>
         <service id="ApiPlatform\Core\DataProvider\PaginationOptions" alias="api_platform.pagination_options" />
-
     </services>
 
 </container>

@@ -80,6 +80,11 @@ final class ApiProperty
     public $iri;
 
     /**
+     * @var array
+     */
+    public $types;
+
+    /**
      * @var bool
      */
     public $identifier;
@@ -139,7 +144,8 @@ final class ApiProperty
         ?bool $push = null,
         ?string $security = null,
         ?array $swaggerContext = null,
-        ?string $securityPostDenormalize = null
+        ?string $securityPostDenormalize = null,
+        ?array $types = null
     ) {
         if (!\is_array($description)) { // @phpstan-ignore-line Doctrine annotations support
             [$publicProperties, $configurableAttributes] = self::getConfigMetadata();

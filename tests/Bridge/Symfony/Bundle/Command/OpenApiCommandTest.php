@@ -41,6 +41,11 @@ class OpenApiCommandTest extends KernelTestCase
         $this->tester = new ApplicationTester($application);
     }
 
+    /**
+     * TODO: change this once we support #[Resource].
+     *
+     * @group legacy
+     */
     public function testExecute()
     {
         $this->tester->run(['command' => 'api:openapi:export']);
