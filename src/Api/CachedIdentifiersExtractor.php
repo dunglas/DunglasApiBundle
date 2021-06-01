@@ -24,7 +24,7 @@ use Symfony\Component\PropertyAccess\PropertyAccessorInterface;
  *
  * @author Antoine Bluchet <soyuka@gmail.com>
  */
-final class CachedIdentifiersExtractor implements IdentifiersExtractorInterface
+final class CachedIdentifiersExtractor implements ContextAwareIdentifiersExtractorInterface
 {
     use ResourceClassInfoTrait;
 
@@ -63,8 +63,13 @@ final class CachedIdentifiersExtractor implements IdentifiersExtractorInterface
     /**
      * {@inheritdoc}
      */
-    public function getIdentifiersFromItem($item): array
+    public function getIdentifiersFromItem($item, array $context = []): array
     {
+        // TODO: Remove this class in 3.0 as the cache is not needed anymore
+        if (isset($context['identifiers']) && $this->decorated instanceof ContextAwareIdentifiersExtractorInterface) {
+            return $this->decorated->getIdentifiersFromItem($item, $context);
+        }
+
         $keys = $this->getKeys($item, function ($item) use (&$identifiers) {
             return $identifiers = $this->decorated->getIdentifiersFromItem($item);
         });

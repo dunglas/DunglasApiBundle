@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace ApiPlatform\Core\JsonLd\Serializer;
 
+use ApiPlatform\Core\Api\ContextAwareIriConverterInterface;
 use ApiPlatform\Core\Api\IriConverterInterface;
 use ApiPlatform\Core\Api\ResourceClassResolverInterface;
 use ApiPlatform\Core\JsonLd\ContextBuilderInterface;
@@ -74,7 +75,7 @@ final class ItemNormalizer extends AbstractItemNormalizer
 
         $resourceClass = $this->resourceClassResolver->getResourceClass($object, $context['resource_class'] ?? null);
         $context = $this->initContext($resourceClass, $context);
-        $iri = $this->iriConverter->getIriFromItem($object);
+        $iri = $this->iriConverter instanceof ContextAwareIriConverterInterface ? $this->iriConverter->getIriFromItem($object, $context) : $this->iriConverter->getIriFromItem($object);
         $context['iri'] = $iri;
         $context['api_normalize'] = true;
 

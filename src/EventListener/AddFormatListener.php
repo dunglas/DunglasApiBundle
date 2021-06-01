@@ -76,7 +76,7 @@ final class AddFormatListener
         $attributes = RequestAttributesExtractor::extractAttributes($request);
 
         // BC check to be removed in 3.0
-        if ($this->resourceMetadataFactory) {
+        if (!isset($attributes['operation_name']) && $this->resourceMetadataFactory) {
             if ($attributes) {
                 // TODO: Subresource operation metadata aren't available by default, for now we have to fallback on default formats.
                 // TODO: A better approach would be to always populate the subresource operation array.

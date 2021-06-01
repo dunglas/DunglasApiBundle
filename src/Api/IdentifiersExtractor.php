@@ -25,7 +25,7 @@ use Symfony\Component\PropertyAccess\PropertyAccessorInterface;
  *
  * @author Antoine Bluchet <soyuka@gmail.com>
  */
-final class IdentifiersExtractor implements IdentifiersExtractorInterface
+final class IdentifiersExtractor implements ContextAwareIdentifiersExtractorInterface
 {
     use ResourceClassInfoTrait;
 
@@ -71,10 +71,29 @@ final class IdentifiersExtractor implements IdentifiersExtractorInterface
     /**
      * {@inheritdoc}
      */
-    public function getIdentifiersFromItem($item): array
+    public function getIdentifiersFromItem($item, array $context = []): array
     {
         $identifiers = [];
         $resourceClass = $this->getResourceClass($item, true);
+        if (isset($context['identifiers'])) {
+            foreach ($context['identifiers'] as $parameterName => [$class, $property]) {
+                if ($item instanceof $class) {
+                    $identifiers[$parameterName] = $this->propertyAccessor->getValue($item, $property);
+                    continue;
+                }
+
+                foreach ($this->propertyNameCollectionFactory->create($resourceClass) as $propertyName) {
+                    $propertyMetadata = $this->propertyMetadataFactory->create($resourceClass, $propertyName);
+                    $type = $propertyMetadata->getType();
+                    if ($type && $type->getClassName() === $class) {
+                        $identifiers[$parameterName] = $this->propertyAccessor->getValue($item, "$propertyName.$property");
+                    }
+                }
+            }
+
+            return $identifiers;
+        }
+
         $identifierProperties = $this->getIdentifiersFromResourceClass($resourceClass);
 
         foreach ($this->propertyNameCollectionFactory->create($resourceClass) as $propertyName) {

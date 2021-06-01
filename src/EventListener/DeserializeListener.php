@@ -15,8 +15,10 @@ namespace ApiPlatform\Core\EventListener;
 
 use ApiPlatform\Core\Api\FormatMatcher;
 use ApiPlatform\Core\Api\FormatsProviderInterface;
+use ApiPlatform\Core\Exception\ResourceClassNotFoundException;
 use ApiPlatform\Core\Metadata\Resource\Factory\ResourceMetadataFactoryInterface;
 use ApiPlatform\Core\Metadata\Resource\ToggleableOperationAttributeTrait;
+use ApiPlatform\Core\Metadata\ResourceCollection\Factory\ResourceCollectionMetadataFactoryInterface;
 use ApiPlatform\Core\Serializer\SerializerContextBuilderInterface;
 use ApiPlatform\Core\Util\RequestAttributesExtractor;
 use Symfony\Component\HttpFoundation\Request;
@@ -40,15 +42,17 @@ final class DeserializeListener
     private $serializerContextBuilder;
     private $formats;
     private $formatsProvider;
+    private $resourceCollectionMetadataFactory;
 
     /**
      * @param ResourceMetadataFactoryInterface|FormatsProviderInterface|array $resourceMetadataFactory
      */
-    public function __construct(SerializerInterface $serializer, SerializerContextBuilderInterface $serializerContextBuilder, $resourceMetadataFactory, ResourceMetadataFactoryInterface $legacyResourceMetadataFactory = null)
+    public function __construct(SerializerInterface $serializer, SerializerContextBuilderInterface $serializerContextBuilder, $resourceMetadataFactory, ResourceMetadataFactoryInterface $legacyResourceMetadataFactory = null, ResourceCollectionMetadataFactoryInterface $resourceCollectionMetadataFactory = null)
     {
         $this->serializer = $serializer;
         $this->serializerContextBuilder = $serializerContextBuilder;
         $this->resourceMetadataFactory = $resourceMetadataFactory instanceof ResourceMetadataFactoryInterface ? $resourceMetadataFactory : $legacyResourceMetadataFactory;
+        $this->resourceCollectionMetadataFactory = $resourceCollectionMetadataFactory;
 
         if (!$resourceMetadataFactory instanceof ResourceMetadataFactoryInterface) {
             @trigger_error(sprintf('Passing an array or an instance of "%s" as 3rd parameter of the constructor of "%s" is deprecated since API Platform 2.5, pass an instance of "%s" instead', FormatsProviderInterface::class, __CLASS__, ResourceMetadataFactoryInterface::class), \E_USER_DEPRECATED);
@@ -83,16 +87,28 @@ final class DeserializeListener
 
         $context = $this->serializerContextBuilder->createFromRequest($request, false, $attributes);
 
-        // BC check to be removed in 3.0
-        if ($this->resourceMetadataFactory) {
-            $formats = $this
-                ->resourceMetadataFactory
-                ->create($attributes['resource_class'])
-                ->getOperationAttribute($attributes, 'input_formats', [], true);
-        } elseif ($this->formatsProvider instanceof FormatsProviderInterface) {
-            $formats = $this->formatsProvider->getFormatsFromAttributes($attributes);
-        } else {
-            $formats = $this->formats;
+        $formats = null;
+        if ($this->resourceCollectionMetadataFactory && isset($attributes['operation_name'])) {
+            try {
+                $resourceCollection = $this->resourceCollectionMetadataFactory->create($attributes['resource_class']);
+                $operation = $resourceCollection->getOperation($attributes['operation_name']);
+                $formats = $operation ? $operation->inputFormats : null;
+            } catch (ResourceClassNotFoundException $e) {
+            }
+        }
+
+        if (!$formats) {
+            // BC check to be removed in 3.0
+            if ($this->resourceMetadataFactory) {
+                $formats = $this
+                    ->resourceMetadataFactory
+                    ->create($attributes['resource_class'])
+                    ->getOperationAttribute($attributes, 'input_formats', [], true);
+            } elseif ($this->formatsProvider instanceof FormatsProviderInterface) {
+                $formats = $this->formatsProvider->getFormatsFromAttributes($attributes);
+            } else {
+                $formats = $this->formats;
+            }
         }
 
         $format = $this->getFormat($request, $formats);

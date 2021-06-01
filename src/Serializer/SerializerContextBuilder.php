@@ -14,10 +14,13 @@ declare(strict_types=1);
 namespace ApiPlatform\Core\Serializer;
 
 use ApiPlatform\Core\Api\OperationType;
+use ApiPlatform\Core\Exception\ResourceClassNotFoundException;
 use ApiPlatform\Core\Exception\RuntimeException;
 use ApiPlatform\Core\Metadata\Resource\Factory\ResourceMetadataFactoryInterface;
+use ApiPlatform\Core\Metadata\ResourceCollection\Factory\ResourceCollectionMetadataFactoryInterface;
 use ApiPlatform\Core\Swagger\Serializer\DocumentationNormalizer;
 use ApiPlatform\Core\Util\RequestAttributesExtractor;
+use ApiPlatform\Metadata\Resource;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Serializer\Encoder\CsvEncoder;
 
@@ -29,10 +32,12 @@ use Symfony\Component\Serializer\Encoder\CsvEncoder;
 final class SerializerContextBuilder implements SerializerContextBuilderInterface
 {
     private $resourceMetadataFactory;
+    private $resourceCollectionMetadataFactory;
 
-    public function __construct(ResourceMetadataFactoryInterface $resourceMetadataFactory)
+    public function __construct(ResourceMetadataFactoryInterface $resourceMetadataFactory, ResourceCollectionMetadataFactoryInterface $resourceCollectionMetadataFactory = null)
     {
         $this->resourceMetadataFactory = $resourceMetadataFactory;
+        $this->resourceCollectionMetadataFactory = $resourceCollectionMetadataFactory;
     }
 
     /**
@@ -44,9 +49,53 @@ final class SerializerContextBuilder implements SerializerContextBuilderInterfac
             throw new RuntimeException('Request attributes are not valid.');
         }
 
-        $resourceMetadata = $this->resourceMetadataFactory->create($attributes['resource_class']);
+        if ($this->resourceCollectionMetadataFactory && isset($attributes['operation_name'])) {
+            try {
+                $resourceCollection = $this->resourceCollectionMetadataFactory->create($attributes['resource_class']);
+                $operation = $resourceCollection->getOperation($attributes['operation_name']);
+                $context = $normalization ? $operation->normalizationContext : $operation->denormalizationContext;
+                $context['uri_template'] = $operation->uriTemplate;
+                $context['identifiers'] = $operation->identifiers;
+                // remove in 3.0, operation type will not exist anymore
+                $context['operation_type'] = ($attributes['identifiers'] ?? []) ? OperationType::ITEM : OperationType::COLLECTION;
+                $context['operation_name'] = $attributes['operation_name'];
+                $context['resource_class'] = $attributes['resource_class'];
+                $context['skip_null_values'] = $context['skip_null_values'] ?? true;
+                $context['iri_only'] = $context['iri_only'] ?? false;
+                $context['input'] = $operation->input;
+                $context['output'] = $operation->output;
+                $context['request_uri'] = $request->getRequestUri();
+                $context['uri'] = $request->getUri();
+
+                if (!$normalization) {
+                    if (!isset($context['api_allow_update'])) {
+                        $context['api_allow_update'] = \in_array($method = $request->getMethod(), ['PUT', 'PATCH'], true);
+
+                        if ($context['api_allow_update'] && 'PATCH' === $method) {
+                            $context['deep_object_to_populate'] = $context['deep_object_to_populate'] ?? true;
+                        }
+                    }
+
+                    if ('csv' === $request->getContentType()) {
+                        $context[CsvEncoder::AS_COLLECTION_KEY] = false;
+                    }
+                }
+
+                return $context;
+            } catch (ResourceClassNotFoundException $e) {
+                $resourceMetadata = $this->resourceMetadataFactory->create($attributes['resource_class']);
+            }
+        } else {
+            $resourceMetadata = $this->resourceMetadataFactory->create($attributes['resource_class']);
+        }
+
         $key = $normalization ? 'normalization_context' : 'denormalization_context';
-        if (isset($attributes['collection_operation_name'])) {
+
+        // TODO: remove in 3.0
+        if (isset($attributes['operation_name'])) {
+            $operationKey = 'operation_name';
+            $operationType = ($attributes['identifiers'] ?? []) ? OperationType::ITEM : OperationType::COLLECTION;
+        } elseif (isset($attributes['collection_operation_name'])) {
             $operationKey = 'collection_operation_name';
             $operationType = OperationType::COLLECTION;
         } elseif (isset($attributes['item_operation_name'])) {

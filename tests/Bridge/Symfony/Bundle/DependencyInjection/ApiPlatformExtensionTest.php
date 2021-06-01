@@ -79,6 +79,7 @@ use ApiPlatform\Core\Metadata\Property\Factory\PropertyMetadataFactoryInterface;
 use ApiPlatform\Core\Metadata\Property\Factory\PropertyNameCollectionFactoryInterface;
 use ApiPlatform\Core\Metadata\Resource\Factory\ResourceMetadataFactoryInterface;
 use ApiPlatform\Core\Metadata\Resource\Factory\ResourceNameCollectionFactoryInterface;
+use ApiPlatform\Core\Metadata\ResourceCollection\Factory\ResourceCollectionMetadataFactoryInterface;
 use ApiPlatform\Core\OpenApi\Factory\OpenApiFactoryInterface;
 use ApiPlatform\Core\OpenApi\Options;
 use ApiPlatform\Core\OpenApi\Serializer\OpenApiNormalizer;
@@ -89,6 +90,7 @@ use ApiPlatform\Core\Serializer\SerializerContextBuilderInterface;
 use ApiPlatform\Core\Tests\Fixtures\TestBundle\TestBundle;
 use ApiPlatform\Core\Tests\ProphecyTrait;
 use ApiPlatform\Core\Validator\ValidatorInterface;
+use ApiPlatform\State\ProviderInterface;
 use Doctrine\Bundle\DoctrineBundle\DoctrineBundle;
 use Doctrine\ORM\OptimisticLockException;
 use Nelmio\ApiDocBundle\NelmioApiDocBundle;
@@ -580,6 +582,7 @@ class ApiPlatformExtensionTest extends TestCase
         $containerBuilderProphecy->setDefinition('api_platform.doctrine.orm.search_filter', Argument::type(Definition::class))->shouldNotBeCalled();
         $containerBuilderProphecy->setDefinition('api_platform.doctrine.orm.subresource_data_provider', Argument::type(Definition::class))->shouldNotBeCalled();
         $containerBuilderProphecy->setDefinition('api_platform.doctrine.orm.listener.mercure.publish', Argument::type(Definition::class))->shouldNotBeCalled();
+        $containerBuilderProphecy->setDefinition('api_platform.doctrine.orm.metadata.property.identifier_metadata_factory', Argument::type(Definition::class))->shouldNotBeCalled();
         $containerBuilderProphecy->setAlias(EagerLoadingExtension::class, 'api_platform.doctrine.orm.query_extension.eager_loading')->shouldNotBeCalled();
         $containerBuilderProphecy->setAlias(FilterExtension::class, 'api_platform.doctrine.orm.query_extension.filter')->shouldNotBeCalled();
         $containerBuilderProphecy->setAlias(FilterEagerLoadingExtension::class, 'api_platform.doctrine.orm.query_extension.filter_eager_loading')->shouldNotBeCalled();
@@ -981,6 +984,7 @@ class ApiPlatformExtensionTest extends TestCase
             'api_platform.cache.identifiers_extractor',
             'api_platform.cache.metadata.property',
             'api_platform.cache.metadata.resource',
+            'api_platform.cache.metadata.resource_collection',
             'api_platform.cache.route_name_resolver',
             'api_platform.cache.subresource_operation_factory',
             'api_platform.cache_warmer.cache_pool_clearer',
@@ -1018,10 +1022,18 @@ class ApiPlatformExtensionTest extends TestCase
             'api_platform.metadata.resource.metadata_factory.operation',
             'api_platform.metadata.resource.metadata_factory.formats',
             'api_platform.metadata.resource.metadata_factory.input_output',
+            'api_platform.metadata.resource.metadata_factory.resource_collection',
             'api_platform.metadata.resource.metadata_factory.short_name',
             'api_platform.metadata.resource.metadata_factory.xml',
             'api_platform.metadata.resource.name_collection_factory.cached',
             'api_platform.metadata.resource.name_collection_factory.xml',
+            'api_platform.metadata.resource_collection.metadata_factory.attributes',
+            'api_platform.metadata.resource_collection.metadata_factory.cached',
+            'api_platform.metadata.resource_collection.metadata_factory.formats',
+            'api_platform.metadata.resource_collection.metadata_factory.identifier',
+            'api_platform.metadata.resource_collection.metadata_factory.input_output',
+            'api_platform.metadata.resource_collection.metadata_factory.php_doc',
+            'api_platform.metadata.resource_collection.metadata_factory.uri_template',
             'api_platform.metadata.property.metadata_factory.default_property',
             'api_platform.negotiator',
             'api_platform.operation_method_resolver',
@@ -1046,6 +1058,7 @@ class ApiPlatformExtensionTest extends TestCase
             'api_platform.serializer.property_filter',
             'api_platform.serializer.uuid_denormalizer',
             'api_platform.serializer_locator',
+            'api_platform.state_provider',
             'api_platform.subresource_data_provider',
             'api_platform.subresource_operation_factory',
             'api_platform.subresource_operation_factory.cached',
@@ -1097,6 +1110,9 @@ class ApiPlatformExtensionTest extends TestCase
             SubresourceDataProviderInterface::class => 'api_platform.subresource_data_provider',
             UrlGeneratorInterface::class => 'api_platform.router',
             PaginationOptions::class => 'api_platform.pagination_options',
+            ProviderInterface::class => 'api_platform.state_provider',
+            ResourceCollectionMetadataFactoryInterface::class => 'api_platform.metadata.resource_collection.metadata_factory',
+            'api_platform.metadata.resource_collection.metadata_factory' => 'api_platform.metadata.resource_collection.metadata_factory.attributes',
         ];
 
         foreach ($aliases as $alias => $service) {
@@ -1300,6 +1316,7 @@ class ApiPlatformExtensionTest extends TestCase
             'api_platform.doctrine.orm.range_filter',
             'api_platform.doctrine.orm.search_filter',
             'api_platform.doctrine.orm.subresource_data_provider',
+            'api_platform.doctrine.orm.metadata.property.identifier_metadata_factory',
             'api_platform.graphql.action.entrypoint',
             'api_platform.graphql.action.graphiql',
             'api_platform.graphql.action.graphql_playground',
@@ -1392,6 +1409,7 @@ class ApiPlatformExtensionTest extends TestCase
             'api_platform.swagger.listener.ui',
             'api_platform.validator',
             'api_platform.validator.query_parameter_validator',
+            'api_platform.metadata.property.identifier_metadata_factory.annotation',
         ];
 
         if (\in_array('odm', $doctrineIntegrationsToLoad, true)) {
@@ -1476,6 +1494,7 @@ class ApiPlatformExtensionTest extends TestCase
         $aliases = [
             'api_platform.http_cache.purger' => 'api_platform.http_cache.purger.varnish',
             'api_platform.message_bus' => 'messenger.default_bus',
+            'api_platform.metadata.property.identifier_metadata_factory' => 'api_platform.metadata.property.identifier_metadata_factory.annotation',
             EagerLoadingExtension::class => 'api_platform.doctrine.orm.query_extension.eager_loading',
             FilterExtension::class => 'api_platform.doctrine.orm.query_extension.filter',
             FilterEagerLoadingExtension::class => 'api_platform.doctrine.orm.query_extension.filter_eager_loading',

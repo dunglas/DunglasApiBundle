@@ -143,6 +143,7 @@ final class ApiPlatformExtension extends Extension implements PrependExtensionIn
         $loader->load('api.xml');
         $loader->load('data_persister.xml');
         $loader->load('data_provider.xml');
+        $loader->load('state.xml');
         $loader->load('filter.xml');
 
         $container->getDefinition('api_platform.operation_method_resolver')
@@ -258,6 +259,7 @@ final class ApiPlatformExtension extends Extension implements PrependExtensionIn
     private function registerMetadataConfiguration(ContainerBuilder $container, array $config, XmlFileLoader $loader): void
     {
         $loader->load('metadata/metadata.xml');
+        $loader->load('metadata/resource_collection.xml');
         $loader->load('metadata/xml.xml');
 
         [$xmlResources, $yamlResources] = $this->getResourcesToWatch($container, $config);

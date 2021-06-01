@@ -100,7 +100,9 @@ final class SwaggerUiAction
             $metadata = $this->resourceMetadataFactory->create($resourceClass);
             $swaggerData['shortName'] = $metadata->getShortName();
 
-            if (null !== $collectionOperationName = $request->attributes->get('_api_collection_operation_name')) {
+            if ($operationName = $request->attributes->get('_api_operation_name')) {
+                $swaggerData['operationId'] = $operationName;
+            } elseif (null !== $collectionOperationName = $request->attributes->get('_api_collection_operation_name')) {
                 $swaggerData['operationId'] = sprintf('%s%sCollection', $collectionOperationName, ucfirst($swaggerData['shortName']));
             } elseif (null !== $itemOperationName = $request->attributes->get('_api_item_operation_name')) {
                 $swaggerData['operationId'] = sprintf('%s%sItem', $itemOperationName, ucfirst($swaggerData['shortName']));

@@ -22,7 +22,7 @@ use Psr\Cache\CacheItemPoolInterface;
  *
  * @author Teoh Han Hui <teohhanhui@gmail.com>
  */
-final class CachedResourceNameCollectionFactory implements ResourceNameCollectionFactoryInterface
+final class CachedResourceNameCollectionFactory implements LegacyResourceNameCollectionFactoryInterface
 {
     use CachedTrait;
 
@@ -39,10 +39,10 @@ final class CachedResourceNameCollectionFactory implements ResourceNameCollectio
     /**
      * {@inheritdoc}
      */
-    public function create(): ResourceNameCollection
+    public function create(bool $legacy = true): ResourceNameCollection
     {
-        return $this->getCached(self::CACHE_KEY, function () {
-            return $this->decorated->create();
+        return $this->getCached($this->decorated instanceof LegacyResourceNameCollectionFactoryInterface ? sprintf('%s-%s', self::CACHE_KEY, $legacy) : self::CACHE_KEY, function () use ($legacy) {
+            return $this->decorated instanceof LegacyResourceNameCollectionFactoryInterface ? $this->decorated->create($legacy) : $this->decorated->create();
         });
     }
 }

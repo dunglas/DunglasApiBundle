@@ -16,6 +16,12 @@
     <testsuites>
         <testsuite name="Project Test Suite">
             <directory>tests</directory>
+            <file phpVersion="8.0" phpVersionOperator=">=">tests/Metadata/Resource/Factory/ResourceCollectionMetadataFactoryTest.php</file>
+            <directory phpVersion="8.0" phpVersionOperator=">=">tests/Core</directory>
+            <directory phpVersion="8.0" phpVersionOperator=">=">tests/Metadata/ResourceCollection</directory>
+            <exclude>tests/Metadata/Resource/Factory/ResourceCollectionMetadataFactoryTest.php</exclude>
+            <exclude>tests/Metadata/ResourceCollection</exclude>
+            <exclude>tests/Core</exclude>
         </testsuite>
     </testsuites>
 

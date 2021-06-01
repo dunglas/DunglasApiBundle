@@ -27,6 +27,7 @@ use ApiPlatform\Core\Tests\Fixtures\DummyResourceInterface;
 use ApiPlatform\Core\Tests\Fixtures\TestBundle\Entity\Dummy;
 use ApiPlatform\Core\Tests\Fixtures\TestBundle\Entity\FileConfigDummy;
 use ApiPlatform\Core\Tests\ProphecyTrait;
+use Symfony\Bridge\PhpUnit\ExpectDeprecationTrait;
 
 /**
  * Tests extractor resource metadata factory.
@@ -35,6 +36,7 @@ use ApiPlatform\Core\Tests\ProphecyTrait;
  */
 class ExtractorResourceMetadataFactoryTest extends FileConfigurationMetadataFactoryProvider
 {
+    use ExpectDeprecationTrait;
     use ProphecyTrait;
 
     /**
@@ -50,8 +52,12 @@ class ExtractorResourceMetadataFactoryTest extends FileConfigurationMetadataFact
         $this->assertEquals($expectedResourceMetadata, $resourceMetadata);
     }
 
+    /**
+     * @group legacy
+     */
     public function testXmlDoesNotExistMetadataFactory()
     {
+        $this->expectDeprecation('Using a legacy ApiPlatform\Core\Metadata\Resource\Factory\ExtractorResourceNameCollectionFactory is deprecated since 2.7 and will not be possible in 3.0.');
         $this->expectException(ResourceClassNotFoundException::class);
         $this->expectExceptionMessage('Resource "ApiPlatform\\Core\\Tests\\Fixtures\\TestBundle\\Entity\\ThisDoesNotExist" not found.');
 
@@ -176,8 +182,12 @@ class ExtractorResourceMetadataFactoryTest extends FileConfigurationMetadataFact
         $this->assertEquals($expectedResourceMetadata, $resourceMetadata);
     }
 
+    /**
+     * @group legacy
+     */
     public function testYamlDoesNotExistMetadataFactory()
     {
+        $this->expectDeprecation('Using a legacy ApiPlatform\Core\Metadata\Resource\Factory\ExtractorResourceNameCollectionFactory is deprecated since 2.7 and will not be possible in 3.0.');
         $this->expectException(ResourceClassNotFoundException::class);
         $this->expectExceptionMessage('Resource "ApiPlatform\\Core\\Tests\\Fixtures\\TestBundle\\Entity\\ThisDoesNotExist" not found.');
 

@@ -104,7 +104,7 @@ abstract class AbstractItemNormalizer extends AbstractObjectNormalizer
      */
     public function supportsNormalization($data, $format = null)
     {
-        if (!\is_object($data)) {
+        if (!\is_object($data) || is_iterable($data)) {
             return false;
         }
 

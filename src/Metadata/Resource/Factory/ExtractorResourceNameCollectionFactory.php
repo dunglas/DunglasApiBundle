@@ -23,7 +23,7 @@ use ApiPlatform\Core\Metadata\Resource\ResourceNameCollection;
  * @author Kévin Dunglas <dunglas@gmail.com>
  * @author Antoine Bluchet <soyuka@gmail.com>
  */
-final class ExtractorResourceNameCollectionFactory implements ResourceNameCollectionFactoryInterface
+final class ExtractorResourceNameCollectionFactory implements LegacyResourceNameCollectionFactoryInterface
 {
     private $extractor;
     private $decorated;
@@ -39,13 +39,23 @@ final class ExtractorResourceNameCollectionFactory implements ResourceNameCollec
      *
      * @throws InvalidArgumentException
      */
-    public function create(): ResourceNameCollection
+    public function create(bool $legacy = true): ResourceNameCollection
     {
+        if (true === $legacy) {
+            @trigger_error(sprintf('Using a legacy %s is deprecated since 2.7 and will not be possible in 3.0.', __CLASS__), \E_USER_DEPRECATED);
+        }
+
         $classes = [];
+
         if ($this->decorated) {
-            foreach ($this->decorated->create() as $resourceClass) {
+            foreach ($this->decorated instanceof LegacyResourceNameCollectionFactoryInterface ? $this->decorated->create($legacy) : $this->decorated->create() as $resourceClass) {
                 $classes[$resourceClass] = true;
             }
+        }
+
+        // TODO: Handle extractors
+        if (!$legacy) {
+            return new ResourceNameCollection(array_keys($classes));
         }
 
         foreach ($this->extractor->getResources() as $resourceClass => $resource) {
