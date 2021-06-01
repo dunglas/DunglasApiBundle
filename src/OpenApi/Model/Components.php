@@ -26,8 +26,9 @@ final class Components
     private $securitySchemes;
     private $links;
     private $callbacks;
+    private $pathItems;
 
-    public function __construct(\ArrayObject $schemas = null, \ArrayObject $responses = null, \ArrayObject $parameters = null, \ArrayObject $examples = null, \ArrayObject $requestBodies = null, \ArrayObject $headers = null, \ArrayObject $securitySchemes = null, \ArrayObject $links = null, \ArrayObject $callbacks = null)
+    public function __construct(\ArrayObject $schemas = null, \ArrayObject $responses = null, \ArrayObject $parameters = null, \ArrayObject $examples = null, \ArrayObject $requestBodies = null, \ArrayObject $headers = null, \ArrayObject $securitySchemes = null, \ArrayObject $links = null, \ArrayObject $callbacks = null, \ArrayObject $pathItems = null)
     {
         $this->schemas = $schemas;
         $this->responses = $responses;
@@ -38,6 +39,7 @@ final class Components
         $this->securitySchemes = $securitySchemes;
         $this->links = $links;
         $this->callbacks = $callbacks;
+        $this->pathItems = $pathItems;
     }
 
     public function getSchemas(): ?\ArrayObject
@@ -83,6 +85,11 @@ final class Components
     public function getCallbacks(): ?\ArrayObject
     {
         return $this->callbacks;
+    }
+
+    public function getPathItems(): ?\ArrayObject
+    {
+        return $this->pathItems;
     }
 
     public function withSchemas(\ArrayObject $schemas): self
@@ -153,6 +160,14 @@ final class Components
     {
         $clone = clone $this;
         $clone->callbacks = $callbacks;
+
+        return $clone;
+    }
+
+    public function withPathItems(\ArrayObject $pathItems): self
+    {
+        $clone = clone $this;
+        $clone->pathItems = $pathItems;
 
         return $clone;
     }
