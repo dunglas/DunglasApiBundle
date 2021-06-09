@@ -164,7 +164,7 @@ final class OpenApi implements DocumentationInterface
         return $clone;
     }
 
-    public function withJsonSchemaDialect(array $jsonSchemaDialect): self
+    public function withJsonSchemaDialect(?string $jsonSchemaDialect): self
     {
         $clone = clone $this;
         $clone->jsonSchemaDialect = $jsonSchemaDialect;
