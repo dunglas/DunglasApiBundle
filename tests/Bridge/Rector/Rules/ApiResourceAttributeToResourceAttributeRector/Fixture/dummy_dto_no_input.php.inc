@@ -1,6 +1,6 @@
 <?php
 
-namespace ApiPlatform\Core\Tests\Bridge\Rector\Rules\ApiResourceAnnotationToResourceAttributeRector\Fixture;
+namespace ApiPlatform\Core\Tests\Bridge\Rector\Rules\ApiResourceAttributeToResourceAttributeRector\Fixture;
 
 use ApiPlatform\Core\Annotation\ApiResource;
 use ApiPlatform\Core\Tests\Fixtures\TestBundle\Controller\DummyDtoNoInput\CreateItemAction;
@@ -41,7 +41,7 @@ class DummyDtoNoInput
 -----
 <?php
 
-namespace ApiPlatform\Core\Tests\Bridge\Rector\Rules\ApiResourceAnnotationToResourceAttributeRector\Fixture;
+namespace ApiPlatform\Core\Tests\Bridge\Rector\Rules\ApiResourceAttributeToResourceAttributeRector\Fixture;
 
 use ApiPlatform\Metadata\Resource;
 use ApiPlatform\Metadata\Post;

@@ -1,6 +1,6 @@
 <?php
 
-namespace ApiPlatform\Core\Tests\Bridge\Rector\Rules\ApiResourceAnnotationToResourceAttributeRector\Fixture;
+namespace ApiPlatform\Core\Tests\Bridge\Rector\Rules\ApiResourceAttributeToResourceAttributeRector\Fixture;
 
 use ApiPlatform\Core\Annotation\ApiResource;
 
@@ -26,7 +26,7 @@ class CustomActionDummy
 -----
 <?php
 
-namespace ApiPlatform\Core\Tests\Bridge\Rector\Rules\ApiResourceAnnotationToResourceAttributeRector\Fixture;
+namespace ApiPlatform\Core\Tests\Bridge\Rector\Rules\ApiResourceAttributeToResourceAttributeRector\Fixture;
 
 use ApiPlatform\Metadata\Resource;
 use ApiPlatform\Metadata\GetCollection;

@@ -2,30 +2,23 @@
 
 namespace ApiPlatform\Core\Bridge\Rector\Rules;
 
-use ApiPlatform\Core\Bridge\Rector\Resolver\OperationClassResolver;
+use ApiPlatform\Core\Annotation\ApiResource;
 use PhpParser\Node;
-use PhpParser\Node\Expr\ArrowFunction;
-use PhpParser\Node\Expr\Closure;
 use PhpParser\Node\Stmt\Class_;
-use PhpParser\Node\Stmt\ClassMethod;
-use PhpParser\Node\Stmt\Function_;
-use PhpParser\Node\Stmt\Property;
 use PHPStan\PhpDocParser\Ast\PhpDoc\PhpDocTagNode;
 use PHPStan\PhpDocParser\Ast\PhpDoc\PhpDocTagValueNode;
 use Rector\BetterPhpDocParser\PhpDoc\DoctrineAnnotationTagValueNode;
 use Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfo;
 use Rector\BetterPhpDocParser\PhpDocManipulator\PhpDocTagRemover;
 use Rector\Core\Contract\Rector\ConfigurableRectorInterface;
-use Rector\Core\Rector\AbstractRector;
 use Rector\Core\ValueObject\PhpVersionFeature;
 use Rector\Php80\ValueObject\AnnotationToAttribute;
 use Rector\PhpAttribute\Printer\PhpAttributeGroupFactory;
-use Symfony\Component\String\UnicodeString;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\ConfiguredCodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 use Webmozart\Assert\Assert;
 
-final class ApiResourceAnnotationToResourceAttributeRector extends AbstractRector implements ConfigurableRectorInterface
+final class ApiResourceAnnotationToResourceAttributeRector extends AbstractApiResourceToResourceAttribute implements ConfigurableRectorInterface
 {
     /**
      * @var string
@@ -43,10 +36,6 @@ final class ApiResourceAnnotationToResourceAttributeRector extends AbstractRecto
      * @var bool
      */
     private $removeTag;
-    /**
-     * @var PhpAttributeGroupFactory
-     */
-    private $phpAttributeGroupFactory;
     /**
      * @var PhpDocTagRemover
      */
@@ -82,7 +71,7 @@ use ApiPlatform\Core\Annotation\ApiResource;
 class Book
 CODE_SAMPLE
             , [
-                self::ANNOTATION_TO_ATTRIBUTE => [new AnnotationToAttribute('ApiPlatform\\Core\\Annotation\\ApiResource', 'ApiPlatform\\Core\\Annotation\\ApiResource')],
+                self::ANNOTATION_TO_ATTRIBUTE => [new AnnotationToAttribute(ApiResource::class, ApiResource::class)],
                 self::REMOVE_TAG => true,
             ])
         ]);
@@ -93,11 +82,11 @@ CODE_SAMPLE
      */
     public function getNodeTypes() : array
     {
-        return [Class_::class, Property::class, ClassMethod::class, Function_::class, Closure::class, ArrowFunction::class];
+        return [Class_::class];
     }
 
     /**
-     * @param Class_|Property|ClassMethod|Function_|Closure|ArrowFunction $node
+     * @param Class_ $node
      */
     public function refactor(Node $node) : ?Node
     {
@@ -129,7 +118,7 @@ CODE_SAMPLE
 
     /**
      * @param array<PhpDocTagNode> $tags
-     * @param Class_|Property|ClassMethod|Function_|Closure|ArrowFunction $node
+     * @param Class_ $node
      */
     private function processApplyAttrGroups(array $tags, PhpDocInfo $phpDocInfo, Node $node) : bool
     {
@@ -165,6 +154,7 @@ CODE_SAMPLE
                 continue 2;
             }
         }
+
         return $hasNewAttrGroups;
     }
 
@@ -174,51 +164,25 @@ CODE_SAMPLE
         if ($phpDocTagValueNode !== $doctrineAnnotationTagValueNode) {
             return \true;
         }
+
         return !$phpDocTagValueNode instanceof DoctrineAnnotationTagValueNode;
     }
 
-    private function resolveOperations(DoctrineAnnotationTagValueNode $tagValue, $node)
+    /**
+     * @param Class_ $node
+     */
+    private function resolveOperations(DoctrineAnnotationTagValueNode $tagValue, Node $node): void
     {
         $values = $tagValue->getValues();
 
-        foreach (['collectionOperations', 'itemOperations'] as $operationType) {
-            if (isset($values[$operationType])) {
-                foreach ($values[$operationType]->getValuesWithExplicitSilentAndWithoutQuotes() as $operationName => $items) {
-                    /**
-                     * For this cases:
-                     * itemOperations={
-                     *     "get_by_isbn"={"method"="GET", "path"="/books/by_isbn/{isbn}.{_format}", "requirements"={"isbn"=".+"}, "identifiers"="isbn"}
-                     * }
-                     */
-                    if (is_array($items)) {
-                        $items = ['operationName' => $operationName] + $items;
-
-                        foreach ($items as $key => $item) {
-                            $camelizedKey = (string) (new UnicodeString($key))->camel();
-                            if ($key === $camelizedKey) {
-                                continue;
-                            }
-                            $items[$camelizedKey] = $items[$key];
-                            unset($items[$key]);
-                        }
-                    }
-                    /**
-                     * For this cases:
-                     * collectionOperations={"get", "post"},
-                     * itemOperations={"get", "put", "delete"},
-                     */
-                    if (is_string($items)) {
-                        $operationName = $items;
-                        $items = [];
-                    }
-
-                    $operationClass = OperationClassResolver::resolve($operationName, $operationType, $items);
-                    $attribute = $this->phpAttributeGroupFactory->createFromClassWithItems($operationClass, $items);
-
-                    $node->attrGroups[] = $attribute;
+        foreach ($this->operationTypes as $type) {
+            if (isset($values[$type])) {
+                $operations = $this->formatOperations($values[$type]->getValuesWithExplicitSilentAndWithoutQuotes());
+                foreach ($operations as $name => $arguments) {
+                    $node->attrGroups[] = $this->createOperationAttributeGroup($type, $name, $arguments);
                 }
-                // Remove collectionOperations/itemOperations from Tag values
-                $tagValue->removeValue($operationType);
+                // Remove collectionOperations|itemOperations from Tag values
+                $tagValue->removeValue($type);
             }
         }
     }

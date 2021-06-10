@@ -25,8 +25,8 @@ use ApiPlatform\Metadata\Get;
 use ApiPlatform\Core\Annotation\ApiResource;
 
 #[Resource]
-#[Get]
 #[Get(operationName: 'get_by_isbn', path: '/books/by_isbn/{isbn}.{_format}', requirements: ['isbn' => '.+'], identifiers: 'isbn')]
+#[Get]
 class Book
 {
 }

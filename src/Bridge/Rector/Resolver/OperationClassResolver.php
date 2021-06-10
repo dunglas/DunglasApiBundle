@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace ApiPlatform\Core\Bridge\Rector\Resolver;
 
 use ApiPlatform\Metadata\Delete;
@@ -11,7 +13,7 @@ use ApiPlatform\Metadata\Put;
 
 class OperationClassResolver
 {
-    private static $operationsClass = [
+    private static array $operationsClass = [
         'itemOperations' => [
             'get' => Get::class,
             'put' => Put::class,
@@ -25,15 +27,14 @@ class OperationClassResolver
         ],
     ];
 
-    public static function resolve($operationName, $operationType, &$items)
+    public static function resolve(string $operationName, string $operationType, array $arguments): string
     {
         if (array_key_exists($operationName, self::$operationsClass[$operationType])) {
             return self::$operationsClass[$operationType][$operationName];
         }
 
-        if (isset($items['method'])) {
-            $method = strtolower($items['method']);
-            unset($items['method']);
+        if (isset($arguments['method'])) {
+            $method = strtolower($arguments['method']);
 
             if (isset(self::$operationsClass[$operationType][$method])) {
                 return self::$operationsClass[$operationType][$method];
