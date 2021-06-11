@@ -1,6 +1,6 @@
 <?php
 
-namespace ApiPlatform\Core\Tests\Bridge\Rector\Rules\ApiResourceAttributeToResourceAttributeRector\Source;
+namespace ApiPlatform\Core\Tests\Bridge\Rector\Rules\ApiResourceAttributeToResourceAttributeRector\Fixture;
 
 use ApiPlatform\Core\Annotation\ApiResource;
 
@@ -13,7 +13,7 @@ class Book
 -----
 <?php
 
-namespace ApiPlatform\Core\Tests\Bridge\Rector\Rules\ApiResourceAttributeToResourceAttributeRector\Source;
+namespace ApiPlatform\Core\Tests\Bridge\Rector\Rules\ApiResourceAttributeToResourceAttributeRector\Fixture;
 
 use ApiPlatform\Metadata\Resource;
 use ApiPlatform\Metadata\Get;

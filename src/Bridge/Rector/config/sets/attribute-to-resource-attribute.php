@@ -13,6 +13,8 @@ return static function (ContainerConfigurator $containerConfigurator): void {
     $parameters->set(Option::AUTO_IMPORT_NAMES, true);
 
     $services = $containerConfigurator->services();
-
-    $services->set(ApiResourceAttributeToResourceAttributeRector::class);
+    $services->set(ApiResourceAttributeToResourceAttributeRector::class)
+        ->call('configure', [[
+            ApiResourceAttributeToResourceAttributeRector::REMOVE_INITIAL_ATTRIBUTE => true
+        ]]);
 };

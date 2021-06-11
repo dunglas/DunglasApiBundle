@@ -4,20 +4,7 @@ namespace ApiPlatform\Core\Tests\Bridge\Rector\Rules\ApiResourceAttributeToResou
 
 use ApiPlatform\Core\Annotation\ApiResource;
 
-/**
- * @ApiResource(itemOperations={
- *     "get",
- *     "get_custom"={"method"="GET", "path"="custom_action_collection_dummies/{id}"},
- *     "custom_normalization"={"route_name"="custom_normalization", "method"="GET"},
- *     "short_custom_normalization"={"route_name"="short_custom_normalization", "method"="GET"}
- * },
- * collectionOperations={
- *     "get",
- *     "get_custom"={"method"="GET", "path"="custom_action_collection_dummies"},
- *     "custom_denormalization"={"route_name"="custom_denormalization", "method"="GET"},
- *     "short_custom_denormalization"={"route_name"="short_custom_denormalization", "method"="GET"}
- * })
- */
+#[ApiResource(itemOperations: ['get', 'get_custom' => ['method' => 'GET', 'path' => 'custom_action_collection_dummies/{id}'], 'custom_normalization' => ['route_name' => 'custom_normalization', 'method' => 'GET'], 'short_custom_normalization' => ['route_name' => 'short_custom_normalization', 'method' => 'GET']], collectionOperations: ['get', 'get_custom' => ['method' => 'GET', 'path' => 'custom_action_collection_dummies'], 'custom_denormalization' => ['route_name' => 'custom_denormalization', 'method' => 'GET'], 'short_custom_denormalization' => ['route_name' => 'short_custom_denormalization', 'method' => 'GET']])]
 class CustomActionDummy
 {
 }

@@ -16,7 +16,7 @@ abstract class AbstractApiResourceToResourceAttribute extends AbstractRector
 
     protected array $operationTypes = ['collectionOperations', 'itemOperations'];
 
-    protected function formatOperations(array $operations): array
+    protected function normalizeOperations(array $operations): array
     {
         foreach ($operations as $name => $arguments) {
             /**

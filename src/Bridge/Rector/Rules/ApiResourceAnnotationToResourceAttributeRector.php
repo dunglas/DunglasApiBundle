@@ -177,7 +177,7 @@ CODE_SAMPLE
 
         foreach ($this->operationTypes as $type) {
             if (isset($values[$type])) {
-                $operations = $this->formatOperations($values[$type]->getValuesWithExplicitSilentAndWithoutQuotes());
+                $operations = $this->normalizeOperations($values[$type]->getValuesWithExplicitSilentAndWithoutQuotes());
                 foreach ($operations as $name => $arguments) {
                     $node->attrGroups[] = $this->createOperationAttributeGroup($type, $name, $arguments);
                 }

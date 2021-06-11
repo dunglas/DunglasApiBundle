@@ -4,9 +4,7 @@ namespace ApiPlatform\Core\Tests\Bridge\Rector\Rules\ApiResourceAttributeToResou
 
 use ApiPlatform\Core\Annotation\ApiResource;
 
-/**
- * @ApiResource
- */
+#[ApiResource]
 class Minimal
 {
 }

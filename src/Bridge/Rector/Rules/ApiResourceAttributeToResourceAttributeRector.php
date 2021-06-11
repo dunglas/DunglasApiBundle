@@ -7,6 +7,10 @@ namespace ApiPlatform\Core\Bridge\Rector\Rules;
 use ApiPlatform\Core\Annotation\ApiResource;
 use ApiPlatform\Metadata\Resource;
 use PhpParser\Node;
+use PhpParser\Node\Expr\Array_;
+use PhpParser\Node\Expr\ClassConstFetch;
+use PhpParser\Node\Identifier;
+use PhpParser\Node\Scalar\String_;
 use PhpParser\Node\Stmt\Class_;
 use Rector\Core\Contract\Rector\ConfigurableRectorInterface;
 use Rector\PhpAttribute\Printer\PhpAttributeGroupFactory;
@@ -68,21 +72,86 @@ CODE_SAMPLE
      */
     public function refactor(Node $node) : ?Node
     {
-        $reflectionClass = new \ReflectionClass($node->name->getAttribute('className'));
-
-        foreach ($reflectionClass->getAttributes() as $attribute) {
-            if (ApiResource::class !== $attribute->getName()) {
-                continue;
+        foreach ($node->attrGroups as $key => $attrGroup) {
+            foreach ($attrGroup->attrs as $attribute) {
+                if (!$this->isName($attribute->name, ApiResource::class)) {
+                    continue;
+                }
+                $items = $this->createItemsFromArgs($attribute->args);
+                $arguments = $this->resolveOperations($items, $node);
+                $resourceAttributeGroup = $this->phpAttributeGroupFactory->createFromClassWithItems(Resource::class, $arguments);
+                array_unshift($node->attrGroups, $resourceAttributeGroup);
             }
-
-            $arguments = $this->resolveOperations($attribute->getArguments(), $node);
-            $resourceAttributeGroup = $this->phpAttributeGroupFactory->createFromClassWithItems(Resource::class, $arguments);
-            array_unshift($node->attrGroups, $resourceAttributeGroup);
         }
 
         $this->cleanupAttrGroups($node);
 
         return $node;
+    }
+
+    private function createItemsFromArgs(array $args) : array
+    {
+        $items = [];
+
+        foreach ($args as $arg) {
+            $itemValue = $this->normalizeNodeValue($arg->value);
+            $itemName = $this->normalizeNodeValue($arg->name);
+            $items[$itemName] = $itemValue;
+        }
+
+        return $items;
+    }
+
+    /**
+     * @param mixed $value
+     * @return bool|float|int|string|array<mixed>|Node\Expr
+     */
+    private function normalizeNodeValue($value)
+    {
+        if ($value instanceof ClassConstFetch) {
+            return sprintf('%s::%s', (string) $value->class, (string) $value->name);
+        }
+        if ($value instanceof Array_) {
+            return $this->normalizeNodeValue($value->items);
+        }
+        if ($value instanceof String_) {
+            return (string) $value->value;
+        }
+        if ($value instanceof Identifier) {
+            return $value->name;
+        }
+        if (\is_array($value)) {
+            $items = [];
+            foreach ($value as $itemKey => $itemValue) {
+                if (null === $itemValue->key) {
+                    $items[] = $this->normalizeNodeValue($itemValue->value);
+                } else {
+                    $items[$this->normalizeNodeValue($itemValue->key)] = $this->normalizeNodeValue($itemValue->value);
+                }
+            }
+
+            return $items;
+        }
+
+        return $value;
+    }
+
+    /**
+     * @param Class_ $node
+     */
+    private function resolveOperations(array $values, Node $node): array
+    {
+        foreach ($this->operationTypes as $type) {
+            if (isset($values[$type])) {
+                $operations = $this->normalizeOperations($values[$type]);
+                foreach ($operations as $name => $arguments) {
+                    $node->attrGroups[] = $this->createOperationAttributeGroup($type, $name, $arguments);
+                }
+                unset($values[$type]);
+            }
+        }
+
+        return $values;
     }
 
     /**
@@ -104,23 +173,5 @@ CODE_SAMPLE
                 }
             }
         }
-    }
-
-    /**
-     * @param Class_ $node
-     */
-    private function resolveOperations(array $values, Node $node): array
-    {
-        foreach ($this->operationTypes as $type) {
-            if (isset($values[$type])) {
-                $operations = $this->formatOperations($values[$type]);
-                foreach ($operations as $name => $arguments) {
-                    $node->attrGroups[] = $this->createOperationAttributeGroup($type, $name, $arguments);
-                }
-                unset($values[$type]);
-            }
-        }
-
-        return $values;
     }
 }

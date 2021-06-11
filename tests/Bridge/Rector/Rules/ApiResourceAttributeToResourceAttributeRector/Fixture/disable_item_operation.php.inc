@@ -5,20 +5,7 @@ namespace ApiPlatform\Core\Tests\Bridge\Rector\Rules\ApiResourceAttributeToResou
 use ApiPlatform\Core\Action\NotFoundAction;
 use ApiPlatform\Core\Annotation\ApiResource;
 
-/**
- * @ApiResource(
- *     collectionOperations={
- *         "get"
- *     },
- *     itemOperations={
- *         "get"={
- *             "controller"=NotFoundAction::class,
- *             "read"=false,
- *             "output"=false
- *         }
- *     }
- * )
- */
+#[ApiResource(collectionOperations: ['get'], itemOperations: ['get' => ['controller' => NotFoundAction::class, 'read' => false, 'output' => false]])]
 class DisableItemOperation
 {
 }
