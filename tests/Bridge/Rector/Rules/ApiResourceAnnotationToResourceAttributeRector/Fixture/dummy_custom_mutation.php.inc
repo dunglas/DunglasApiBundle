@@ -34,7 +34,7 @@ use ApiPlatform\Core\Annotation\ApiResource;
  *     "testCustomArguments"={
  *         "mutation"="app.graphql.mutation_resolver.dummy_custom",
  *         "args"={"operandC"={"type"="Int!"}}
- *     }
+ *     },
  * })
  */
 class DummyCustomMutation

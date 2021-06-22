@@ -772,6 +772,77 @@ jobs:
       - name: Run Behat tests
         run: vendor/bin/behat --out=std --format=progress --profile=default --no-interaction
 
+  behat-rector-upgrade:
+    name: Behat (PHP ${{ matrix.php }}) (Rector)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      matrix:
+        php:
+          - '8.0'
+      fail-fast: false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          tools: pecl, composer
+          extensions: intl, bcmath, curl, openssl, mbstring, pdo_sqlite
+          ini-values: memory_limit=-1
+      - name: Get composer cache directory
+        id: composercache
+        run: echo "::set-output name=dir::$(composer config cache-files-dir)"
+      - name: Cache dependencies
+        uses: actions/cache@v2
+        with:
+          path: ${{ steps.composercache.outputs.dir }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.json') }}
+          restore-keys: ${{ runner.os }}-composer-
+      - name: Require Symfony components and Rector
+        run: composer require symfony/intl symfony/uid rector/rector-src --dev --no-interaction --no-progress --ansi
+      - name: Update project dependencies
+        run: composer update --no-interaction --no-progress --ansi
+      - name: Install PHPUnit
+        run: vendor/bin/simple-phpunit --version
+      - name: Clear test app cache
+        run: rm -Rf tests/Fixtures/app/var/cache/*
+      - name: Convert annotations to attributes
+        run: tests/Fixtures/app/console api:rector:upgrade tests/Fixtures/TestBundle/Entity --annotation-to-api-resource
+      - name: Run Behat tests
+        run: |
+          mkdir -p build/logs/behat
+          vendor/bin/behat --out=std --format=progress --format=junit --out=build/logs/behat/junit --profile=default --no-interaction
+        continue-on-error: true
+      - name: Upload test artifacts
+        if: always()
+        uses: actions/upload-artifact@v1
+        with:
+          name: behat-logs-php${{ matrix.php }}
+          path: build/logs/behat
+        continue-on-error: true
+      - name: Export OpenAPI documents
+        run: |
+          mkdir -p build/out/openapi
+          tests/Fixtures/app/console api:openapi:export --spec-version=2 -o build/out/openapi/swagger_v2.json
+          tests/Fixtures/app/console api:openapi:export --spec-version=2 --yaml -o build/out/openapi/swagger_v2.yaml
+          tests/Fixtures/app/console api:openapi:export --spec-version=3 -o build/out/openapi/openapi_v3.json
+          tests/Fixtures/app/console api:openapi:export --spec-version=3 --yaml -o build/out/openapi/openapi_v3.yaml
+      - name: Validate OpenAPI documents
+        run: |
+          npx swagger-cli validate build/out/openapi/swagger_v2.json
+          npx swagger-cli validate build/out/openapi/swagger_v2.yaml
+          npx swagger-cli validate build/out/openapi/openapi_v3.json
+          npx swagger-cli validate build/out/openapi/openapi_v3.yaml
+      - name: Upload OpenAPI artifacts
+        if: always()
+        uses: actions/upload-artifact@v1
+        with:
+          name: openapi-docs-php${{ matrix.php }}
+          path: build/out/openapi
+        continue-on-error: true
+        
   windows-phpunit:
     name: Windows PHPUnit (PHP ${{ matrix.php }}) (SQLite)
     runs-on: windows-latest

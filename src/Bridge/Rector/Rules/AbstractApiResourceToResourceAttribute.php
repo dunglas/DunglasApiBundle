@@ -1,5 +1,14 @@
 <?php
 
+/*
+ * This file is part of the API Platform project.
+ *
+ * (c) Kévin Dunglas <dunglas@gmail.com>
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
 declare(strict_types=1);
 
 namespace ApiPlatform\Core\Bridge\Rector\Rules;
@@ -19,13 +28,13 @@ abstract class AbstractApiResourceToResourceAttribute extends AbstractRector
     protected function normalizeOperations(array $operations): array
     {
         foreach ($operations as $name => $arguments) {
-            /**
+            /*
              * Case of custom action, ex:
              * itemOperations={
              *     "get_by_isbn"={"method"="GET", "path"="/books/by_isbn/{isbn}.{_format}", "requirements"={"isbn"=".+"}, "identifiers"="isbn"}
              * }
              */
-            if (is_array($arguments)) {
+            if (\is_array($arguments)) {
                 // add operation name
                 $arguments = ['operationName' => $name] + $arguments;
                 foreach ($arguments as $key => $argument) {
@@ -39,12 +48,12 @@ abstract class AbstractApiResourceToResourceAttribute extends AbstractRector
                 }
             }
 
-            /**
+            /*
              * Case of default action, ex:
              * collectionOperations={"get", "post"},
              * itemOperations={"get", "put", "delete"},
              */
-            if (is_string($arguments)) {
+            if (\is_string($arguments)) {
                 unset($operations[$name]);
                 $name = $arguments;
                 $arguments = [];

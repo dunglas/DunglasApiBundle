@@ -1,5 +1,16 @@
 <?php
 
+/*
+ * This file is part of the API Platform project.
+ *
+ * (c) Kévin Dunglas <dunglas@gmail.com>
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
+declare(strict_types=1);
+
 namespace ApiPlatform\Core\Bridge\Rector\Rules;
 
 use ApiPlatform\Core\Annotation\ApiResource;
@@ -47,7 +58,7 @@ final class ApiResourceAnnotationToResourceAttributeRector extends AbstractApiRe
         $this->phpDocTagRemover = $phpDocTagRemover;
     }
 
-    public function getRuleDefinition() : RuleDefinition
+    public function getRuleDefinition(): RuleDefinition
     {
         return new RuleDefinition('Change annotation to attribute', [new ConfiguredCodeSample(<<<'CODE_SAMPLE'
 use ApiPlatform\Core\Annotation\ApiResource;
@@ -73,14 +84,14 @@ CODE_SAMPLE
             , [
                 self::ANNOTATION_TO_ATTRIBUTE => [new AnnotationToAttribute(ApiResource::class, ApiResource::class)],
                 self::REMOVE_TAG => true,
-            ])
+            ]),
         ]);
     }
 
     /**
      * @return array<class-string<Node>>
      */
-    public function getNodeTypes() : array
+    public function getNodeTypes(): array
     {
         return [Class_::class];
     }
@@ -88,7 +99,7 @@ CODE_SAMPLE
     /**
      * @param Class_ $node
      */
-    public function refactor(Node $node) : ?Node
+    public function refactor(Node $node): ?Node
     {
         if (!$this->isAtLeastPhpVersion(PhpVersionFeature::ATTRIBUTES)) {
             return null;
@@ -102,13 +113,14 @@ CODE_SAMPLE
         if ($hasNewAttrGroups) {
             return $node;
         }
+
         return null;
     }
 
     /**
      * @param array<string, AnnotationToAttribute[]> $configuration
      */
-    public function configure(array $configuration) : void
+    public function configure(array $configuration): void
     {
         $annotationsToAttributes = $configuration[self::ANNOTATION_TO_ATTRIBUTE] ?? [];
         Assert::allIsInstanceOf($annotationsToAttributes, AnnotationToAttribute::class);
@@ -118,11 +130,11 @@ CODE_SAMPLE
 
     /**
      * @param array<PhpDocTagNode> $tags
-     * @param Class_ $node
+     * @param Class_               $node
      */
-    private function processApplyAttrGroups(array $tags, PhpDocInfo $phpDocInfo, Node $node) : bool
+    private function processApplyAttrGroups(array $tags, PhpDocInfo $phpDocInfo, Node $node): bool
     {
-        $hasNewAttrGroups = \false;
+        $hasNewAttrGroups = false;
         foreach ($tags as $tag) {
             foreach ($this->annotationsToAttributes as $annotationToAttribute) {
                 $annotationToAttributeTag = $annotationToAttribute->getTag();
@@ -133,7 +145,7 @@ CODE_SAMPLE
                     }
                     // 2. add attributes
                     $node->attrGroups[] = $this->phpAttributeGroupFactory->createFromSimpleTag($annotationToAttribute);
-                    $hasNewAttrGroups = \true;
+                    $hasNewAttrGroups = true;
                     continue 2;
                 }
                 if ($this->shouldSkip($tag->value, $phpDocInfo, $annotationToAttributeTag)) {
@@ -150,7 +162,7 @@ CODE_SAMPLE
                 $this->resolveOperations($tagValue, $node);
                 $resourceAttributeGroup = $this->phpAttributeGroupFactory->create($tagValue, $annotationToAttribute);
                 array_unshift($node->attrGroups, $resourceAttributeGroup);
-                $hasNewAttrGroups = \true;
+                $hasNewAttrGroups = true;
                 continue 2;
             }
         }
@@ -158,11 +170,11 @@ CODE_SAMPLE
         return $hasNewAttrGroups;
     }
 
-    private function shouldSkip(PhpDocTagValueNode $phpDocTagValueNode, PhpDocInfo $phpDocInfo, string $annotationToAttributeTag) : bool
+    private function shouldSkip(PhpDocTagValueNode $phpDocTagValueNode, PhpDocInfo $phpDocInfo, string $annotationToAttributeTag): bool
     {
         $doctrineAnnotationTagValueNode = $phpDocInfo->getByAnnotationClass($annotationToAttributeTag);
         if ($phpDocTagValueNode !== $doctrineAnnotationTagValueNode) {
-            return \true;
+            return true;
         }
 
         return !$phpDocTagValueNode instanceof DoctrineAnnotationTagValueNode;

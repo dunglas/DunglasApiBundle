@@ -1,5 +1,14 @@
 <?php
 
+/*
+ * This file is part of the API Platform project.
+ *
+ * (c) Kévin Dunglas <dunglas@gmail.com>
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
 declare(strict_types=1);
 
 namespace ApiPlatform\Core\Bridge\Rector\Rules;
@@ -31,7 +40,7 @@ final class ApiResourceAttributeToResourceAttributeRector extends AbstractApiRes
         $this->phpAttributeGroupFactory = $phpAttributeGroupFactory;
     }
 
-    public function getRuleDefinition() : RuleDefinition
+    public function getRuleDefinition(): RuleDefinition
     {
         return new RuleDefinition('Upgrade ApiResource attribute to Resource and Operations attributes', [new ConfiguredCodeSample(<<<'CODE_SAMPLE'
 use ApiPlatform\Core\Annotation\ApiResource;
@@ -54,7 +63,7 @@ CODE_SAMPLE
     /**
      * @return array<class-string<Node>>
      */
-    public function getNodeTypes() : array
+    public function getNodeTypes(): array
     {
         return [Class_::class];
     }
@@ -62,7 +71,7 @@ CODE_SAMPLE
     /**
      * @param array<string> $configuration
      */
-    public function configure(array $configuration) : void
+    public function configure(array $configuration): void
     {
         $this->removeInitialAttribute = $configuration[self::REMOVE_INITIAL_ATTRIBUTE] ?? true;
     }
@@ -70,7 +79,7 @@ CODE_SAMPLE
     /**
      * @param Class_ $node
      */
-    public function refactor(Node $node) : ?Node
+    public function refactor(Node $node): ?Node
     {
         foreach ($node->attrGroups as $key => $attrGroup) {
             foreach ($attrGroup->attrs as $attribute) {
@@ -89,7 +98,7 @@ CODE_SAMPLE
         return $node;
     }
 
-    private function createItemsFromArgs(array $args) : array
+    private function createItemsFromArgs(array $args): array
     {
         $items = [];
 
@@ -103,7 +112,6 @@ CODE_SAMPLE
     }
 
     /**
-     * @param mixed $value
      * @return bool|float|int|string|array<mixed>|Node\Expr
      */
     private function normalizeNodeValue($value)
@@ -155,11 +163,11 @@ CODE_SAMPLE
     }
 
     /**
-     * Remove initial ApiResource attribute from node
+     * Remove initial ApiResource attribute from node.
      *
      * @param Class_ $node
      */
-    private function cleanupAttrGroups(Node $node) : void
+    private function cleanupAttrGroups(Node $node): void
     {
         if (false === $this->removeInitialAttribute) {
             return;
@@ -169,7 +177,7 @@ CODE_SAMPLE
             foreach ($attrGroup->attrs as $attribute) {
                 if ($this->isName($attribute->name, ApiResource::class)) {
                     unset($node->attrGroups[$key]);
-                    continue(2);
+                    continue 2;
                 }
             }
         }

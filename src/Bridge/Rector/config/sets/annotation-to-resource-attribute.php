@@ -1,10 +1,19 @@
 <?php
 
+/*
+ * This file is part of the API Platform project.
+ *
+ * (c) Kévin Dunglas <dunglas@gmail.com>
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
 declare(strict_types=1);
 
 use ApiPlatform\Core\Annotation\ApiResource;
-use ApiPlatform\Metadata\Resource;
 use ApiPlatform\Core\Bridge\Rector\Rules\ApiResourceAnnotationToResourceAttributeRector;
+use ApiPlatform\Metadata\Resource;
 use Rector\Core\Configuration\Option;
 use Rector\Core\ValueObject\PhpVersion;
 use Rector\Php80\ValueObject\AnnotationToAttribute;
@@ -27,6 +36,5 @@ return static function (ContainerConfigurator $containerConfigurator): void {
                     Resource::class
                 ),
             ]),
-        ]])
-    ;
+        ]]);
 };

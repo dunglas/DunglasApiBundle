@@ -1,5 +1,14 @@
 <?php
 
+/*
+ * This file is part of the API Platform project.
+ *
+ * (c) Kévin Dunglas <dunglas@gmail.com>
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
 declare(strict_types=1);
 
 use ApiPlatform\Core\Annotation\ApiResource;
@@ -29,8 +38,7 @@ return static function (ContainerConfigurator $containerConfigurator): void {
                 ),
             ]),
             ApiResourceAnnotationToResourceAttributeRector::REMOVE_TAG => false,
-        ]])
-    ;
+        ]]);
 
     // ApiResource annotation to ApiResource attribute
     $services->set(AnnotationToAttributeRector::class)
@@ -41,6 +49,5 @@ return static function (ContainerConfigurator $containerConfigurator): void {
                     ApiResource::class
                 ),
             ]),
-        ]])
-    ;
+        ]]);
 };
