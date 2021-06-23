@@ -58,6 +58,10 @@ final class OrderExtension implements ContextAwareQueryCollectionExtensionInterf
             }
             if (null !== $defaultOrder) {
                 foreach ($defaultOrder as $field => $order) {
+                    if(isset($context['filters']['order'][$field])){
+                        continue;
+                    }
+                    
                     if (\is_int($field)) {
                         // Default direction
                         $field = $order;
