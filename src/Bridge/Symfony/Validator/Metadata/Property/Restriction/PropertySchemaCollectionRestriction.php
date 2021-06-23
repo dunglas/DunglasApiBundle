@@ -57,7 +57,7 @@ final class PropertySchemaCollectionRestriction implements PropertySchemaRestric
                 $required[] = $field;
             }
 
-            $restriction['properties'][$field] = $this->mergeConstraintRestrictions($baseConstraint, $propertyMetadata);
+            $restriction['properties'][$field] = $this->mergeConstraintRestrictions($baseConstraint, new PropertyMetadata());
         }
 
         if ($required) {
