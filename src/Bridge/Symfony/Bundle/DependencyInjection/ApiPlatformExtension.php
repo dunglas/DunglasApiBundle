@@ -317,7 +317,7 @@ final class ApiPlatformExtension extends Extension implements PrependExtensionIn
 
     private function getResourcesToWatch(ContainerBuilder $container, array $config): array
     {
-        $paths = array_unique(array_merge($config['mapping']['paths'], $this->getBundlesResourcesPaths($container, $config)));
+        $paths = array_unique(array_merge($this->getBundlesResourcesPaths($container, $config), $config['mapping']['paths']));
 
         // Flex structure (only if nothing specified)
         $projectDir = $container->getParameter('kernel.project_dir');
