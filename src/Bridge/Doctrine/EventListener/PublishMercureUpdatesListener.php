@@ -127,7 +127,9 @@ final class PublishMercureUpdatesListener
             return;
         }
 
-        $value = $this->resourceMetadataFactory->create($resourceClass)->getAttribute('mercure', false);
+        $metadata = $this->resourceMetadataFactory->create($resourceClass);
+        $value = $metadata->getAttribute('mercure', false);
+
         if (false === $value) {
             return;
         }
@@ -152,6 +154,7 @@ final class PublishMercureUpdatesListener
             $this->deletedEntities[(object) [
                 'id' => $this->iriConverter->getIriFromItem($entity),
                 'iri' => $this->iriConverter->getIriFromItem($entity, UrlGeneratorInterface::ABS_URL),
+                'type' => $metadata->getIri() ?? $metadata->getShortName(),
             ]] = $value;
 
             return;
@@ -169,9 +172,8 @@ final class PublishMercureUpdatesListener
             // By convention, if the entity has been deleted, we send only its IRI
             // This may change in the feature, because it's not JSON Merge Patch compliant,
             // and I'm not a fond of this approach
-            $iri = $entity->iri;
-            /** @var string $data */
-            $data = json_encode(['@id' => $entity->id]);
+            $iri  = $entity->iri;
+            $data = json_encode(['@id' => $entity->id, '@type' => $entity->type]);
         } else {
             $resourceClass = $this->getObjectClass($entity);
             $context = $this->resourceMetadataFactory->create($resourceClass)->getAttribute('normalization_context', []);
