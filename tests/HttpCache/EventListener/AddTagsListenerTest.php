@@ -201,4 +201,26 @@ class AddTagsListenerTest extends TestCase
 
         $this->assertSame('/foo,/bar,/dummies', $response->headers->get('Cache-Tags'));
     }
+
+    public function testAddTagsWithXKey()
+    {
+        $iriConverterProphecy = $this->prophesize(IriConverterInterface::class);
+
+        $response = new Response();
+        $response->setPublic();
+        $response->setEtag('foo');
+
+        $event = new ResponseEvent(
+            $this->prophesize(HttpKernelInterface::class)->reveal(),
+            new Request([], [], ['_resources' => ['/foo', '/bar'], '_api_resource_class' => Dummy::class, '_api_item_operation_name' => 'get']),
+            HttpKernelInterface::MASTER_REQUEST,
+            $response
+        );
+
+        $listener = new AddTagsListener($iriConverterProphecy->reveal(), true);
+        $listener->onKernelResponse($event);
+
+        $this->assertSame('/foo,/bar', $response->headers->get('Cache-Tags'));
+        $this->assertSame('/foo /bar', $response->headers->get('xkey'));
+    }
 }

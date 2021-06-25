@@ -59,6 +59,11 @@ api_platform:
     http_cache:
         invalidation:
             enabled: true
+            xkey: 
+                enabled: true
+                glue: ' '
+            http_tags: 
+                enabled: true
     openapi:
         backward_compatibility_layer: false
     defaults:
@@ -227,9 +232,16 @@ services:
 
     api_platform.http_cache.purger:
         class: ApiPlatform\Core\Tests\Fixtures\NullPurger
+        
+    api_platform.http_cache.purger.xkey:
+        class: ApiPlatform\Core\Tests\Fixtures\NullPurger
 
     test.api_platform.http_cache.purger:
         alias: api_platform.http_cache.purger
+        public: true
+        
+    test.api_platform.http_cache.purger.xkey:
+        alias: api_platform.http_cache.purger.xkey
         public: true
 
     test.property_accessor:

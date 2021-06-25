@@ -209,6 +209,9 @@ final class ApiPlatformExtension extends Extension implements PrependExtensionIn
         $container->setParameter('api_platform.http_cache.vary', $config['defaults']['cache_headers']['vary'] ?? $config['http_cache']['vary']);
         $container->setParameter('api_platform.http_cache.public', $config['defaults']['cache_headers']['public'] ?? $config['http_cache']['public']);
         $container->setParameter('api_platform.http_cache.invalidation.max_header_length', $config['defaults']['cache_headers']['invalidation']['max_header_length'] ?? $config['http_cache']['invalidation']['max_header_length']);
+        $container->setParameter('api_platform.http_cache.invalidation.xkey.enabled', $config['defaults']['cache_headers']['invalidation']['xkey_enabled'] ?? $this->isConfigEnabled($container, $config['http_cache']['invalidation']['xkey']));
+        $container->setParameter('api_platform.http_cache.invalidation.xkey.glue', $config['defaults']['cache_headers']['invalidation']['xkey']['glue'] ?? $config['http_cache']['invalidation']['xkey']['glue']);
+        $container->setParameter('api_platform.http_cache.invalidation.http_tags.enabled', $config['defaults']['cache_headers']['invalidation']['http_tags_enabled'] ?? $this->isConfigEnabled($container, $config['http_cache']['invalidation']['http_tags']));
 
         $container->setAlias('api_platform.operation_path_resolver.default', $config['default_operation_path_resolver']);
         $container->setAlias('api_platform.path_segment_name_generator', $config['path_segment_name_generator']);
@@ -582,6 +585,10 @@ final class ApiPlatformExtension extends Extension implements PrependExtensionIn
             return;
         }
 
+        if (!$this->isConfigEnabled($container, $config['http_cache']['invalidation']['xkey']) && !$this->isConfigEnabled($container, $config['http_cache']['invalidation']['http_tags'])) {
+            throw new RuntimeException('You can not set both xkey and http_tags to false.');
+        }
+
         if ($this->isConfigEnabled($container, $config['doctrine'])) {
             $loader->load('doctrine_orm_http_cache_purger.xml');
         }
@@ -596,9 +603,17 @@ final class ApiPlatformExtension extends Extension implements PrependExtensionIn
             $definitions[] = $definition;
         }
 
-        $container->getDefinition('api_platform.http_cache.purger.varnish')->setArguments([$definitions,
-            $config['http_cache']['invalidation']['max_header_length'], ]);
-        $container->setAlias('api_platform.http_cache.purger', 'api_platform.http_cache.purger.varnish');
+        if ($this->isConfigEnabled($container, $config['http_cache']['invalidation']['http_tags'])) {
+            $container->getDefinition('api_platform.http_cache.purger.varnish')->setArguments([$definitions,
+                $config['http_cache']['invalidation']['max_header_length'], ]);
+            $container->setAlias('api_platform.http_cache.purger', 'api_platform.http_cache.purger.varnish');
+        }
+
+        if ($this->isConfigEnabled($container, $config['http_cache']['invalidation']['xkey'])) {
+            $container->getDefinition('api_platform.http_cache.purger.varnish.xkey')->setArguments([$definitions,
+                $config['http_cache']['invalidation']['max_header_length'], ]);
+            $container->setAlias('api_platform.http_cache.purger.xkey', 'api_platform.http_cache.purger.varnish.xkey');
+        }
     }
 
     /**
