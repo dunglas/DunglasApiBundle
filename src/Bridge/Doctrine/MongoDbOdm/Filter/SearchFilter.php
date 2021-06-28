@@ -100,9 +100,7 @@ final class SearchFilter extends AbstractFilter implements SearchFilterInterface
         $metadata = $this->getNestedMetadata($resourceClass, $associations);
 
         if ($metadata->hasField($field) && !$metadata->hasAssociation($field)) {
-            if ('id' === $field) {
-                $values = array_map([$this, 'getIdFromValue'], $values);
-            }
+            $values = array_map([$this, 'getIdFromValue'], $values);
 
             if (!$this->hasValidValues($values, $this->getDoctrineFieldType($property, $resourceClass))) {
                 $this->logger->notice('Invalid filter ignored', [

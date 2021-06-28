@@ -13,9 +13,11 @@ declare(strict_types=1);
 
 namespace ApiPlatform\Core\Bridge\Doctrine\Common\Filter;
 
+use ApiPlatform\Core\Api\IdentifiersExtractorInterface;
 use ApiPlatform\Core\Api\IriConverterInterface;
 use ApiPlatform\Core\Bridge\Doctrine\Common\PropertyHelperTrait;
 use ApiPlatform\Core\Exception\InvalidArgumentException;
+use ApiPlatform\Core\Exception\InvalidIdentifierException;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\PropertyAccess\PropertyAccessorInterface;
 
@@ -29,8 +31,13 @@ trait SearchFilterTrait
 {
     use PropertyHelperTrait;
 
+    /** @var IriConverterInterface */
     protected $iriConverter;
+
+    /** @var PropertyAccessorInterface */
     protected $propertyAccessor;
+
+    /** @var IdentifiersExtractorInterface */
     protected $identifiersExtractor;
 
     /**
@@ -121,8 +128,26 @@ trait SearchFilterTrait
     {
         try {
             $item = $this->getIriConverter()->getItemFromIri($value, ['fetch_data' => false]);
+            if (null === $item) {
+                return null;
+            }
 
-            return $this->getPropertyAccessor()->getValue($item, 'id');
+            $entityManager = $this
+                ->getManagerRegistry()
+                ->getManagerForClass($item::class);
+
+            if (!$entityManager) {
+                // I'm keeping this because tests depends on it but in this case we should probably return the $item
+                return $this->getPropertyAccessor()->getValue($item, 'id');
+            }
+
+            $identifiers = $entityManager->getClassMetadata($item::class)->getIdentifierValues($item);
+            if (count($identifiers) > 1) {
+                // Not sure about the exception to use
+                throw new InvalidIdentifierException('Filter does not support multiple identifiers');
+            }
+
+            return reset($identifiers);
         } catch (InvalidArgumentException $e) {
             // Do nothing, return the raw value
         }
