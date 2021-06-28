@@ -242,10 +242,10 @@ final class ApiLoader extends Loader
             [
                 '_controller' => $controller,
                 '_format' => null,
-                '_stateless' => $operation['stateless'],
+                '_stateless' => $operation['stateless'] ?? null,
                 '_api_resource_class' => $resourceClass,
-                '_api_identifiers' => $operation['identifiers'],
-                '_api_has_composite_identifier' => $operation['has_composite_identifier'],
+                '_api_identifiers' => $operation['identifiers'] ?? [],
+                '_api_has_composite_identifier' => $operation['has_composite_identifier'] ?? true,
                 sprintf('_api_%s_operation_name', $operationType) => $operationName,
             ] + ($operation['defaults'] ?? []),
             $operation['requirements'] ?? [],
