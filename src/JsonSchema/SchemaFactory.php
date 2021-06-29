@@ -152,13 +152,13 @@ final class SchemaFactory implements SchemaFactoryInterface
                 $definition['required'][] = $normalizedPropertyName;
             }
 
-            $this->buildPropertySchema($schema, $definitionName, $normalizedPropertyName, $propertyMetadata, $serializerContext, $format);
+            $this->buildPropertySchema($schema, $definitionName, $normalizedPropertyName, $propertyMetadata, $serializerContext, $format, $type === Schema::TYPE_OUTPUT);
         }
 
         return $schema;
     }
 
-    private function buildPropertySchema(Schema $schema, string $definitionName, string $normalizedPropertyName, PropertyMetadata $propertyMetadata, array $serializerContext, string $format): void
+    private function buildPropertySchema(Schema $schema, string $definitionName, string $normalizedPropertyName, PropertyMetadata $propertyMetadata, array $serializerContext, string $format, bool $isOutput): void
     {
         $version = $schema->getVersion();
         $swagger = false;
@@ -228,7 +228,7 @@ final class SchemaFactory implements SchemaFactoryInterface
                 $className = $valueType->getClassName();
             }
 
-            $valueSchema = $this->typeFactory->getType(new Type($builtinType, $type->isNullable(), $className, $isCollection), $format, $propertyMetadata->isReadableLink(), $serializerContext, $schema);
+            $valueSchema = $this->typeFactory->getType(new Type($builtinType, $type->isNullable(), $className, $isCollection), $format, $isOutput ? $propertyMetadata->isReadableLink() : $propertyMetadata->isWritableLink(), $serializerContext, $schema);
         }
 
         if (\array_key_exists('type', $propertySchema) && \array_key_exists('$ref', $valueSchema)) {
