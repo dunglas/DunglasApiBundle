@@ -17,6 +17,7 @@ use ApiPlatform\Core\Api\OperationType;
 use ApiPlatform\Core\Exception\RuntimeException;
 use ApiPlatform\Core\Metadata\Resource\Factory\ResourceMetadataFactoryInterface;
 use ApiPlatform\Core\Swagger\Serializer\DocumentationNormalizer;
+use ApiPlatform\Core\Translation\ResourceTranslatorInterface;
 use ApiPlatform\Core\Util\RequestAttributesExtractor;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Serializer\Encoder\CsvEncoder;
@@ -29,10 +30,12 @@ use Symfony\Component\Serializer\Encoder\CsvEncoder;
 final class SerializerContextBuilder implements SerializerContextBuilderInterface
 {
     private $resourceMetadataFactory;
+    private $resourceTranslator;
 
-    public function __construct(ResourceMetadataFactoryInterface $resourceMetadataFactory)
+    public function __construct(ResourceMetadataFactoryInterface $resourceMetadataFactory, ResourceTranslatorInterface $resourceTranslator = null)
     {
         $this->resourceMetadataFactory = $resourceMetadataFactory;
+        $this->resourceTranslator = $resourceTranslator;
     }
 
     /**
@@ -112,6 +115,10 @@ final class SerializerContextBuilder implements SerializerContextBuilderInterfac
 
                 break;
             }
+        }
+
+        if ($this->resourceTranslator) {
+            $context['all_translations_enabled'] = $this->resourceTranslator->isAllTranslationsEnabled($attributes['resource_class'], $request->query->all());
         }
 
         return $context;

@@ -71,7 +71,8 @@ use ApiPlatform\Core\Exception\InvalidArgumentException;
  *     @Attribute("urlGenerationStrategy", type="int"),
  *     @Attribute("validationGroups", type="mixed"),
  *     @Attribute("exceptionToStatus", type="array"),
- *     @Attribute("queryParameterValidationEnabled", type="bool")
+ *     @Attribute("queryParameterValidationEnabled", type="bool"),
+ *     @Attribute("translation", type="array")
  * )
  */
 #[\Attribute(\Attribute::TARGET_CLASS)]
@@ -174,6 +175,7 @@ final class ApiResource
      * @param int          $urlGenerationStrategy
      * @param array        $exceptionToStatus               https://api-platform.com/docs/core/errors/#fine-grained-configuration
      * @param bool         $queryParameterValidationEnabled
+     * @param array        $translation
      *
      * @throws InvalidArgumentException
      */
@@ -225,7 +227,8 @@ final class ApiResource
         ?int $urlGenerationStrategy = null,
         ?bool $compositeIdentifier = null,
         ?array $exceptionToStatus = null,
-        ?bool $queryParameterValidationEnabled = null
+        ?bool $queryParameterValidationEnabled = null,
+        ?array $translation = null
     ) {
         if (!\is_array($description)) { // @phpstan-ignore-line Doctrine annotations support
             [$publicProperties, $configurableAttributes] = self::getConfigMetadata();

@@ -45,7 +45,7 @@ interface ContextBuilderInterface
      *
      * @throws ResourceClassNotFoundException
      */
-    public function getResourceContext(string $resourceClass, int $referenceType = UrlGeneratorInterface::ABS_PATH): array;
+    public function getResourceContext(string $resourceClass, int $referenceType = UrlGeneratorInterface::ABS_PATH/*, array $context = []*/): array;
 
     /**
      * Gets the URI of the given resource context.

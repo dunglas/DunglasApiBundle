@@ -67,6 +67,7 @@ class ApiResourceTest extends TestCase
             'sunset' => 'Thu, 11 Oct 2018 00:00:00 +0200',
             'urlGenerationStrategy' => UrlGeneratorInterface::ABS_PATH,
             'queryParameterValidationEnabled' => false,
+            'translation' => ['class' => 'TranslationClass'],
         ]);
 
         $this->assertSame('shortName', $resource->shortName);
@@ -109,6 +110,7 @@ class ApiResourceTest extends TestCase
             'sunset' => 'Thu, 11 Oct 2018 00:00:00 +0200',
             'url_generation_strategy' => 1,
             'query_parameter_validation_enabled' => false,
+            'translation' => ['class' => 'TranslationClass'],
         ], $resource->attributes);
     }
 
@@ -165,6 +167,7 @@ return new \ApiPlatform\Core\Annotation\ApiResource(
         \DomainException::class => 400,
     ],
     queryParameterValidationEnabled: false,
+    translation: ['class' => 'TranslationClass'],
 );
 PHP
         );
@@ -218,6 +221,7 @@ PHP
                 \DomainException::class => 400,
             ],
             'query_parameter_validation_enabled' => false,
+            'translation' => ['class' => 'TranslationClass'],
         ], $resource->attributes);
     }
 

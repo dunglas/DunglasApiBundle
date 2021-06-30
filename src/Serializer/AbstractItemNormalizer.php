@@ -26,6 +26,7 @@ use ApiPlatform\Core\Metadata\Property\Factory\PropertyNameCollectionFactoryInte
 use ApiPlatform\Core\Metadata\Property\PropertyMetadata;
 use ApiPlatform\Core\Metadata\Resource\Factory\ResourceMetadataFactoryInterface;
 use ApiPlatform\Core\Security\ResourceAccessCheckerInterface;
+use ApiPlatform\Core\Translation\ResourceTranslatorInterface;
 use ApiPlatform\Core\Util\ClassInfoTrait;
 use Symfony\Component\PropertyAccess\Exception\NoSuchPropertyException;
 use Symfony\Component\PropertyAccess\PropertyAccess;
@@ -63,13 +64,14 @@ abstract class AbstractItemNormalizer extends AbstractObjectNormalizer
     protected $iriConverter;
     protected $resourceClassResolver;
     protected $resourceAccessChecker;
+    protected $resourceTranslator;
     protected $propertyAccessor;
     protected $itemDataProvider;
     protected $allowPlainIdentifiers;
     protected $dataTransformers = [];
     protected $localCache = [];
 
-    public function __construct(PropertyNameCollectionFactoryInterface $propertyNameCollectionFactory, PropertyMetadataFactoryInterface $propertyMetadataFactory, IriConverterInterface $iriConverter, ResourceClassResolverInterface $resourceClassResolver, PropertyAccessorInterface $propertyAccessor = null, NameConverterInterface $nameConverter = null, ClassMetadataFactoryInterface $classMetadataFactory = null, ItemDataProviderInterface $itemDataProvider = null, bool $allowPlainIdentifiers = false, array $defaultContext = [], iterable $dataTransformers = [], ResourceMetadataFactoryInterface $resourceMetadataFactory = null, ResourceAccessCheckerInterface $resourceAccessChecker = null)
+    public function __construct(PropertyNameCollectionFactoryInterface $propertyNameCollectionFactory, PropertyMetadataFactoryInterface $propertyMetadataFactory, IriConverterInterface $iriConverter, ResourceClassResolverInterface $resourceClassResolver, PropertyAccessorInterface $propertyAccessor = null, NameConverterInterface $nameConverter = null, ClassMetadataFactoryInterface $classMetadataFactory = null, ItemDataProviderInterface $itemDataProvider = null, bool $allowPlainIdentifiers = false, array $defaultContext = [], iterable $dataTransformers = [], ResourceMetadataFactoryInterface $resourceMetadataFactory = null, ResourceAccessCheckerInterface $resourceAccessChecker = null, ResourceTranslatorInterface $resourceTranslator = null)
     {
         if (!isset($defaultContext['circular_reference_handler'])) {
             $defaultContext['circular_reference_handler'] = function ($object) {
@@ -97,6 +99,7 @@ abstract class AbstractItemNormalizer extends AbstractObjectNormalizer
         $this->dataTransformers = $dataTransformers;
         $this->resourceMetadataFactory = $resourceMetadataFactory;
         $this->resourceAccessChecker = $resourceAccessChecker;
+        $this->resourceTranslator = $resourceTranslator;
     }
 
     /**
@@ -257,6 +260,8 @@ abstract class AbstractItemNormalizer extends AbstractObjectNormalizer
         $previousObject = null !== $objectToPopulate ? clone $objectToPopulate : null;
         $object = parent::denormalize($data, $resourceClass, $format, $context);
 
+        $this->denormalizeTranslation($data, $resourceClass, $format, $object);
+
         // Revert attributes that aren't allowed to be changed after a post-denormalize check
         foreach (array_keys($data) as $attribute) {
             if (!$this->canAccessAttributePostDenormalize($object, $previousObject, $attribute, $context)) {
@@ -270,6 +275,28 @@ abstract class AbstractItemNormalizer extends AbstractObjectNormalizer
         }
 
         return $object;
+    }
+
+    /**
+     * @param object $object
+     */
+    protected function denormalizeTranslation(array $data, string $resourceClass, ?string $format, $object): void
+    {
+        if (!$this->resourceTranslator || !$this->resourceTranslator->isResourceTranslatable($object)) {
+            return;
+        }
+
+        $locale = $this->resourceTranslator->getLocale();
+        $translationToPopulate = $object->getResourceTranslation($locale);
+
+        if (!$this->serializer instanceof DenormalizerInterface) {
+            throw new LogicException(sprintf('The injected serializer must be an instance of "%s".', DenormalizerInterface::class));
+        }
+        $translation = $this->serializer->denormalize($data, $this->resourceTranslator->getTranslationClass($resourceClass), $format, [self::OBJECT_TO_POPULATE => $translationToPopulate]);
+        $translation->setLocale($locale);
+
+        $object->removeResourceTranslation($translation);
+        $object->addResourceTranslation($translation);
     }
 
     /**
@@ -611,15 +638,22 @@ abstract class AbstractItemNormalizer extends AbstractObjectNormalizer
         $context['api_attribute'] = $attribute;
         $propertyMetadata = $this->propertyMetadataFactory->create($context['resource_class'], $attribute, $this->getFactoryOptions($context));
 
-        // BC to be removed in 3.0
-        try {
-            $attributeValue = $this->propertyAccessor->getValue($object, $attribute);
-        } catch (NoSuchPropertyException $e) {
-            if (!$propertyMetadata->hasChildInherited()) {
-                throw $e;
-            }
+        $attributeValue = null;
+        if ($this->resourceTranslator) {
+            $attributeValue = $this->resourceTranslator->translateAttributeValue($object, $attribute, $context);
+        }
 
-            $attributeValue = null;
+        if (!$attributeValue) {
+            // BC to be removed in 3.0
+            try {
+                $attributeValue = $this->propertyAccessor->getValue($object, $attribute);
+            } catch (NoSuchPropertyException $e) {
+                if (!$propertyMetadata->hasChildInherited()) {
+                    throw $e;
+                }
+
+                $attributeValue = null;
+            }
         }
 
         if ($context['api_denormalize'] ?? false) {

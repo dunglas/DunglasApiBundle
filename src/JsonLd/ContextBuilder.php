@@ -18,6 +18,7 @@ use ApiPlatform\Core\Metadata\Property\Factory\PropertyMetadataFactoryInterface;
 use ApiPlatform\Core\Metadata\Property\Factory\PropertyNameCollectionFactoryInterface;
 use ApiPlatform\Core\Metadata\Resource\Factory\ResourceMetadataFactoryInterface;
 use ApiPlatform\Core\Metadata\Resource\Factory\ResourceNameCollectionFactoryInterface;
+use ApiPlatform\Core\Translation\ResourceTranslatorInterface;
 use ApiPlatform\Core\Util\ClassInfoTrait;
 use Symfony\Component\Serializer\NameConverter\NameConverterInterface;
 
@@ -42,8 +43,9 @@ final class ContextBuilder implements AnonymousContextBuilderInterface
      * @var NameConverterInterface|null
      */
     private $nameConverter;
+    private $resourceTranslator;
 
-    public function __construct(ResourceNameCollectionFactoryInterface $resourceNameCollectionFactory, ResourceMetadataFactoryInterface $resourceMetadataFactory, PropertyNameCollectionFactoryInterface $propertyNameCollectionFactory, PropertyMetadataFactoryInterface $propertyMetadataFactory, UrlGeneratorInterface $urlGenerator, NameConverterInterface $nameConverter = null)
+    public function __construct(ResourceNameCollectionFactoryInterface $resourceNameCollectionFactory, ResourceMetadataFactoryInterface $resourceMetadataFactory, PropertyNameCollectionFactoryInterface $propertyNameCollectionFactory, PropertyMetadataFactoryInterface $propertyMetadataFactory, UrlGeneratorInterface $urlGenerator, NameConverterInterface $nameConverter = null, ResourceTranslatorInterface $resourceTranslator = null)
     {
         $this->resourceNameCollectionFactory = $resourceNameCollectionFactory;
         $this->resourceMetadataFactory = $resourceMetadataFactory;
@@ -51,6 +53,7 @@ final class ContextBuilder implements AnonymousContextBuilderInterface
         $this->propertyMetadataFactory = $propertyMetadataFactory;
         $this->urlGenerator = $urlGenerator;
         $this->nameConverter = $nameConverter;
+        $this->resourceTranslator = $resourceTranslator;
     }
 
     /**
@@ -88,7 +91,7 @@ final class ContextBuilder implements AnonymousContextBuilderInterface
     /**
      * {@inheritdoc}
      */
-    public function getResourceContext(string $resourceClass, int $referenceType = UrlGeneratorInterface::ABS_PATH): array
+    public function getResourceContext(string $resourceClass, int $referenceType = UrlGeneratorInterface::ABS_PATH, array $context = []): array
     {
         $resourceMetadata = $this->resourceMetadataFactory->create($resourceClass);
         if (null === $shortName = $resourceMetadata->getShortName()) {
@@ -96,13 +99,13 @@ final class ContextBuilder implements AnonymousContextBuilderInterface
         }
 
         if ($resourceMetadata->getAttribute('normalization_context')['iri_only'] ?? false) {
-            $context = $this->getBaseContext($referenceType);
-            $context['hydra:member']['@type'] = '@id';
+            $resourceContext = $this->getBaseContext($referenceType);
+            $resourceContext['hydra:member']['@type'] = '@id';
 
-            return $context;
+            return $resourceContext;
         }
 
-        return $this->getResourceContextWithShortname($resourceClass, $referenceType, $shortName);
+        return $this->getResourceContextWithShortname($resourceClass, $referenceType, $shortName, $context);
     }
 
     /**
@@ -148,9 +151,13 @@ final class ContextBuilder implements AnonymousContextBuilderInterface
         return $jsonLdContext;
     }
 
-    private function getResourceContextWithShortname(string $resourceClass, int $referenceType, string $shortName): array
+    private function getResourceContextWithShortname(string $resourceClass, int $referenceType, string $shortName, array $context = []): array
     {
-        $context = $this->getBaseContext($referenceType);
+        $resourceContext = $this->getBaseContext($referenceType);
+        $allTranslationsEnabled = $context['all_translations_enabled'] ?? ($this->resourceTranslator && $this->resourceTranslator->isAllTranslationsEnabled($resourceClass, []));
+        if (!$allTranslationsEnabled && $this->resourceTranslator && $this->resourceTranslator->isResourceClassTranslatable($resourceClass) && $locale = $this->resourceTranslator->getLocale()) {
+            $resourceContext['@language'] = $locale;
+        }
 
         foreach ($this->propertyNameCollectionFactory->create($resourceClass) as $propertyName) {
             $propertyMetadata = $this->propertyMetadataFactory->create($resourceClass, $propertyName);
@@ -173,15 +180,19 @@ final class ContextBuilder implements AnonymousContextBuilderInterface
                 ];
             }
 
+            if ($allTranslationsEnabled) {
+                $jsonldContext += ['@container' => '@language'];
+            }
+
             if (empty($jsonldContext)) {
-                $context[$convertedName] = $id;
+                $resourceContext[$convertedName] = $id;
             } else {
-                $context[$convertedName] = $jsonldContext + [
+                $resourceContext[$convertedName] = $jsonldContext + [
                     '@id' => $id,
                 ];
             }
         }
 
-        return $context;
+        return $resourceContext;
     }
 }

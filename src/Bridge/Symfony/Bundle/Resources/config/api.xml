@@ -82,6 +82,7 @@
 
         <service id="api_platform.serializer.context_builder" class="ApiPlatform\Core\Serializer\SerializerContextBuilder" public="false">
             <argument type="service" id="api_platform.metadata.resource.metadata_factory" />
+            <argument type="service" id="api_platform.translation.resource_translator" />
         </service>
         <service id="ApiPlatform\Core\Serializer\SerializerContextBuilderInterface" alias="api_platform.serializer.context_builder" />
 
@@ -117,6 +118,7 @@
             <argument type="tagged" tag="api_platform.data_transformer" on-invalid="ignore" />
             <argument type="service" id="api_platform.metadata.resource.metadata_factory" on-invalid="ignore" />
             <argument type="service" id="api_platform.security.resource_access_checker" on-invalid="ignore" />
+            <argument type="service" id="api_platform.translation.resource_translator" on-invalid="ignore" />
 
             <!-- Run before serializer.normalizer.json_serializable -->
             <tag name="serializer.normalizer" priority="-895" />
