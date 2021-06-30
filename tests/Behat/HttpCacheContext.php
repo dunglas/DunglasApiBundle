@@ -43,4 +43,19 @@ final class HttpCacheContext implements Context
             throw new ExpectationFailedException(sprintf('IRIs "%s" does not match expected "%s".', $purgedIris, $iris));
         }
     }
+
+    /**
+     * @Then :iris IRIs should be purged with xkey
+     */
+    public function irisShouldBePurgedWithXKey(string $iris)
+    {
+        $purger = $this->kernel->getContainer()->get('behat.driver.service_container')->get('test.api_platform.http_cache.purger.xkey');
+
+        $purgedIris = implode(' ', $purger->getIris());
+        $purger->clear();
+
+        if ($iris !== $purgedIris) {
+            throw new ExpectationFailedException(sprintf('IRIs "%s" does not match expected "%s".', $purgedIris, $iris));
+        }
+    }
 }

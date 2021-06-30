@@ -12,7 +12,10 @@
             <argument type="service" id="api_platform.http_cache.purger" />
             <argument type="service" id="api_platform.iri_converter" />
             <argument type="service" id="api_platform.resource_class_resolver" />
-
+            <argument type="service" id="api_platform.property_accessor" />
+            <argument type="service" id="api_platform.http_cache.purger.xkey" />
+            <argument>%api_platform.http_cache.invalidation.xkey.enabled%</argument>
+            <argument>%api_platform.http_cache.invalidation.http_tags.enabled%</argument>
             <tag name="doctrine.event_listener" event="preUpdate" />
             <tag name="doctrine.event_listener" event="onFlush" />
             <tag name="doctrine.event_listener" event="postFlush" />
