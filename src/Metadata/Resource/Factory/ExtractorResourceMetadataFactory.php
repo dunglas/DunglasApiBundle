@@ -28,6 +28,7 @@ final class ExtractorResourceMetadataFactory implements ResourceMetadataFactoryI
     private $extractor;
     private $decorated;
     private $defaults;
+    private $resources = ['description', 'iri', 'itemOperations', 'collectionOperations', 'graphql'];
 
     public function __construct(ExtractorInterface $extractor, ResourceMetadataFactoryInterface $decorated = null, array $defaults = [])
     {
@@ -54,11 +55,10 @@ final class ExtractorResourceMetadataFactory implements ResourceMetadataFactoryI
             return $this->handleNotFound($parentResourceMetadata, $resourceClass);
         }
 
-        $resource['description'] = $resource['description'] ?? $this->defaults['description'] ?? null;
-        $resource['iri'] = $resource['iri'] ?? $this->defaults['iri'] ?? null;
-        $resource['itemOperations'] = $resource['itemOperations'] ?? $this->defaults['item_operations'] ?? null;
-        $resource['collectionOperations'] = $resource['collectionOperations'] ?? $this->defaults['collection_operations'] ?? null;
-        $resource['graphql'] = $resource['graphql'] ?? $this->defaults['graphql'] ?? null;
+        foreach ($this->resources as $availableResource) {
+            $resource[$availableResource] =
+                $resource[$availableResource] ?? $this->defaults[strtolower(preg_replace('/(?<!^)[A-Z]+|(?<!^|\d)[\d]+/', '_$0', $availableResource))] ?? null;
+        }
 
         if (null !== $resource['attributes'] || [] !== $this->defaults['attributes']) {
             $resource['attributes'] = (array) $resource['attributes'];
@@ -91,14 +91,75 @@ final class ExtractorResourceMetadataFactory implements ResourceMetadataFactoryI
      */
     private function update(ResourceMetadata $resourceMetadata, array $metadata): ResourceMetadata
     {
-        foreach (['shortName', 'description', 'iri', 'itemOperations', 'collectionOperations', 'subresourceOperations', 'graphql', 'attributes'] as $property) {
-            if (null === $metadata[$property] || null !== $resourceMetadata->{'get'.ucfirst($property)}()) {
-                continue;
+        foreach (['shortName', 'description', 'iri', 'itemOperations', 'collectionOperations', 'subresourceOperations', 'graphql', 'attributes'] as $propertyName) {
+            $propertyValue = $this->resolveResourceMetadataPropertyValue($propertyName, $resourceMetadata, $metadata);
+            if (null !== $propertyValue) {
+                $resourceMetadata = $resourceMetadata->{'with' . ucfirst($propertyName)}($propertyValue);
             }
-
-            $resourceMetadata = $resourceMetadata->{'with'.ucfirst($property)}($metadata[$property]);
         }
 
         return $resourceMetadata;
+    }
+
+    /** @return mixed */
+    private function resolveResourceMetadataPropertyValue(
+        string $propertyName,
+        ResourceMetadata $parentResourceMetadata,
+        array $childResourceMetadata
+    ) {
+        $parentPropertyValue = $parentResourceMetadata->{'get' . ucfirst($propertyName)}();
+
+        $childPropertyValue = $childResourceMetadata[$propertyName];
+        if (null === $childPropertyValue) {
+            return $parentPropertyValue;
+        }
+
+        if (null === $parentPropertyValue) {
+            return $childPropertyValue;
+        }
+
+        if (is_array($parentPropertyValue)) {
+            if (!is_array($childPropertyValue)) {
+                throw new \InvalidArgumentException(sprintf(
+                    'Invalid child property value type for property "%s", expected array',
+                    $propertyName,
+                ));
+            }
+
+            return $this->replaceConfigs($parentPropertyValue, $childPropertyValue);
+        }
+
+        return $childPropertyValue;
+    }
+
+    private function replaceConfigs(...$configs): array
+    {
+        $resultingConfig = [];
+
+        foreach ($configs as $config) {
+            foreach ($config as $newKey => $newValue) {
+                $unsetNewKey = false;
+                if (is_string($newKey) && 1 === preg_match('/^(.*[^ ]) +\\(unset\\)$/', $newKey, $matches)) {
+                    [, $newKey] = $matches;
+                    $unsetNewKey = true;
+                }
+
+                if ($unsetNewKey) {
+                    unset($resultingConfig[$newKey]);
+
+                    if (null === $newValue) {
+                        continue;
+                    }
+                }
+
+                if (is_integer($newKey)) {
+                    $resultingConfig[] = $newValue;
+                } else {
+                    $resultingConfig[$newKey] = $newValue;
+                }
+            }
+        }
+
+        return $resultingConfig;
     }
 }
