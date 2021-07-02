@@ -23,8 +23,9 @@ final class Info
     private $contact;
     private $license;
     private $version;
+    private $summary;
 
-    public function __construct(string $title, string $version, string $description = '', string $termsOfService = null, Contact $contact = null, License $license = null)
+    public function __construct(string $title, string $version, string $description = '', string $termsOfService = null, Contact $contact = null, License $license = null, string $summary = null)
     {
         $this->title = $title;
         $this->version = $version;
@@ -32,6 +33,7 @@ final class Info
         $this->termsOfService = $termsOfService;
         $this->contact = $contact;
         $this->license = $license;
+        $this->summary = $summary;
     }
 
     public function getTitle(): string
@@ -62,6 +64,11 @@ final class Info
     public function getVersion(): string
     {
         return $this->version;
+    }
+
+    public function getSummary(): ?string
+    {
+        return $this->summary;
     }
 
     public function withTitle(string $title): self
@@ -108,6 +115,14 @@ final class Info
     {
         $clone = clone $this;
         $clone->version = $version;
+
+        return $clone;
+    }
+
+    public function withSummary(string $summary): self
+    {
+        $clone = clone $this;
+        $clone->summary = $summary;
 
         return $clone;
     }

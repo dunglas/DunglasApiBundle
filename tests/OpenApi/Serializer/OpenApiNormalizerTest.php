@@ -178,6 +178,7 @@ class OpenApiNormalizerTest extends TestCase
         $this->assertArrayNotHasKey('extensionProperties', $openApiAsArray);
         // this key is null, should not be in the output
         $this->assertArrayNotHasKey('termsOfService', $openApiAsArray['info']);
+        $this->assertArrayNotHasKey('summary', $openApiAsArray['info']);
         $this->assertArrayNotHasKey('paths', $openApiAsArray['paths']);
         $this->assertArrayHasKey('/dummies/{id}', $openApiAsArray['paths']);
         $this->assertArrayNotHasKey('servers', $openApiAsArray['paths']['/dummies/{id}']['get']);

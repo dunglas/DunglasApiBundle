@@ -23,7 +23,7 @@ final class OpenApi implements DocumentationInterface
 {
     use ExtensionTrait;
 
-    public const VERSION = '3.0.3';
+    public const VERSION = '3.1.0';
 
     private $openapi;
     private $info;
@@ -33,8 +33,10 @@ final class OpenApi implements DocumentationInterface
     private $security;
     private $tags;
     private $externalDocs;
+    private $jsonSchemaDialect;
+    private $webhooks;
 
-    public function __construct(Info $info, array $servers, Paths $paths, Components $components = null, array $security = [], array $tags = [], $externalDocs = null)
+    public function __construct(Info $info, array $servers, Paths $paths, Components $components = null, array $security = [], array $tags = [], $externalDocs = null, string $jsonSchemaDialect = null, \ArrayObject $webhooks = null)
     {
         $this->openapi = self::VERSION;
         $this->info = $info;
@@ -44,6 +46,8 @@ final class OpenApi implements DocumentationInterface
         $this->security = $security;
         $this->tags = $tags;
         $this->externalDocs = $externalDocs;
+        $this->jsonSchemaDialect = $jsonSchemaDialect;
+        $this->webhooks = $webhooks;
     }
 
     public function getOpenapi(): string
@@ -84,6 +88,16 @@ final class OpenApi implements DocumentationInterface
     public function getExternalDocs(): ?array
     {
         return $this->externalDocs;
+    }
+
+    public function getJsonSchemaDialect(): ?string
+    {
+        return $this->jsonSchemaDialect;
+    }
+
+    public function getWebhooks(): ?\ArrayObject
+    {
+        return $this->webhooks;
     }
 
     public function withOpenapi(string $openapi): self
@@ -146,6 +160,14 @@ final class OpenApi implements DocumentationInterface
     {
         $clone = clone $this;
         $clone->externalDocs = $externalDocs;
+
+        return $clone;
+    }
+
+    public function withJsonSchemaDialect(?string $jsonSchemaDialect): self
+    {
+        $clone = clone $this;
+        $clone->jsonSchemaDialect = $jsonSchemaDialect;
 
         return $clone;
     }

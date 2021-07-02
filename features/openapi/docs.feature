@@ -10,7 +10,7 @@ Feature: Documentation support
     And the response should be in JSON
     And the header "Content-Type" should be equal to "application/json; charset=utf-8"
     # Context
-    And the JSON node "openapi" should be equal to "3.0.3"
+    And the JSON node "openapi" should be equal to "3.1.0"
     # Root properties
     And the JSON node "info.title" should be equal to "My Dummy API"
     And the JSON node "info.description" should contain "This is a test API."

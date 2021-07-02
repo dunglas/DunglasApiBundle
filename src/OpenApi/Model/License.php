@@ -19,11 +19,13 @@ final class License
 
     private $name;
     private $url;
+    private $identifier;
 
-    public function __construct(string $name, string $url = null)
+    public function __construct(string $name, string $url = null, string $identifier = null)
     {
         $this->name = $name;
         $this->url = $url;
+        $this->identifier = $identifier;
     }
 
     public function getName(): string
@@ -34,6 +36,11 @@ final class License
     public function getUrl(): ?string
     {
         return $this->url;
+    }
+
+    public function getIdentifier(): ?string
+    {
+        return $this->identifier;
     }
 
     public function withName(string $name): self
@@ -48,6 +55,14 @@ final class License
     {
         $clone = clone $this;
         $clone->url = $url;
+
+        return $clone;
+    }
+
+    public function withIdentifier(?string $identifier): self
+    {
+        $clone = clone $this;
+        $clone->identifier = $identifier;
 
         return $clone;
     }
