@@ -40,6 +40,12 @@ final class ElasticsearchClientPass implements CompilerPassInterface
             $clientConfiguration['hosts'] = $hosts;
         }
 
+        if ($options = $container->getParameter('api_platform.elasticsearch.options')) {
+            foreach ($options as $option => $value) {
+                $clientConfiguration[$option] = $value;
+            }
+        }
+
         if ($container->has('logger')) {
             $clientConfiguration['logger'] = new Reference('logger');
             $clientConfiguration['tracer'] = new Reference('logger');

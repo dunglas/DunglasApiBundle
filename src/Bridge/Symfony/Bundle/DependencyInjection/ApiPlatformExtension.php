@@ -714,6 +714,7 @@ final class ApiPlatformExtension extends Extension implements PrependExtensionIn
 
         $container->setParameter('api_platform.elasticsearch.hosts', $config['elasticsearch']['hosts']);
         $container->setParameter('api_platform.elasticsearch.mapping', $config['elasticsearch']['mapping']);
+        $container->setParameter('api_platform.elasticsearch.options', $config['elasticsearch']['options']);
     }
 
     private function registerDataTransformerConfiguration(ContainerBuilder $container): void
