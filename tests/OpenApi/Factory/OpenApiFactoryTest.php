@@ -675,6 +675,10 @@ class OpenApiFactoryTest extends TestCase
 
         $this->assertEquals($openApi->getInfo()->getExtensionProperties(), ['x-info-key' => 'Info value']);
         $this->assertEquals($openApi->getExtensionProperties(), ['x-key' => 'Custom x-key value', 'x-value' => 'Custom x-value value']);
+
+        $this->assertNotNull($openApi->getPaths()->getPath('/dummies/{id}'));
+        $openApi->getPaths()->removePath('/dummies/{id}');
+        $this->assertNull($openApi->getPaths()->getPath('/dummies/{id}'));
     }
 
     public function testSubresourceDocumentation()

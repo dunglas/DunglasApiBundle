@@ -32,6 +32,7 @@
 * Exception: Add the ability to customize multiple status codes based on the validation exception (#4017)
 * GraphQL: Fix graphql fetching with Elasticsearch (#4217)
 * ApiLoader: Support `_format` resolving (#4292)
+* OpenAPI: Allow removing paths
 
 ## 2.6.5
 

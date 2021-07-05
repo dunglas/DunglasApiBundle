@@ -22,6 +22,11 @@ final class Paths
         $this->paths[$path] = $pathItem;
     }
 
+    public function removePath(string $path): void
+    {
+        unset($this->paths[$path]);
+    }
+
     public function getPath(string $path): ?PathItem
     {
         return $this->paths[$path] ?? null;
