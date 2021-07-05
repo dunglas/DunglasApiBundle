@@ -1,0 +1,11 @@
+resources:
+    'ApiPlatform\Core\Tests\Fixtures\TestBundle\Entity\FileConfigDummy':
+        description: New description
+        itemOperations:
+            my_op_name:
+                method: 'GET'
+                path: 'the/path'
+        collectionOperations:
+            my_collection_op:
+                method: 'POST'
+                status: '200'

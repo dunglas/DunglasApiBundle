@@ -164,6 +164,23 @@ class ExtractorResourceMetadataFactoryTest extends FileConfigurationMetadataFact
     }
 
     /**
+     * @dataProvider overrideOperationsResourceMetadataProvider
+     */
+    public function testXmlOverrideExistingParentResourceMetadataFactory(ResourceMetadata $expectedResourceMetadata)
+    {
+        $configPath = __DIR__.'/../../../Fixtures/FileConfigurations/resourcesoverride.xml';
+
+        $decorated = $this->prophesize(ResourceMetadataFactoryInterface::class);
+        $decorated->create(FileConfigDummy::class)->willReturn($this->resourceMetadataProvider()[0][0])->shouldBeCalled();
+
+        $resourceMetadataFactory = new ExtractorResourceMetadataFactory(new XmlExtractor([$configPath]), $decorated->reveal());
+
+        $resourceMetadata = $resourceMetadataFactory->create(FileConfigDummy::class);
+
+        $this->assertEquals($expectedResourceMetadata, $resourceMetadata);
+    }
+
+    /**
      * @dataProvider resourceMetadataProvider
      */
     public function testYamlCreateResourceMetadata(ResourceMetadata $expectedResourceMetadata)
@@ -243,6 +260,23 @@ class ExtractorResourceMetadataFactoryTest extends FileConfigurationMetadataFact
 
         $decorated = $this->prophesize(ResourceMetadataFactoryInterface::class);
         $decorated->create(FileConfigDummy::class)->willReturn($expectedResourceMetadata)->shouldBeCalled();
+
+        $resourceMetadataFactory = new ExtractorResourceMetadataFactory(new YamlExtractor([$configPath]), $decorated->reveal());
+
+        $resourceMetadata = $resourceMetadataFactory->create(FileConfigDummy::class);
+
+        $this->assertEquals($expectedResourceMetadata, $resourceMetadata);
+    }
+
+    /**
+     * @dataProvider overrideOperationsResourceMetadataProvider
+     */
+    public function testYamlOverrideExistingParentResourceMetadataFactory(ResourceMetadata $expectedResourceMetadata)
+    {
+        $configPath = __DIR__.'/../../../Fixtures/FileConfigurations/resourcesoverride.yml';
+
+        $decorated = $this->prophesize(ResourceMetadataFactoryInterface::class);
+        $decorated->create(FileConfigDummy::class)->willReturn($this->resourceMetadataProvider()[0][0])->shouldBeCalled();
 
         $resourceMetadataFactory = new ExtractorResourceMetadataFactory(new YamlExtractor([$configPath]), $decorated->reveal());
 

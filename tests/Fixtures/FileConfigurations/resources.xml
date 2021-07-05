@@ -23,6 +23,7 @@
             <collectionOperation name="my_collection_op">
                 <attribute name="method">POST</attribute>
                 <attribute name="path">the/collection/path</attribute>
+                <attribute name="status">201</attribute>
             </collectionOperation>
         </collectionOperations>
         <subresourceOperations>

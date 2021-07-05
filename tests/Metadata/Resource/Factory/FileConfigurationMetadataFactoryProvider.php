@@ -36,7 +36,7 @@ abstract class FileConfigurationMetadataFactoryProvider extends TestCase
                 'my_other_op_name' => ['method' => 'POST'],
             ],
             'collectionOperations' => [
-                'my_collection_op' => ['method' => 'POST', 'path' => 'the/collection/path'],
+                'my_collection_op' => ['method' => 'POST', 'path' => 'the/collection/path', 'status' => '201'],
             ],
             'subresourceOperations' => [
                 'my_collection_subresource' => ['path' => 'the/subresource/path'],
@@ -107,6 +107,24 @@ abstract class FileConfigurationMetadataFactoryProvider extends TestCase
         ]);
         $resourceMetadata = $resourceMetadata->withCollectionOperations([
             'my_op_name' => ['method' => 'POST'],
+        ]);
+
+        return [[$resourceMetadata]];
+    }
+
+    public function overrideOperationsResourceMetadataProvider()
+    {
+        $resourceMetadata = $this->resourceMetadataProvider()[0][0];
+
+        $resourceMetadata = $resourceMetadata->withDescription('New description');
+
+        $resourceMetadata = $resourceMetadata->withItemOperations([
+            'my_op_name' => ['method' => 'GET', 'path' => 'the/path'],
+            'my_other_op_name' => ['method' => 'POST'],
+        ]);
+
+        $resourceMetadata = $resourceMetadata->withCollectionOperations([
+            'my_collection_op' => ['method' => 'POST', 'status' => '200'],
         ]);
 
         return [[$resourceMetadata]];

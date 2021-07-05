@@ -12,6 +12,7 @@ resources:
             my_collection_op:
                 method: 'POST'
                 path: 'the/collection/path'
+                status: '201'
         subresourceOperations:
             my_collection_subresource:
                 path: 'the/subresource/path'
