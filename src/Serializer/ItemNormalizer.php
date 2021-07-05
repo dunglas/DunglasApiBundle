@@ -51,6 +51,12 @@ class ItemNormalizer extends AbstractItemNormalizer
      */
     public function denormalize($data, $class, $format = null, array $context = [])
     {
+        if (null === $objectToPopulate = $this->extractObjectToPopulate($class, $context, static::OBJECT_TO_POPULATE)) {
+            $normalizedData = $this->prepareForDenormalization($data);
+            $class = $this->getClassDiscriminatorResolvedClass($normalizedData, $class);
+        }
+        $resourceClass = $this->resourceClassResolver->getResourceClass($objectToPopulate, $class);
+        $context['resource_class'] = $resourceClass;
         // Avoid issues with proxies if we populated the object
         if (isset($data['id']) && !isset($context[self::OBJECT_TO_POPULATE])) {
             if (isset($context['api_allow_update']) && true !== $context['api_allow_update']) {
