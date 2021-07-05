@@ -170,7 +170,7 @@ final class Operation
         return $clone;
     }
 
-    public function withRequestBody(RequestBody $requestBody): self
+    public function withRequestBody(?RequestBody $requestBody): self
     {
         $clone = clone $this;
         $clone->requestBody = $requestBody;
