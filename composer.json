@@ -99,6 +99,7 @@
         "phpdocumentor/reflection-docblock": "To support extracting metadata from PHPDoc.",
         "psr/cache-implementation": "To use metadata caching.",
         "ramsey/uuid": "To support Ramsey's UUID identifiers.",
+        "rector/rector-src": "To support converting PHP annotations to attributes.",
         "symfony/cache": "To have metadata caching when using Symfony integration.",
         "symfony/config": "To load XML configuration files.",
         "symfony/expression-language": "To use authorization features.",
@@ -110,8 +111,11 @@
     },
     "autoload": {
         "psr-4": {
-            "ApiPlatform\\Core\\": "src/"
-        }
+            "ApiPlatform\\": "src/"
+        },
+        "files": [
+            "src/deprecation.php"
+        ]
     },
     "autoload-dev": {
         "psr-4": {

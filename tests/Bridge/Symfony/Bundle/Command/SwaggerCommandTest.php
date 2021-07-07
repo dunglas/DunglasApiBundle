@@ -66,9 +66,9 @@ class SwaggerCommandTest extends KernelTestCase
         $expected = <<<YAML
   /dummy_cars:
     get:
+      operationId: '_api_/dummy_cars.{_format}_get'
       tags:
         - DummyCar
-      operationId: getDummyCarCollection
 YAML;
 
         // Windows uses \r\n as PHP_EOL but symfony exports YAML with \n
@@ -78,7 +78,7 @@ YAML;
   '/dummy_cars/{id}':
     get:
       tags: []
-      operationId: getDummyCarItem
+      operationId: '_api_/dummy_cars/{id}.{_format}_get'
 YAML;
 
         $this->assertStringContainsString(str_replace(\PHP_EOL, "\n", $expected), $result, 'arrays should be correctly formatted.');

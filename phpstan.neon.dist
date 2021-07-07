@@ -38,6 +38,10 @@ parameters:
 		- tests/Fixtures/TestBundle/Security/AbstractSecurityUser.php
 		# Templates for Maker
 		- src/Bridge/Symfony/Maker/Resources/skeleton
+		# Rector because new API Platform 3.0 classes don't exist yet
+		- src/Bridge/Rector
+		- src/Bridge/Symfony/Bundle/Command/RectorCommand.php
+		- tests/Bridge/Rector/Rules
 	earlyTerminatingMethodCalls:
 		PHPUnit\Framework\Constraint\Constraint:
 			- fail
@@ -88,9 +92,6 @@ parameters:
 			path: tests/GraphQl/Type/TypesContainerTest.php
 
 		# Expected, due to PHP 8 attributes
-		- '#ReflectionProperty::getAttributes\(\)#'
-		- '#ReflectionMethod::getAttributes\(\)#'
-		- '#ReflectionClass<object>::getAttributes\(\)#'
 		- '#Constructor of class ApiPlatform\\Core\\Annotation\\ApiResource has an unused parameter#'
 		- '#Constructor of class ApiPlatform\\Core\\Annotation\\ApiProperty has an unused parameter#'
 

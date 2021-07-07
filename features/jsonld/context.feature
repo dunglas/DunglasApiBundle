@@ -80,7 +80,7 @@ Feature: JSON-LD contexts generation
               "hydra": "http://www.w3.org/ns/hydra/core#",
               "person": {
                   "@id": "http://example.com/id",
-                  "@type": "@id",
+                  "@var": "@id",
                   "foo": "bar"
               }
           }

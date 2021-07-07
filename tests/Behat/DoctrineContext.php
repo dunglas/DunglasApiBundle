@@ -107,6 +107,7 @@ use ApiPlatform\Core\Tests\Fixtures\TestBundle\Entity\Dummy;
 use ApiPlatform\Core\Tests\Fixtures\TestBundle\Entity\DummyAggregateOffer;
 use ApiPlatform\Core\Tests\Fixtures\TestBundle\Entity\DummyCar;
 use ApiPlatform\Core\Tests\Fixtures\TestBundle\Entity\DummyCarColor;
+use ApiPlatform\Core\Tests\Fixtures\TestBundle\Entity\DummyCarIdentifier;
 use ApiPlatform\Core\Tests\Fixtures\TestBundle\Entity\DummyCustomMutation;
 use ApiPlatform\Core\Tests\Fixtures\TestBundle\Entity\DummyCustomQuery;
 use ApiPlatform\Core\Tests\Fixtures\TestBundle\Entity\DummyDate;
@@ -1170,21 +1171,24 @@ final class DoctrineContext implements Context
         $foo->setName('mustli');
         $foo->setCanSell(true);
         $foo->setAvailableAt(new \DateTime());
+        $this->manager->persist($foo->getId());
         $this->manager->persist($foo);
+        $this->manager->flush();
 
         $bar1 = $this->buildDummyCarColor();
         $bar1->setProp('red');
         $bar1->setCar($foo);
         $this->manager->persist($bar1);
+        $this->manager->flush();
 
         $bar2 = $this->buildDummyCarColor();
         $bar2->setProp('blue');
         $bar2->setCar($foo);
         $this->manager->persist($bar2);
+        $this->manager->flush();
 
         $foo->setColors([$bar1, $bar2]);
         $this->manager->persist($foo);
-
         $this->manager->flush();
     }
 
@@ -1837,8 +1841,9 @@ final class DoctrineContext implements Context
     {
         $dummy = $this->buildPatchDummyRelation();
         $related = $this->buildRelatedDummy();
-        $dummy->setRelated($related);
         $this->manager->persist($related);
+        $this->manager->flush();
+        $dummy->setRelated($related);
         $this->manager->persist($dummy);
         $this->manager->flush();
     }

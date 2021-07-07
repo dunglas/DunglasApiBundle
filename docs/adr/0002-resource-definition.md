@@ -24,8 +24,7 @@ In API Platform, this resource identifier is also named [IRI (Internationalized 
 ```php
 <?php
 
-#[Get]
-#[Post]
+#[Resource]
 class Users
 {
     #[ApiProperty(iri="hydra:member")]
@@ -34,9 +33,11 @@ class Users
     public float $averageRate;
 }
 
-#[Get]
-#[Put]
-#[Delete]
+#[Resource("/companies/{companyId}/users/{id}", normalization_context=["groups"= [....]]), operations={}]
+#[Resource(normalization_context=["groups"= [....]], operations=[
+ new Get(),
+ new Post(),
+])]
 class User
 {
     #[ApiProperty(identifier=true)]

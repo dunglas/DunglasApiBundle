@@ -24,8 +24,10 @@ use ApiPlatform\Core\Metadata\Resource\Factory\ResourceMetadataFactoryInterface;
 use ApiPlatform\Core\Metadata\Resource\ResourceMetadata;
 use ApiPlatform\Core\Tests\Fixtures\TestBundle\Entity\Dummy;
 use ApiPlatform\Core\Tests\ProphecyTrait;
+use ApiPlatform\State\ProviderInterface;
 use PHPUnit\Framework\TestCase;
 use Prophecy\Argument;
+use Symfony\Bridge\PhpUnit\ExpectDeprecationTrait;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -35,6 +37,7 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
  */
 class ReadListenerTest extends TestCase
 {
+    use ExpectDeprecationTrait;
     use ProphecyTrait;
 
     public function testNotAnApiPlatformRequest()
@@ -164,7 +167,7 @@ class ReadListenerTest extends TestCase
         $identifierConverter = $this->prophesize(IdentifierConverterInterface::class);
 
         $collectionDataProvider = $this->prophesize(CollectionDataProviderInterface::class);
-        $collectionDataProvider->getCollection('Foo', 'get', ['filters' => ['foo' => 'bar']])->willReturn([])->shouldBeCalled();
+        $collectionDataProvider->getCollection('Foo', 'get', ['filters' => ['foo' => 'bar'], IdentifierConverterInterface::HAS_IDENTIFIER_CONVERTER => true])->willReturn([])->shouldBeCalled();
 
         $itemDataProvider = $this->prophesize(ItemDataProviderInterface::class);
         $itemDataProvider->getItem()->shouldNotBeCalled();
@@ -397,6 +400,53 @@ class ReadListenerTest extends TestCase
         $subresourceDataProvider = $this->prophesize(SubresourceDataProviderInterface::class);
 
         $request = new Request([], [], ['id' => 'foo=22;bar=test', '_api_resource_class' => 'DummyWithCompositeIdentifier', '_api_item_operation_name' => 'get', '_api_format' => 'json', '_api_mime_type' => 'application/json', '_api_identifiers' => ['foo', 'bar'], '_api_has_composite_identifier' => true]);
+        $request->setMethod('GET');
+
+        $event = $this->prophesize(RequestEvent::class);
+        $event->getRequest()->willReturn($request)->shouldBeCalled();
+
+        $listener = new ReadListener($collectionDataProvider->reveal(), $itemDataProvider->reveal(), $subresourceDataProvider->reveal(), null, $identifierConverter->reveal());
+        $listener->onKernelRequest($event->reveal());
+    }
+
+    public function testRetrieveOperationWithStateProvider()
+    {
+        $identifierConverter = $this->prophesize(IdentifierConverterInterface::class);
+        $identifierConverter->convert(['id' => '22'], 'Foo')->shouldBeCalled()->willReturn(['id' => 22]);
+        $this->expectException(NotFoundHttpException::class);
+
+        $collectionDataProvider = $this->prophesize(CollectionDataProviderInterface::class);
+        $itemDataProvider = $this->prophesize(ItemDataProviderInterface::class);
+        $subresourceDataProvider = $this->prophesize(SubresourceDataProviderInterface::class);
+        $stateProvider = $this->prophesize(ProviderInterface::class);
+        $stateProvider->provide('Foo', ['id' => 22], Argument::cetera())->shouldBeCalled()->willReturn(null);
+
+        $request = new Request([], [], ['id' => '22', '_api_resource_class' => 'Foo', '_api_operation_name' => 'get',  '_api_operation' => [], '_api_format' => 'json', '_api_mime_type' => 'application/json', '_api_identifiers' => ['id' => ['Foo', 'id']]]);
+        $request->setMethod('GET');
+
+        $event = $this->prophesize(RequestEvent::class);
+        $event->getRequest()->willReturn($request)->shouldBeCalled();
+
+        $listener = new ReadListener($collectionDataProvider->reveal(), $itemDataProvider->reveal(), $subresourceDataProvider->reveal(), null, $identifierConverter->reveal(), null, $stateProvider->reveal());
+        $listener->onKernelRequest($event->reveal());
+    }
+
+    /**
+     * @group legacy
+     */
+    public function testRetrieveOperationWithoutStateProvider()
+    {
+        $this->expectDeprecation('Using a #[Resource] without a state provider is deprecated since 2.7 and will not be possible anymore in 3.0.');
+        $identifierConverter = $this->prophesize(IdentifierConverterInterface::class);
+        $identifierConverter->convert(['id' => '22'], 'Foo')->shouldBeCalled()->willReturn(['id' => 22]);
+        $this->expectException(NotFoundHttpException::class);
+
+        $collectionDataProvider = $this->prophesize(CollectionDataProviderInterface::class);
+        $itemDataProvider = $this->prophesize(ItemDataProviderInterface::class);
+        $itemDataProvider->getItem('Foo', ['id' => 22], 'get', Argument::cetera())->willReturn(null)->shouldBeCalled();
+        $subresourceDataProvider = $this->prophesize(SubresourceDataProviderInterface::class);
+
+        $request = new Request([], [], ['id' => '22', '_api_resource_class' => 'Foo', '_api_operation_name' => 'get', '_api_operation' => [], '_api_format' => 'json', '_api_mime_type' => 'application/json', '_api_identifiers' => ['id' => ['Foo', 'id']]]);
         $request->setMethod('GET');
 
         $event = $this->prophesize(RequestEvent::class);

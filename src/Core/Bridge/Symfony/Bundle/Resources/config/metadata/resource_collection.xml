@@ -1,0 +1,83 @@
+<?xml version="1.0" ?>
+
+<container xmlns="http://symfony.com/schema/dic/services"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
+
+    <services>
+
+        <service id="ApiPlatform\Metadata\Resource\Factory\ResourceMetadataCollectionFactoryInterface" alias="api_platform.metadata.resource_metadata_collection_factory" />
+        <service id="api_platform.metadata.resource_metadata_collection_factory" alias="api_platform.metadata.resource_metadata_collection_factory.attributes" />
+
+        <service id="api_platform.metadata.resource_metadata_collection_factory.attributes" class="ApiPlatform\Metadata\Resource\Factory\AttributesResourceMetadataCollectionFactory" public="false">
+            <argument>null</argument>
+            <argument>%api_platform.defaults%</argument>
+        </service>
+
+        <!-- compute legacy resources first -->
+        <service id="api_platform.metadata.resource_metadata_collection_factory.legacy_resource_metadata" class="ApiPlatform\Metadata\Resource\Factory\LegacyResourceMetadataResourceMetadataCollectionFactory" decorates="api_platform.metadata.resource_metadata_collection_factory" decoration-priority="1000" public="false">
+            <argument type="service" id="api_platform.metadata.resource_metadata_collection_factory.legacy_resource_metadata.inner" />
+            <argument type="service" id="api_platform.metadata.resource.metadata_factory" />
+            <argument>%api_platform.defaults%</argument>
+        </service>
+
+        <service id="api_platform.metadata.resource_metadata_collection_factory.legacy_subresource_metadata" class="ApiPlatform\Metadata\Resource\Factory\LegacySubresourceMetadataResourceMetadataCollectionFactory" decorates="api_platform.metadata.resource_metadata_collection_factory" decoration-priority="1000" public="false">
+            <argument type="service" id="api_platform.subresource_operation_factory" />
+            <argument type="service" id="api_platform.metadata.resource.name_collection_factory" />
+            <argument type="service" id="api_platform.metadata.resource_metadata_collection_factory.legacy_subresource_metadata.inner" />
+        </service>
+
+        <service id="api_platform.metadata.resource_metadata_collection_factory.identifier" class="ApiPlatform\Metadata\Resource\Factory\IdentifierResourceMetadataCollectionFactory" decorates="api_platform.metadata.resource_metadata_collection_factory" decoration-priority="600" public="false">
+            <argument type="service" id="api_platform.metadata.resource_metadata_collection_factory.identifier.inner" />
+            <argument type="service" id="api_platform.metadata.property.name_collection_factory" />
+            <argument type="service" id="api_platform.metadata.property.identifier_metadata_factory" />
+        </service>
+
+        <!-- must run after identifiers -->
+        <service id="api_platform.metadata.resource_metadata_collection_factory.uri_template" class="ApiPlatform\Metadata\Resource\Factory\UriTemplateResourceMetadataCollectionFactory" decorates="api_platform.metadata.resource_metadata_collection_factory" decoration-priority="500" public="false">
+            <argument type="service" id="api_platform.path_segment_name_generator" />
+            <argument type="service" id="api_platform.metadata.resource_metadata_collection_factory.uri_template.inner" />
+        </service>
+
+        <!-- must run after uri template -->
+        <service id="api_platform.metadata.resource_metadata_collection_factory.operation_name" class="ApiPlatform\Metadata\Resource\Factory\OperationNameResourceMetadataCollectionFactory" decorates="api_platform.metadata.resource_metadata_collection_factory" decoration-priority="200" public="false">
+            <argument type="service" id="api_platform.metadata.resource_metadata_collection_factory.operation_name.inner" />
+        </service>
+
+        <service id="api_platform.metadata.resource_metadata_collection_factory.input_output" class="ApiPlatform\Metadata\Resource\Factory\InputOutputResourceMetadataCollectionFactory" decorates="api_platform.metadata.resource_metadata_collection_factory" decoration-priority="200" public="false">
+            <argument type="service" id="api_platform.metadata.resource_metadata_collection_factory.input_output.inner" />
+        </service>
+
+        <service id="api_platform.metadata.resource_metadata_collection_factory.php_doc" class="ApiPlatform\Metadata\Resource\Factory\PhpDocResourceMetadataCollectionFactory" decorates="api_platform.metadata.resource_metadata_collection_factory" decoration-priority="200" public="false">
+            <argument type="service" id="api_platform.metadata.resource_metadata_collection_factory.php_doc.inner" />
+        </service>
+
+        <service id="api_platform.metadata.resource_metadata_collection_factory.formats" class="ApiPlatform\Metadata\Resource\Factory\FormatsResourceMetadataCollectionFactory" decorates="api_platform.metadata.resource_metadata_collection_factory" decoration-priority="200" public="false">
+            <argument type="service" id="api_platform.metadata.resource_metadata_collection_factory.formats.inner" />
+            <argument>%api_platform.formats%</argument>
+            <argument>%api_platform.patch_formats%</argument>
+        </service>
+
+        <!-- <service id="api_platform.metadata.resource_metadata_collection_factory.cached" class="ApiPlatform\Metadata\Resource\Factory\CachedResourceMetadataCollectionFactory" decorates="api_platform.metadata.resource_metadata_collection_factory" decoration&#45;priority="&#45;10" public="false"> -->
+        <!--     <argument type="service" id="api_platform.cache.metadata.resource_collection" /> -->
+        <!--     <argument type="service" id="api_platform.metadata.resource_metadata_collection_factory.cached.inner" /> -->
+        <!-- </service> -->
+
+        <service id="api_platform.cache.metadata.resource_collection" parent="cache.system" public="false">
+            <tag name="cache.pool" />
+        </service>
+
+        <!-- Property metadata used to compute identifiers -->
+        <service id="api_platform.metadata.property.identifier_metadata_factory" alias="api_platform.metadata.property.identifier_metadata_factory.property_info" />
+
+        <service id="api_platform.metadata.property.identifier_metadata_factory.property_info" class="ApiPlatform\Core\Bridge\Symfony\PropertyInfo\Metadata\Property\PropertyInfoPropertyMetadataFactory" decorates="api_platform.metadata.property.identifier_metadata_factory" public="false">
+            <argument type="service" id="api_platform.property_info" />
+        </service>
+
+        <service id="api_platform.metadata.property.identifier_metadata_factory.annotation" class="ApiPlatform\Core\Metadata\Property\Factory\AnnotationPropertyMetadataFactory" decorates="api_platform.metadata.property.identifier_metadata_factory" public="false">
+            <argument type="service" id="annotation_reader" />
+            <argument type="service" id="api_platform.metadata.property.identifier_metadata_factory.annotation.inner" />
+        </service>
+    </services>
+
+</container>

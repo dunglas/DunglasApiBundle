@@ -52,28 +52,28 @@ class JsonSchemaGenerateCommandTest extends KernelTestCase
 
     public function testExecuteWithItemOperationGet()
     {
-        $this->tester->run(['command' => 'api:json-schema:generate', 'resource' => $this->entityClass, '--itemOperation' => 'get', '--type' => 'output']);
+        $this->tester->run(['command' => 'api:json-schema:generate', 'resource' => $this->entityClass, '--itemOperation' => '_api_/dummies/{id}.{_format}_get', '--type' => 'output']);
 
         $this->assertJson($this->tester->getDisplay());
     }
 
     public function testExecuteWithCollectionOperationGet()
     {
-        $this->tester->run(['command' => 'api:json-schema:generate', 'resource' => $this->entityClass, '--collectionOperation' => 'get', '--type' => 'output']);
+        $this->tester->run(['command' => 'api:json-schema:generate', 'resource' => $this->entityClass, '--collectionOperation' => '_api_/dummies.{_format}_get', '--type' => 'output']);
 
         $this->assertJson($this->tester->getDisplay());
     }
 
     public function testExecuteWithTooManyOptions()
     {
-        $this->tester->run(['command' => 'api:json-schema:generate', 'resource' => $this->entityClass, '--collectionOperation' => 'get', '--itemOperation' => 'get', '--type' => 'output']);
+        $this->tester->run(['command' => 'api:json-schema:generate', 'resource' => $this->entityClass, '--collectionOperation' => '_api_/dummies.{_format}_get', '--itemOperation' => '_api_/dummies/{id}.{_format}_get', '--type' => 'output']);
 
         $this->assertStringStartsWith('[ERROR] You can only use one of "--itemOperation" and "--collectionOperation" options at the same time.', trim(preg_replace('/\s+/', ' ', $this->tester->getDisplay())));
     }
 
     public function testExecuteWithJsonldFormatOption()
     {
-        $this->tester->run(['command' => 'api:json-schema:generate', 'resource' => $this->entityClass, '--collectionOperation' => 'post', '--format' => 'jsonld']);
+        $this->tester->run(['command' => 'api:json-schema:generate', 'resource' => $this->entityClass, '--collectionOperation' => '_api_/dummies.{_format}_post', '--format' => 'jsonld']);
         $result = $this->tester->getDisplay();
 
         $this->assertStringContainsString('@id', $result);

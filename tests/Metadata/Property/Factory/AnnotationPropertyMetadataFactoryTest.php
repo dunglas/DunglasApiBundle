@@ -24,6 +24,7 @@ use ApiPlatform\Core\Tests\ProphecyTrait;
 use Doctrine\Common\Annotations\Reader;
 use PHPUnit\Framework\TestCase;
 use Prophecy\Argument;
+use Symfony\Component\PropertyInfo\Type;
 
 /**
  * @author Kévin Dunglas <dunglas@gmail.com>
@@ -49,6 +50,9 @@ class AnnotationPropertyMetadataFactoryTest extends TestCase
         $this->assertTrue($metadata->isRequired());
         $this->assertEquals('foo', $metadata->getIri());
         $this->assertEquals(['foo' => 'bar'], $metadata->getAttributes());
+        $this->assertEquals('foo', $metadata->getExample());
+        $this->assertEquals(['foo'], $metadata->getSchema());
+        $this->assertEquals([new Type('bool'), new Type('int')], $metadata->getBuiltinTypes());
     }
 
     /**
@@ -78,6 +82,9 @@ class AnnotationPropertyMetadataFactoryTest extends TestCase
         $annotation->required = true;
         $annotation->iri = 'foo';
         $annotation->attributes = ['foo' => 'bar'];
+        $annotation->example = 'foo';
+        $annotation->schema = ['foo'];
+        $annotation->builtinTypes = [new Type('bool'), new Type('int')];
 
         $propertyReaderProphecy = $this->prophesize(Reader::class);
         $propertyReaderProphecy->getPropertyAnnotation(Argument::type(\ReflectionProperty::class), ApiProperty::class)->willReturn($annotation)->shouldBeCalled();

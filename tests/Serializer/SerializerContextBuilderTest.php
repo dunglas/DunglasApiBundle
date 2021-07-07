@@ -14,11 +14,13 @@ declare(strict_types=1);
 namespace ApiPlatform\Core\Tests\Serializer;
 
 use ApiPlatform\Core\Exception\RuntimeException;
-use ApiPlatform\Core\Metadata\Resource\Factory\ResourceMetadataFactoryInterface;
-use ApiPlatform\Core\Metadata\Resource\ResourceMetadata;
+use ApiPlatform\Core\Metadata\ResourceCollection\Factory\ResourceCollectionMetadataFactoryInterface;
+use ApiPlatform\Core\Metadata\ResourceCollection\ResourceCollection;
 use ApiPlatform\Core\Serializer\SerializerContextBuilder;
 use ApiPlatform\Core\Swagger\Serializer\DocumentationNormalizer;
 use ApiPlatform\Core\Tests\ProphecyTrait;
+use ApiPlatform\Metadata\Patch;
+use ApiPlatform\Metadata\Resource;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request;
 
@@ -36,27 +38,32 @@ class SerializerContextBuilderTest extends TestCase
 
     protected function setUp(): void
     {
-        $resourceMetadata = new ResourceMetadata(
-            null,
-            null,
-            null,
-            [],
-            [],
-            [
-                'normalization_context' => ['foo' => 'bar', DocumentationNormalizer::SWAGGER_DEFINITION_NAME => 'MyDefinition'],
-                'denormalization_context' => ['bar' => 'baz'],
-            ]
-        );
+        $resourceMetadata = new ResourceCollection([
+            new Resource(
+                uriTemplate: null,
+                shortName: null,
+                description: null,
+                types: [],
+                operations: [],
+                normalizationContext: ['foo' => 'bar', DocumentationNormalizer::SWAGGER_DEFINITION_NAME => 'MyDefinition'],
+                denormalizationContext: ['bar' => 'baz']
+            ), ]);
 
-        $resourceMetadataWithPatch = new ResourceMetadata(
-            null,
-            null,
-            null,
-            ['patch' => ['method' => 'PATCH', 'input_formats' => ['json' => ['application/merge-patch+json']]]],
-            []
-        );
+        $resourceMetadataWithPatch = new ResourceCollection([
+            new Resource(
+                uriTemplate: null,
+                shortName: null,
+                description: null,
+                operations: [
+                    'patch' => new Patch(
+                        inputFormats: ['json' => ['application/merge-patch+json']],
+                    ),
+                ],
+                formats: []
+            ),
+        ]);
 
-        $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
+        $resourceMetadataFactoryProphecy = $this->prophesize(ResourceCollectionMetadataFactoryInterface::class);
         $resourceMetadataFactoryProphecy->create('Foo')->willReturn($resourceMetadata);
         $resourceMetadataFactoryProphecy->create('FooWithPatch')->willReturn($resourceMetadataWithPatch);
 

@@ -21,6 +21,7 @@ use ApiPlatform\Core\Metadata\Property\Factory\PropertyNameCollectionFactoryInte
 use ApiPlatform\Core\Metadata\Property\PropertyMetadata;
 use ApiPlatform\Core\Metadata\Property\PropertyNameCollection;
 use ApiPlatform\Core\Tests\Fixtures\TestBundle\Doctrine\Generator\Uuid;
+use ApiPlatform\Core\Tests\Fixtures\TestBundle\Entity\AttributeResource;
 use ApiPlatform\Core\Tests\Fixtures\TestBundle\Entity\Dummy;
 use ApiPlatform\Core\Tests\Fixtures\TestBundle\Entity\RelatedDummy;
 use ApiPlatform\Core\Tests\Fixtures\TestBundle\Model\ResourceInterface;
@@ -28,6 +29,7 @@ use ApiPlatform\Core\Tests\Fixtures\TestBundle\Model\ResourceInterfaceImplementa
 use ApiPlatform\Core\Tests\ProphecyTrait;
 use PHPUnit\Framework\TestCase;
 use Prophecy\Argument;
+use Symfony\Component\PropertyInfo\Type;
 
 /**
  * @author Antoine Bluchet <soyuka@gmail.com>
@@ -263,5 +265,25 @@ class IdentifiersExtractorTest extends TestCase
         $identifiersExtractor = new IdentifiersExtractor($propertyNameCollectionFactoryProphecy->reveal(), $propertyMetadataFactoryProphecy->reveal(), null, $resourceClassResolverProphecy->reveal());
 
         $this->assertSame(['id'], $identifiersExtractor->getIdentifiersFromResourceClass(Dummy::class));
+    }
+
+    /**
+     * @requires PHP 8.0
+     */
+    public function testGetIdentifiersFromItemWithContext()
+    {
+        $a = new AttributeResource(1, 'test');
+        $a->dummy = new Dummy();
+        $a->dummy->setId(1);
+        $resourceClassResolverProphecy = $this->prophesize(ResourceClassResolverInterface::class);
+        $resourceClassResolverProphecy->getResourceClass($a)->willReturn(AttributeResource::class);
+        $propertyNameCollectionFactoryProphecy = $this->prophesize(PropertyNameCollectionFactoryInterface::class);
+        $propertyNameCollectionFactoryProphecy->create(AttributeResource::class)->willReturn(new PropertyNameCollection(['identifier', 'dummy']));
+        $propertyMetadataFactoryProphecy = $this->prophesize(PropertyMetadataFactoryInterface::class);
+        $propertyMetadataFactoryProphecy->create(AttributeResource::class, 'identifier')->willReturn((new PropertyMetadata())->withIdentifier(true));
+        $propertyMetadataFactoryProphecy->create(AttributeResource::class, 'dummy')->willReturn((new PropertyMetadata())->withType(new Type('object', true, Dummy::class)));
+
+        $identifiersExtractor = new IdentifiersExtractor($propertyNameCollectionFactoryProphecy->reveal(), $propertyMetadataFactoryProphecy->reveal(), null, $resourceClassResolverProphecy->reveal());
+        $this->assertSame(['identifier' => 1, 'dummyId' => 1], $identifiersExtractor->getIdentifiersFromItem($a, ['identifiers' => ['identifier' => [AttributeResource::class, 'identifier'], 'dummyId' => [Dummy::class, 'id']]]));
     }
 }

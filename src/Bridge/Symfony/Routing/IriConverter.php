@@ -11,57 +11,52 @@
 
 declare(strict_types=1);
 
-namespace ApiPlatform\Core\Bridge\Symfony\Routing;
+namespace ApiPlatform\Bridge\Symfony\Routing;
 
-use ApiPlatform\Core\Api\IdentifiersExtractor;
-use ApiPlatform\Core\Api\IdentifiersExtractorInterface;
-use ApiPlatform\Core\Api\IriConverterInterface;
-use ApiPlatform\Core\Api\OperationType;
+use ApiPlatform\Api\IdentifiersExtractorInterface;
+use ApiPlatform\Api\IriConverterInterface;
+use ApiPlatform\Api\UrlGeneratorInterface;
 use ApiPlatform\Core\Api\ResourceClassResolverInterface;
-use ApiPlatform\Core\Api\UrlGeneratorInterface;
-use ApiPlatform\Core\DataProvider\ItemDataProviderInterface;
-use ApiPlatform\Core\DataProvider\OperationDataProviderTrait;
-use ApiPlatform\Core\DataProvider\SubresourceDataProviderInterface;
 use ApiPlatform\Core\Exception\InvalidArgumentException;
 use ApiPlatform\Core\Exception\InvalidIdentifierException;
 use ApiPlatform\Core\Exception\ItemNotFoundException;
 use ApiPlatform\Core\Exception\RuntimeException;
 use ApiPlatform\Core\Identifier\CompositeIdentifierParser;
-use ApiPlatform\Core\Identifier\IdentifierConverterInterface;
-use ApiPlatform\Core\Metadata\Property\Factory\PropertyMetadataFactoryInterface;
-use ApiPlatform\Core\Metadata\Property\Factory\PropertyNameCollectionFactoryInterface;
-use ApiPlatform\Core\Metadata\Resource\Factory\ResourceMetadataFactoryInterface;
+use ApiPlatform\Core\Identifier\ContextAwareIdentifierConverterInterface;
 use ApiPlatform\Core\Util\AttributesExtractor;
 use ApiPlatform\Core\Util\ResourceClassInfoTrait;
-use Symfony\Component\PropertyAccess\PropertyAccess;
-use Symfony\Component\PropertyAccess\PropertyAccessorInterface;
+use ApiPlatform\Metadata\Resource\Factory\ResourceMetadataCollectionFactoryInterface;
+use ApiPlatform\State\ProviderInterface;
 use Symfony\Component\Routing\Exception\ExceptionInterface as RoutingExceptionInterface;
 use Symfony\Component\Routing\RouterInterface;
 
 /**
  * {@inheritdoc}
  *
- * @author Kévin Dunglas <dunglas@gmail.com>
+ * @experimental
+ *
+ * @author Antoine Bluchet <soyuka@gmail.com>
  */
 final class IriConverter implements IriConverterInterface
 {
-    use OperationDataProviderTrait;
     use ResourceClassInfoTrait;
 
-    private $routeNameResolver;
+    private $stateProvider;
     private $router;
     private $identifiersExtractor;
+    private $identifierConverter;
+    private $resourceMetadataCollectionFactory;
 
-    public function __construct(PropertyNameCollectionFactoryInterface $propertyNameCollectionFactory, PropertyMetadataFactoryInterface $propertyMetadataFactory, ItemDataProviderInterface $itemDataProvider, RouteNameResolverInterface $routeNameResolver, RouterInterface $router, PropertyAccessorInterface $propertyAccessor = null, IdentifiersExtractorInterface $identifiersExtractor = null, SubresourceDataProviderInterface $subresourceDataProvider = null, IdentifierConverterInterface $identifierConverter = null, ResourceClassResolverInterface $resourceClassResolver = null, ResourceMetadataFactoryInterface $resourceMetadataFactory = null)
+    public function __construct(ProviderInterface $stateProvider, RouterInterface $router, IdentifiersExtractorInterface $identifiersExtractor, ContextAwareIdentifierConverterInterface $identifierConverter, ResourceClassResolverInterface $resourceClassResolver, ResourceMetadataCollectionFactoryInterface $resourceMetadataCollectionFactory)
     {
-        $this->itemDataProvider = $itemDataProvider;
-        $this->routeNameResolver = $routeNameResolver;
+        $this->stateProvider = $stateProvider;
         $this->router = $router;
-        $this->subresourceDataProvider = $subresourceDataProvider;
         $this->identifierConverter = $identifierConverter;
+        $this->identifiersExtractor = $identifiersExtractor;
+        $this->resourceMetadataCollectionFactory = $resourceMetadataCollectionFactory;
+        // For the ResourceClassInfoTrait
         $this->resourceClassResolver = $resourceClassResolver;
-        $this->identifiersExtractor = $identifiersExtractor ?: new IdentifiersExtractor($propertyNameCollectionFactory, $propertyMetadataFactory, $propertyAccessor ?? PropertyAccess::createPropertyAccessor());
-        $this->resourceMetadataFactory = $resourceMetadataFactory;
+        $this->resourceMetadataFactory = $resourceMetadataCollectionFactory;
     }
 
     /**
@@ -75,35 +70,38 @@ final class IriConverter implements IriConverterInterface
             throw new InvalidArgumentException(sprintf('No route matches "%s".', $iri), $e->getCode(), $e);
         }
 
-        if (!isset($parameters['_api_resource_class'])) {
+        if (!isset($parameters['_api_resource_class'], $parameters['_api_operation_name'])) {
             throw new InvalidArgumentException(sprintf('No resource associated to "%s".', $iri));
         }
 
-        if (isset($parameters['_api_collection_operation_name'])) {
-            throw new InvalidArgumentException(sprintf('The iri "%s" references a collection not an item.', $iri));
+        $attributes = AttributesExtractor::extractAttributes($parameters);
+        $operation = $this->resourceMetadataFactory->create($attributes['resource_class'])->getOperation($attributes['operation_name']);
+        $shouldParseCompositeIdentifiers = $operation->getCompositeIdentifier() && \count($operation->getIdentifiers()) > 1;
+
+        foreach ($operation->getIdentifiers() as $parameterName => $identifiedBy) {
+            if (!isset($parameters[$parameterName])) {
+                if (!isset($parameters['id'])) {
+                    throw new InvalidIdentifierException(sprintf('Parameter "%s" not found, check the identifiers configuration.', $parameterName));
+                }
+
+                $parameterName = 'id';
+            }
+
+            if ($shouldParseCompositeIdentifiers) {
+                $identifiers = CompositeIdentifierParser::parse($parameters[$parameterName]);
+                break;
+            }
+
+            $identifiers[$parameterName] = $parameters[$parameterName];
         }
 
-        $attributes = AttributesExtractor::extractAttributes($parameters);
-
         try {
-            $identifiers = $this->extractIdentifiers($parameters, $attributes);
+            $identifiers = $this->identifierConverter->convert($identifiers, $attributes['resource_class'], ['identifiers' => $operation->getIdentifiers()]);
         } catch (InvalidIdentifierException $e) {
             throw new InvalidArgumentException($e->getMessage(), $e->getCode(), $e);
         }
 
-        if ($this->identifierConverter) {
-            $context[IdentifierConverterInterface::HAS_IDENTIFIER_CONVERTER] = true;
-        }
-
-        if (isset($attributes['subresource_operation_name'])) {
-            if (($item = $this->getSubresourceData($identifiers, $attributes, $context)) && !\is_array($item)) {
-                return $item;
-            }
-
-            throw new ItemNotFoundException(sprintf('Item not found for "%s".', $iri));
-        }
-
-        if ($item = $this->getItemData($identifiers, $attributes, $context)) {
+        if ($item = $this->stateProvider->provide($attributes['resource_class'], $identifiers, $attributes['operation_name'], ['operation' => $operation])) {
             return $item;
         }
 
@@ -113,26 +111,24 @@ final class IriConverter implements IriConverterInterface
     /**
      * {@inheritdoc}
      */
-    public function getIriFromItem($item, int $referenceType = null): string
+    public function getIriFromItem($item, string $operationName = null, int $referenceType = UrlGeneratorInterface::ABS_PATH, array $context = []): string
     {
         $resourceClass = $this->getResourceClass($item, true);
 
+        $operation = $context['operation'] ?? $this->resourceMetadataFactory->create($resourceClass)->getOperation($operationName);
+
         try {
-            $identifiers = $this->identifiersExtractor->getIdentifiersFromItem($item);
+            $identifiers = $this->identifiersExtractor->getIdentifiersFromItem($item, $operationName, ['operation' => $operation]);
         } catch (RuntimeException $e) {
             throw new InvalidArgumentException(sprintf('Unable to generate an IRI for the item of type "%s"', $resourceClass), $e->getCode(), $e);
         }
 
-        return $this->getItemIriFromResourceClass($resourceClass, $identifiers, $this->getReferenceType($resourceClass, $referenceType));
-    }
+        if (\count($identifiers) > 1 && $operation->getCompositeIdentifier()) {
+            $identifiers = [key($operation->getIdentifiers()) => CompositeIdentifierParser::stringify($identifiers)];
+        }
 
-    /**
-     * {@inheritdoc}
-     */
-    public function getIriFromResourceClass(string $resourceClass, int $referenceType = null): string
-    {
         try {
-            return $this->router->generate($this->routeNameResolver->getRouteName($resourceClass, OperationType::COLLECTION), [], $this->getReferenceType($resourceClass, $referenceType));
+            return $this->router->generate($operation->getName(), $identifiers, $referenceType ?? $operation->getUrlGenerationStrategy());
         } catch (RoutingExceptionInterface $e) {
             throw new InvalidArgumentException(sprintf('Unable to generate an IRI for "%s".', $resourceClass), $e->getCode(), $e);
         }
@@ -141,41 +137,20 @@ final class IriConverter implements IriConverterInterface
     /**
      * {@inheritdoc}
      */
-    public function getItemIriFromResourceClass(string $resourceClass, array $identifiers, int $referenceType = null): string
+    public function getIriFromResourceClass(string $resourceClass, string $operationName = null, int $referenceType = UrlGeneratorInterface::ABS_PATH, array $context = []): string
     {
-        $routeName = $this->routeNameResolver->getRouteName($resourceClass, OperationType::ITEM);
-        $metadata = $this->resourceMetadataFactory->create($resourceClass);
-
-        if (\count($identifiers) > 1 && true === $metadata->getAttribute('composite_identifier', true)) {
-            $identifiers = ['id' => CompositeIdentifierParser::stringify($identifiers)];
+        // TODO: 3.0 remove the condition
+        if ($context['extra_properties']['is_legacy_subresource'] ?? false) {
+            trigger_deprecation('api-platform/core', '2.7', 'The IRI will change and match the first operation of the resource. Switch to an alternate resource when possible instead of using subresources.');
+            $operation = $this->resourceMetadataFactory->create($resourceClass)->getOperation($context['extra_properties']['legacy_subresource_operation_name']);
+        } else {
+            $operation = $this->resourceMetadataFactory->create($resourceClass)->getOperation($operationName);
         }
 
         try {
-            return $this->router->generate($routeName, $identifiers, $this->getReferenceType($resourceClass, $referenceType));
+            return $this->router->generate($operation->getName(), [], $referenceType ?? $operation->getUrlGenerationStrategy());
         } catch (RoutingExceptionInterface $e) {
             throw new InvalidArgumentException(sprintf('Unable to generate an IRI for "%s".', $resourceClass), $e->getCode(), $e);
         }
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getSubresourceIriFromResourceClass(string $resourceClass, array $context, int $referenceType = null): string
-    {
-        try {
-            return $this->router->generate($this->routeNameResolver->getRouteName($resourceClass, OperationType::SUBRESOURCE, $context), $context['subresource_identifiers'], $this->getReferenceType($resourceClass, $referenceType));
-        } catch (RoutingExceptionInterface $e) {
-            throw new InvalidArgumentException(sprintf('Unable to generate an IRI for "%s".', $resourceClass), $e->getCode(), $e);
-        }
-    }
-
-    private function getReferenceType(string $resourceClass, ?int $referenceType): ?int
-    {
-        if (null === $referenceType && null !== $this->resourceMetadataFactory) {
-            $metadata = $this->resourceMetadataFactory->create($resourceClass);
-            $referenceType = $metadata->getAttribute('url_generation_strategy');
-        }
-
-        return $referenceType ?? UrlGeneratorInterface::ABS_PATH;
     }
 }

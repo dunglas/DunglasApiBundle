@@ -10,12 +10,13 @@ env:
 
 jobs:
   php-cs-fixer:
+    name: PHP-cs-fixer (PHP ${{ matrix.php }})
     runs-on: ubuntu-latest
     timeout-minutes: 20
     strategy:
       matrix:
         php:
-          - '7.4'
+          - '8'
       fail-fast: false
     env:
       PHP_CS_FIXER_FUTURE_MODE: '1'
@@ -34,16 +35,17 @@ jobs:
         run: php-cs-fixer fix --dry-run --diff --ansi
 
   phpstan:
-    name: PHPStan
+    name: PHPStan (PHP ${{ matrix.php }})
     runs-on: ubuntu-latest
     timeout-minutes: 20
     strategy:
       matrix:
         php:
-          - '7.4'
+          - '8'
       fail-fast: false
     env:
       APP_DEBUG: '1' # https://github.com/phpstan/phpstan-symfony/issues/37
+      SYMFONY_PHPUNIT_VERSION: '9.5'
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -69,8 +71,6 @@ jobs:
       - name: Require Symfony components
         run: composer require symfony/intl symfony/uid --dev --no-interaction --no-progress --ansi
       - name: Install PHPUnit
-        env:
-          SYMFONY_PHPUNIT_VERSION: '9.5'
         run: vendor/bin/simple-phpunit --version
       - name: Cache PHPStan results
         uses: actions/cache@v2
@@ -247,16 +247,26 @@ jobs:
         if: (startsWith(matrix.php, '8.0'))
         run: rm -Rf tests/Fixtures/app/var/cache/*
       - name: Run Behat tests
+        if: (!startsWith(matrix.php, '8.0'))
+        run: |
+          mkdir -p build/logs/behat
+          if [ "$COVERAGE" = '1' ]; then
+            vendor/bin/behat --out=std --format=progress --format=junit --out=build/logs/behat/junit --profile=default-coverage --no-interaction --tags='~@php8'
+          else
+            if [ "${{ matrix.php }}" = '7.1' ]; then
+              vendor/bin/behat --out=std --format=progress --format=junit --out=build/logs/behat/junit --profile=default --no-interaction --tags='~@symfony/uid&&~@php8'
+            else
+              vendor/bin/behat --out=std --format=progress --format=junit --out=build/logs/behat/junit --profile=default --no-interaction --tags='~@php8'
+            fi
+          fi
+      - name: Run Behat tests
+        if: (startsWith(matrix.php, '8.0'))
         run: |
           mkdir -p build/logs/behat
           if [ "$COVERAGE" = '1' ]; then
             vendor/bin/behat --out=std --format=progress --format=junit --out=build/logs/behat/junit --profile=default-coverage --no-interaction
           else
-            if [ "${{ matrix.php }}" = '7.1' ]; then
-              vendor/bin/behat --out=std --format=progress --format=junit --out=build/logs/behat/junit --profile=default --no-interaction --tags='~@symfony/uid'
-            else
-              vendor/bin/behat --out=std --format=progress --format=junit --out=build/logs/behat/junit --profile=default --no-interaction
-            fi
+            vendor/bin/behat --out=std --format=progress --format=junit --out=build/logs/behat/junit --profile=default --no-interaction
           fi
       - name: Merge code coverage reports
         if: matrix.coverage
@@ -389,7 +399,7 @@ jobs:
         run: tests/Fixtures/app/console cache:clear --ansi
       - name: Run Behat tests
         # @TODO remove the tag "@symfony/uid" in 3.0
-        run: vendor/bin/behat --out=std --format=progress --profile=default --no-interaction --tags='~@symfony/uid'
+        run: vendor/bin/behat --out=std --format=progress --profile=default --no-interaction --tags='~@symfony/uid&&~php8'
 
   postgresql:
     name: Behat (PHP ${{ matrix.php }}) (PostgreSQL)
@@ -440,7 +450,7 @@ jobs:
         run: tests/Fixtures/app/console cache:clear --ansi
       - name: Run Behat tests
         run: | 
-          vendor/bin/behat --out=std --format=progress --profile=postgres --no-interaction -vv
+          vendor/bin/behat --out=std --format=progress --profile=postgres --no-interaction -vv --tags='~php8'
 
   mysql:
     name: Behat (PHP ${{ matrix.php }}) (MySQL)
@@ -500,7 +510,7 @@ jobs:
     strategy:
       matrix:
         php:
-          - '7.4'
+          - '8'
       fail-fast: false
     env:
       APP_ENV: mongodb
@@ -647,12 +657,10 @@ jobs:
         php:
           - '8.0'
         symfony:
-          - '5.4'
+          - '5.3'
       fail-fast: false
     env:
-      # See https://github.com/doctrine/DoctrineMongoDBBundle/pull/673
-      #SYMFONY_DEPRECATIONS_HELPER: max[direct]=0
-      SYMFONY_DEPRECATIONS_HELPER: max[self]=0
+      SYMFONY_DEPRECATIONS_HELPER: max[direct]=0
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -711,7 +719,7 @@ jobs:
         php:
           - '8.0'
         symfony:
-          - '5.4'
+          - '5.3'
       fail-fast: false
     steps:
       - name: Checkout
@@ -764,6 +772,77 @@ jobs:
       - name: Run Behat tests
         run: vendor/bin/behat --out=std --format=progress --profile=default --no-interaction
 
+  behat-rector-upgrade:
+    name: Behat (PHP ${{ matrix.php }}) (Rector)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      matrix:
+        php:
+          - '8.0'
+      fail-fast: false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          tools: pecl, composer
+          extensions: intl, bcmath, curl, openssl, mbstring, pdo_sqlite
+          ini-values: memory_limit=-1
+      - name: Get composer cache directory
+        id: composercache
+        run: echo "::set-output name=dir::$(composer config cache-files-dir)"
+      - name: Cache dependencies
+        uses: actions/cache@v2
+        with:
+          path: ${{ steps.composercache.outputs.dir }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.json') }}
+          restore-keys: ${{ runner.os }}-composer-
+      - name: Require Symfony components and Rector
+        run: composer require symfony/intl symfony/uid rector/rector-src --dev --no-interaction --no-progress --ansi
+      - name: Update project dependencies
+        run: composer update --no-interaction --no-progress --ansi
+      - name: Install PHPUnit
+        run: vendor/bin/simple-phpunit --version
+      - name: Clear test app cache
+        run: rm -Rf tests/Fixtures/app/var/cache/*
+      - name: Convert annotations to attributes
+        run: tests/Fixtures/app/console api:rector:upgrade tests/Fixtures/TestBundle/Entity --annotation-to-api-resource
+      - name: Run Behat tests
+        run: |
+          mkdir -p build/logs/behat
+          vendor/bin/behat --out=std --format=progress --format=junit --out=build/logs/behat/junit --profile=default --no-interaction
+        continue-on-error: true
+      - name: Upload test artifacts
+        if: always()
+        uses: actions/upload-artifact@v1
+        with:
+          name: behat-logs-php${{ matrix.php }}
+          path: build/logs/behat
+        continue-on-error: true
+      - name: Export OpenAPI documents
+        run: |
+          mkdir -p build/out/openapi
+          tests/Fixtures/app/console api:openapi:export --spec-version=2 -o build/out/openapi/swagger_v2.json
+          tests/Fixtures/app/console api:openapi:export --spec-version=2 --yaml -o build/out/openapi/swagger_v2.yaml
+          tests/Fixtures/app/console api:openapi:export --spec-version=3 -o build/out/openapi/openapi_v3.json
+          tests/Fixtures/app/console api:openapi:export --spec-version=3 --yaml -o build/out/openapi/openapi_v3.yaml
+      - name: Validate OpenAPI documents
+        run: |
+          npx swagger-cli validate build/out/openapi/swagger_v2.json
+          npx swagger-cli validate build/out/openapi/swagger_v2.yaml
+          npx swagger-cli validate build/out/openapi/openapi_v3.json
+          npx swagger-cli validate build/out/openapi/openapi_v3.yaml
+      - name: Upload OpenAPI artifacts
+        if: always()
+        uses: actions/upload-artifact@v1
+        with:
+          name: openapi-docs-php${{ matrix.php }}
+          path: build/out/openapi
+        continue-on-error: true
+        
   windows-phpunit:
     name: Windows PHPUnit (PHP ${{ matrix.php }}) (SQLite)
     runs-on: windows-latest
@@ -858,5 +937,10 @@ jobs:
       - name: Clear test app cache
         run: tests/Fixtures/app/console cache:clear --ansi
       - name: Run Behat tests
-        run: vendor/bin/behat --out=std --format=progress --profile=default --no-interaction
+        run: |
+            if ( "${{ matrix.php }}" -eq '7.4' ) {
+                vendor/bin/behat --out=std --format=progress --profile=default --no-interaction --tags='~@php8'
+            } else {
+                vendor/bin/behat --out=std --format=progress --profile=default --no-interaction 
+            }
 

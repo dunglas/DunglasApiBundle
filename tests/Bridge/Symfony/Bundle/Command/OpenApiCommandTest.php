@@ -41,6 +41,11 @@ class OpenApiCommandTest extends KernelTestCase
         $this->tester = new ApplicationTester($application);
     }
 
+    /**
+     * TODO: change this once we support #[Resource].
+     *
+     * @group legacy
+     */
     public function testExecute()
     {
         $this->tester->run(['command' => 'api:openapi:export']);
@@ -56,9 +61,9 @@ class OpenApiCommandTest extends KernelTestCase
         $this->assertYaml($result);
 
         $expected = <<<YAML
-  /dummy_cars:
+  '/dummy_cars.{_format}':
     get:
-      operationId: getDummyCarCollection
+      operationId: '_api_/dummy_cars.{_format}_get'
       tags:
         - DummyCar
 YAML;
@@ -66,9 +71,9 @@ YAML;
         $this->assertStringContainsString(str_replace(\PHP_EOL, "\n", $expected), $result, 'nested object should be present.');
 
         $expected = <<<YAML
-  '/dummy_cars/{id}':
+  '/dummy_cars/{id}.{_format}':
     get:
-      operationId: getDummyCarItem
+      operationId: '_api_/dummy_cars/{id}.{_format}_get'
       tags: []
 YAML;
 
