@@ -12,6 +12,8 @@
 declare(strict_types=1);
 
 use ApiPlatform\Core\Annotation\ApiResource;
+use ApiPlatform\Core\Bridge\Rector\Rules\ApiResourceAnnotationToApiResourceAttributeRector;
+use ApiPlatform\Metadata\Resource;
 use Rector\Core\Configuration\Option;
 use Rector\Core\ValueObject\PhpVersion;
 use Rector\Php80\Rector\Class_\AnnotationToAttributeRector;
@@ -26,13 +28,25 @@ return static function (ContainerConfigurator $containerConfigurator): void {
 
     $services = $containerConfigurator->services();
 
+    // ApiResource annotation to ApiResource & operation attributes
+    $services->set(ApiResourceAnnotationToApiResourceAttributeRector::class)
+        ->call('configure', [[
+            ApiResourceAnnotationToApiResourceAttributeRector::ANNOTATION_TO_ATTRIBUTE => ValueObjectInliner::inline([
+                new AnnotationToAttribute(
+                    \ApiPlatform\Core\Annotation\ApiResource::class,
+                    \ApiPlatform\Metadata\ApiResource::class
+                ),
+            ]),
+            ApiResourceAnnotationToApiResourceAttributeRector::REMOVE_TAG => false,
+        ]]);
+
     // ApiResource annotation to ApiResource attribute
     $services->set(AnnotationToAttributeRector::class)
         ->call('configure', [[
             AnnotationToAttributeRector::ANNOTATION_TO_ATTRIBUTE => ValueObjectInliner::inline([
                 new AnnotationToAttribute(
                     \ApiPlatform\Core\Annotation\ApiResource::class,
-                    \ApiPlatform\Metadata\ApiResource::class
+                    \ApiPlatform\Core\Annotation\ApiResource::class
                 ),
             ]),
         ]]);

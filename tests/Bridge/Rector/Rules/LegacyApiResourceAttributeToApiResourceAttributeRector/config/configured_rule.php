@@ -11,13 +11,10 @@
 
 declare(strict_types=1);
 
-use ApiPlatform\Core\Annotation\ApiResource;
+use ApiPlatform\Core\Bridge\Rector\Rules\LegacyApiResourceAttributeToApiResourceAttributeRector;
 use Rector\Core\Configuration\Option;
 use Rector\Core\ValueObject\PhpVersion;
-use Rector\Php80\Rector\Class_\AnnotationToAttributeRector;
-use Rector\Php80\ValueObject\AnnotationToAttribute;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
-use Symplify\SymfonyPhpConfig\ValueObjectInliner;
 
 return static function (ContainerConfigurator $containerConfigurator): void {
     $parameters = $containerConfigurator->parameters();
@@ -25,15 +22,8 @@ return static function (ContainerConfigurator $containerConfigurator): void {
     $parameters->set(Option::AUTO_IMPORT_NAMES, true);
 
     $services = $containerConfigurator->services();
-
-    // ApiResource annotation to ApiResource attribute
-    $services->set(AnnotationToAttributeRector::class)
+    $services->set(LegacyApiResourceAttributeToApiResourceAttributeRector::class)
         ->call('configure', [[
-            AnnotationToAttributeRector::ANNOTATION_TO_ATTRIBUTE => ValueObjectInliner::inline([
-                new AnnotationToAttribute(
-                    \ApiPlatform\Core\Annotation\ApiResource::class,
-                    \ApiPlatform\Metadata\ApiResource::class
-                ),
-            ]),
+            LegacyApiResourceAttributeToApiResourceAttributeRector::REMOVE_INITIAL_ATTRIBUTE => true,
         ]]);
 };

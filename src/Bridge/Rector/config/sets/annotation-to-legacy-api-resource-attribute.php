@@ -12,9 +12,9 @@
 declare(strict_types=1);
 
 use ApiPlatform\Core\Annotation\ApiResource;
+use ApiPlatform\Core\Bridge\Rector\Rules\ApiResourceAnnotationToApiResourceAttributeRector;
 use Rector\Core\Configuration\Option;
 use Rector\Core\ValueObject\PhpVersion;
-use Rector\Php80\Rector\Class_\AnnotationToAttributeRector;
 use Rector\Php80\ValueObject\AnnotationToAttribute;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
 use Symplify\SymfonyPhpConfig\ValueObjectInliner;
@@ -26,10 +26,10 @@ return static function (ContainerConfigurator $containerConfigurator): void {
 
     $services = $containerConfigurator->services();
 
-    // ApiResource annotation to ApiResource attribute
-    $services->set(AnnotationToAttributeRector::class)
+    // ApiResource annotation to ApiResource & operation attributes
+    $services->set(ApiResourceAnnotationToApiResourceAttributeRector::class)
         ->call('configure', [[
-            AnnotationToAttributeRector::ANNOTATION_TO_ATTRIBUTE => ValueObjectInliner::inline([
+            ApiResourceAnnotationToApiResourceAttributeRector::ANNOTATION_TO_ATTRIBUTE => ValueObjectInliner::inline([
                 new AnnotationToAttribute(
                     \ApiPlatform\Core\Annotation\ApiResource::class,
                     \ApiPlatform\Metadata\ApiResource::class

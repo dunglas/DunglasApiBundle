@@ -13,7 +13,7 @@ declare(strict_types=1);
 
 namespace ApiPlatform\Core\Tests\Bridge\Symfony\Bundle\Command;
 
-use ApiPlatform\Metadata\Resource;
+use ApiPlatform\Metadata\ApiResource;
 use Symfony\Bundle\FrameworkBundle\Console\Application;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\Console\Exception\InvalidOptionException;
@@ -45,7 +45,7 @@ class RectorCommandTest extends KernelTestCase
      */
     public function testExecuteForbiddenOperationsWithApiPlatformV2()
     {
-        $operations = ['annotation-to-resource', 'attribute-to-resource', 'keep-attribute'];
+        $operations = ['annotation-to-api-resource', 'attribute-to-api-resource', 'keep-attribute'];
 
         foreach ($operations as $operation) {
             $this->expectException(InvalidOptionException::class);
@@ -62,7 +62,7 @@ class RectorCommandTest extends KernelTestCase
      */
     public function testExecuteAllowedOperationsWithApiPlatformV2()
     {
-        $operations = ['annotation-to-api-resource'];
+        $operations = ['annotation-to-legacy-api-resource'];
 
         foreach ($operations as $operation) {
             $this->commandTester->setInputs(['yes']);
@@ -83,11 +83,11 @@ class RectorCommandTest extends KernelTestCase
      */
     public function testExecuteOperationsWithApiPlatformV3()
     {
-        if (!class_exists(Resource::class)) {
+        if (!class_exists(\ApiPlatform\Metadata\ApiResource::class)) {
             $this->markTestSkipped();
         }
 
-        $operations = ['annotation-to-api-resource', 'annotation-to-resource', 'attribute-to-resource', 'keep-attribute'];
+        $operations = ['annotation-to-legacy-api-resource', 'annotation-to-api-resource', 'attribute-to-api-resource', 'keep-attribute'];
 
         foreach ($operations as $operation) {
             $this->commandTester->execute([
@@ -136,13 +136,13 @@ class RectorCommandTest extends KernelTestCase
      */
     public function testExecuteWithTooMuchOptions()
     {
-        if (!class_exists(Resource::class)) {
+        if (!class_exists(\ApiPlatform\Metadata\ApiResource::class)) {
             $this->markTestSkipped();
         }
 
         $this->commandTester->execute([
             'src' => 'tests/Fixtures/TestBundle/Entity',
-            '--annotation-to-resource' => null,
+            '--annotation-to-api-resource' => null,
             '--keep-attribute' => null,
             '--dry-run' => null,
             '--silent' => null,

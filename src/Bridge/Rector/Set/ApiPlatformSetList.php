@@ -20,17 +20,17 @@ final class ApiPlatformSetList implements SetListInterface
     /**
      * @var string
      */
+    public const ANNOTATION_TO_LEGACY_API_RESOURCE_ATTRIBUTE = __DIR__.'/../config/sets/annotation-to-legacy-api-resource-attribute.php';
+    /**
+     * @var string
+     */
     public const ANNOTATION_TO_API_RESOURCE_ATTRIBUTE = __DIR__.'/../config/sets/annotation-to-api-resource-attribute.php';
     /**
      * @var string
      */
-    public const ANNOTATION_TO_RESOURCE_ATTRIBUTE = __DIR__.'/../config/sets/annotation-to-resource-attribute.php';
+    public const ANNOTATION_TO_LEGACY_API_RESOURCE_AND_API_RESOURCE_ATTRIBUTE = __DIR__.'/../config/sets/annotation-to-legacy-api-resource-and-api-resource-attribute.php';
     /**
      * @var string
      */
-    public const ANNOTATION_TO_API_RESOURCE_AND_RESOURCE_ATTRIBUTE = __DIR__.'/../config/sets/annotation-to-api-resource-and-resource-attribute.php';
-    /**
-     * @var string
-     */
-    public const ATTRIBUTE_TO_RESOURCE_ATTRIBUTE = __DIR__.'/../config/sets/attribute-to-resource-attribute.php';
+    public const ATTRIBUTE_TO_API_RESOURCE_ATTRIBUTE = __DIR__.'/../config/sets/attribute-to-api-resource-attribute.php';
 }

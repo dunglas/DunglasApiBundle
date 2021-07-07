@@ -22,15 +22,15 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
-class RectorCommand extends Command
+final class RectorCommand extends Command
 {
     private const OPERATIONS_V2 = [
-        'annotation-to-api-resource' => '@ApiResource to #[ApiResource]',
+        'annotation-to-legacy-api-resource' => '@ApiResource to Legacy #[ApiResource]',
     ];
     private const OPERATIONS = self::OPERATIONS_V2 + [
-        'annotation-to-resource' => '@ApiResource to #[Resource]',
-        'attribute-to-resource' => '@ApiResource to #[ApiResource] and #[Resource]',
-        'keep-attribute' => '#[ApiResource] to #[Resource]',
+        'annotation-to-api-resource' => '@ApiResource to new #[ApiResource]',
+        'attribute-to-api-resource' => '@ApiResource to legacy #[ApiResource] and new #[ApiResource]',
+        'keep-attribute' => 'Legacy #[ApiResource] to new #[ApiResource]',
     ];
 
     protected static $defaultName = 'api:rector:upgrade';
@@ -41,12 +41,12 @@ class RectorCommand extends Command
     protected function configure()
     {
         $this
-            ->setDescription('Change ApiResource annotation/attribute to ApiResource/Resource attribute')
+            ->setDescription('Change legacy ApiResource annotation/attribute to new ApiResource attribute')
             ->addOption('dry-run', '-d', InputOption::VALUE_NONE, 'Rector will show you diff of files that it would change. To make the changes, drop --dry-run')
             ->addOption('silent', '-s', InputOption::VALUE_NONE, 'Run Rector silently')
             ->addArgument('src', InputArgument::REQUIRED, 'Path to folder/file to convert, forwarded to Rector');
 
-        foreach (class_exists(Resource::class) ? self::OPERATIONS : self::OPERATIONS_V2 as $operationKey => $operationDescription) {
+        foreach (class_exists(\ApiPlatform\Metadata\ApiResource::class) ? self::OPERATIONS : self::OPERATIONS_V2 as $operationKey => $operationDescription) {
             $this->addOption($operationKey, null, InputOption::VALUE_NONE, $operationDescription);
         }
     }
@@ -63,7 +63,7 @@ class RectorCommand extends Command
         }
 
         $io = new SymfonyStyle($input, $output);
-        $operations = class_exists(Resource::class) ? self::OPERATIONS : self::OPERATIONS_V2;
+        $operations = class_exists(\ApiPlatform\Metadata\ApiResource::class) ? self::OPERATIONS : self::OPERATIONS_V2;
 
         $choices = array_values($operations);
 
@@ -109,16 +109,16 @@ class RectorCommand extends Command
 
         switch ($operationKey) {
             case $operationKeys[0]:
-                $command .= ' --config='.ApiPlatformSetList::ANNOTATION_TO_API_RESOURCE_ATTRIBUTE;
+                $command .= ' --config='.ApiPlatformSetList::ANNOTATION_TO_LEGACY_API_RESOURCE_ATTRIBUTE;
                 break;
             case $operationKeys[1]:
-                $command .= ' --config='.ApiPlatformSetList::ANNOTATION_TO_RESOURCE_ATTRIBUTE;
+                $command .= ' --config='.ApiPlatformSetList::ANNOTATION_TO_API_RESOURCE_ATTRIBUTE;
                 break;
             case $operationKeys[2]:
-                $command .= ' --config='.ApiPlatformSetList::ANNOTATION_TO_API_RESOURCE_AND_RESOURCE_ATTRIBUTE;
+                $command .= ' --config='.ApiPlatformSetList::ANNOTATION_TO_LEGACY_API_RESOURCE_AND_API_RESOURCE_ATTRIBUTE;
                 break;
             case $operationKeys[3]:
-                $command .= ' --config='.ApiPlatformSetList::ATTRIBUTE_TO_RESOURCE_ATTRIBUTE;
+                $command .= ' --config='.ApiPlatformSetList::ATTRIBUTE_TO_API_RESOURCE_ATTRIBUTE;
                 break;
         }
 
