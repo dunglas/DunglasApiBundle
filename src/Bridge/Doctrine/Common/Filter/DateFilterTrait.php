@@ -44,10 +44,10 @@ trait DateFilterTrait
                 continue;
             }
 
-            $description += $this->getFilterDescription($property, self::PARAMETER_BEFORE);
-            $description += $this->getFilterDescription($property, self::PARAMETER_STRICTLY_BEFORE);
-            $description += $this->getFilterDescription($property, self::PARAMETER_AFTER);
-            $description += $this->getFilterDescription($property, self::PARAMETER_STRICTLY_AFTER);
+            $description += $this->getFilterDescription($property, self::PARAMETER_BEFORE, $resourceClass);
+            $description += $this->getFilterDescription($property, self::PARAMETER_STRICTLY_BEFORE, $resourceClass);
+            $description += $this->getFilterDescription($property, self::PARAMETER_AFTER, $resourceClass);
+            $description += $this->getFilterDescription($property, self::PARAMETER_STRICTLY_AFTER, $resourceClass);
         }
 
         return $description;
@@ -55,7 +55,7 @@ trait DateFilterTrait
 
     abstract protected function getProperties(): ?array;
 
-    abstract protected function normalizePropertyName($property);
+    abstract protected function normalizePropertyName($property/*, ?string $resourceClass = null, array $context = []*/);
 
     /**
      * Determines whether the given property refers to a date field.
@@ -68,9 +68,22 @@ trait DateFilterTrait
     /**
      * Gets filter description.
      */
-    protected function getFilterDescription(string $property, string $period): array
+    protected function getFilterDescription(string $property, string $period/*, ?string $resourceClass = null*/): array
     {
-        $propertyName = $this->normalizePropertyName($property);
+        if (\func_num_args() > 2) {
+            $resourceClass = null === ($arg = func_get_arg(2)) ? $arg : (string) $arg;
+        } else {
+            if (__CLASS__ !== static::class) {
+                $r = new \ReflectionMethod($this, __FUNCTION__);
+                if (__CLASS__ !== $r->getDeclaringClass()->getName()) {
+                    @trigger_error(sprintf('Method %s() will have a third `$resourceClass` argument in version API Platform 3.0. Not defining it is deprecated since API Platform 2.7.', __FUNCTION__), \E_USER_DEPRECATED);
+                }
+            }
+
+            $resourceClass = null;
+        }
+
+        $propertyName = $this->normalizePropertyName($property, $resourceClass);
 
         return [
             sprintf('%s[%s]', $propertyName, $period) => [

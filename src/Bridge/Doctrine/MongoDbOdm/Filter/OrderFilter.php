@@ -76,7 +76,7 @@ final class OrderFilter extends AbstractFilter implements OrderFilterInterface
         }
 
         foreach ($context['filters'][$this->orderParameterName] as $property => $value) {
-            $this->filterProperty($this->denormalizePropertyName($property), $value, $aggregationBuilder, $resourceClass, $operationName, $context);
+            $this->filterProperty($this->denormalizePropertyName($property, $resourceClass, $context), $value, $aggregationBuilder, $resourceClass, $operationName, $context);
         }
     }
 

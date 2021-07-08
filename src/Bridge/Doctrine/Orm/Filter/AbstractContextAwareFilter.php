@@ -30,7 +30,7 @@ abstract class AbstractContextAwareFilter extends AbstractFilter implements Cont
         }
 
         foreach ($context['filters'] as $property => $value) {
-            $this->filterProperty($this->denormalizePropertyName($property), $value, $queryBuilder, $queryNameGenerator, $resourceClass, $operationName, $context);
+            $this->filterProperty($this->denormalizePropertyName($property, $resourceClass, $context), $value, $queryBuilder, $queryNameGenerator, $resourceClass, $operationName, $context);
         }
     }
 }

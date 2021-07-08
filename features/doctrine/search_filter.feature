@@ -17,7 +17,7 @@ Feature: Search filter on collections
   @createSchema
   Scenario: Test #944
     Given there is a DummyCar entity with related colors
-    When I send a "GET" request to "/dummy_cars?colors.prop=red"
+    When I send a "GET" request to "/dummy_cars?couleurs.prop=red"
     Then the response status code should be 200
     And the JSON should be equal to:
     """
@@ -29,7 +29,7 @@ Feature: Search filter on collections
         {
           "@id": "/dummy_cars/1",
           "@type": "DummyCar",
-          "colors": [
+          "couleurs": [
             {
               "@id": "/dummy_car_colors/1",
               "@type": "DummyCarColor",
@@ -71,12 +71,12 @@ Feature: Search filter on collections
       ],
       "hydra:totalItems": 1,
       "hydra:view": {
-        "@id": "/dummy_cars?colors.prop=red",
+        "@id": "/dummy_cars?couleurs.prop=red",
         "@type": "hydra:PartialCollectionView"
       },
       "hydra:search": {
         "@type": "hydra:IriTemplate",
-        "hydra:template": "/dummy_cars{?availableAt[before],availableAt[strictly_before],availableAt[after],availableAt[strictly_after],canSell,foobar[],foobargroups[],foobargroups_override[],colors.prop,colors,colors[],secondColors,secondColors[],thirdColors,thirdColors[],uuid,uuid[],name}",
+        "hydra:template": "/dummy_cars{?availableAt[before],availableAt[strictly_before],availableAt[after],availableAt[strictly_after],canSell,foobar[],foobargroups[],foobargroups_override[],couleurs.prop,couleurs,couleurs[],secondColors,secondColors[],thirdColors,thirdColors[],uuid,uuid[],name}",
         "hydra:variableRepresentation": "BasicRepresentation",
         "hydra:mapping": [
           {
@@ -129,20 +129,20 @@ Feature: Search filter on collections
           },
           {
             "@type": "IriTemplateMapping",
-            "variable": "colors.prop",
-            "property": "colors.prop",
+            "variable": "couleurs.prop",
+            "property": "couleurs.prop",
             "required": false
           },
           {
             "@type": "IriTemplateMapping",
-            "variable": "colors",
-            "property": "colors",
+            "variable": "couleurs",
+            "property": "couleurs",
             "required": false
           },
           {
             "@type": "IriTemplateMapping",
-            "variable": "colors[]",
-            "property": "colors",
+            "variable": "couleurs[]",
+            "property": "couleurs",
             "required": false
           },
           {

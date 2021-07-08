@@ -59,7 +59,7 @@ trait SearchFilterTrait
                 $metadata = $this->getClassMetadata($resourceClass);
             }
 
-            $propertyName = $this->normalizePropertyName($property);
+            $propertyName = $this->normalizePropertyName($property, $resourceClass);
             if ($metadata->hasField($field)) {
                 $typeOfField = $this->getType($metadata->getTypeOfField($field));
                 $strategy = $this->getProperties()[$property] ?? self::STRATEGY_EXACT;
@@ -112,7 +112,7 @@ trait SearchFilterTrait
 
     abstract protected function getPropertyAccessor(): PropertyAccessorInterface;
 
-    abstract protected function normalizePropertyName($property);
+    abstract protected function normalizePropertyName($property/*, ?string $resourceClass = null, array $context = []*/);
 
     /**
      * Gets the ID from an IRI or a raw ID.

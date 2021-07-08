@@ -206,8 +206,8 @@ Feature: Collections filtering
       }
     }
     """
-    Then the JSON node "data.dummyCar.colors.edges" should have 1 element
-    And the JSON node "data.dummyCar.colors.edges[0].node.prop" should be equal to "blue"
+    Then the JSON node "data.dummyCar.couleurs.edges" should have 1 element
+    And the JSON node "data.dummyCar.couleurs.edges[0].node.prop" should be equal to "blue"
 
   @createSchema
   Scenario: Retrieve a collection filtered using the related search filter

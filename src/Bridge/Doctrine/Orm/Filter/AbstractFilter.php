@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace ApiPlatform\Core\Bridge\Doctrine\Orm\Filter;
 
 use ApiPlatform\Core\Bridge\Doctrine\Common\PropertyHelperTrait;
+use ApiPlatform\Core\Bridge\Doctrine\Common\Util\PropertyNameNormalizerTrait;
 use ApiPlatform\Core\Bridge\Doctrine\Orm\PropertyHelperTrait as OrmPropertyHelperTrait;
 use ApiPlatform\Core\Bridge\Doctrine\Orm\Util\QueryNameGeneratorInterface;
 use ApiPlatform\Core\Util\RequestParser;
@@ -37,6 +38,7 @@ abstract class AbstractFilter implements FilterInterface
 {
     use OrmPropertyHelperTrait;
     use PropertyHelperTrait;
+    use PropertyNameNormalizerTrait;
 
     protected $managerRegistry;
     protected $requestStack;
@@ -93,6 +95,11 @@ abstract class AbstractFilter implements FilterInterface
         return $this->logger;
     }
 
+    protected function getNameConverter(): ?NameConverterInterface
+    {
+        return $this->nameConverter;
+    }
+
     /**
      * Determines whether the given property is enabled.
      */
@@ -140,23 +147,5 @@ abstract class AbstractFilter implements FilterInterface
         }
 
         return $request->query->all();
-    }
-
-    protected function denormalizePropertyName($property)
-    {
-        if (!$this->nameConverter instanceof NameConverterInterface) {
-            return $property;
-        }
-
-        return implode('.', array_map([$this->nameConverter, 'denormalize'], explode('.', (string) $property)));
-    }
-
-    protected function normalizePropertyName($property)
-    {
-        if (!$this->nameConverter instanceof NameConverterInterface) {
-            return $property;
-        }
-
-        return implode('.', array_map([$this->nameConverter, 'normalize'], explode('.', (string) $property)));
     }
 }

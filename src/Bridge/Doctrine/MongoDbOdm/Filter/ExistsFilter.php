@@ -60,7 +60,7 @@ final class ExistsFilter extends AbstractFilter implements ExistsFilterInterface
         }
 
         foreach ($context['filters'][$this->existsParameterName] as $property => $value) {
-            $this->filterProperty($this->denormalizePropertyName($property), $value, $aggregationBuilder, $resourceClass, $operationName, $context);
+            $this->filterProperty($this->denormalizePropertyName($property, $resourceClass, $context), $value, $aggregationBuilder, $resourceClass, $operationName, $context);
         }
     }
 

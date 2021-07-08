@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace ApiPlatform\Core\Bridge\Doctrine\MongoDbOdm\Filter;
 
 use ApiPlatform\Core\Bridge\Doctrine\Common\PropertyHelperTrait;
+use ApiPlatform\Core\Bridge\Doctrine\Common\Util\PropertyNameNormalizerTrait;
 use ApiPlatform\Core\Bridge\Doctrine\MongoDbOdm\PropertyHelperTrait as MongoDbOdmPropertyHelperTrait;
 use Doctrine\ODM\MongoDB\Aggregation\Builder;
 use Doctrine\Persistence\ManagerRegistry;
@@ -34,6 +35,7 @@ abstract class AbstractFilter implements FilterInterface
 {
     use MongoDbOdmPropertyHelperTrait;
     use PropertyHelperTrait;
+    use PropertyNameNormalizerTrait;
 
     protected $managerRegistry;
     protected $logger;
@@ -54,7 +56,7 @@ abstract class AbstractFilter implements FilterInterface
     public function apply(Builder $aggregationBuilder, string $resourceClass, string $operationName = null, array &$context = [])
     {
         foreach ($context['filters'] as $property => $value) {
-            $this->filterProperty($this->denormalizePropertyName($property), $value, $aggregationBuilder, $resourceClass, $operationName, $context);
+            $this->filterProperty($this->denormalizePropertyName($property, $resourceClass, $context), $value, $aggregationBuilder, $resourceClass, $operationName, $context);
         }
     }
 
@@ -78,6 +80,11 @@ abstract class AbstractFilter implements FilterInterface
         return $this->logger;
     }
 
+    protected function getNameConverter(): ?NameConverterInterface
+    {
+        return $this->nameConverter;
+    }
+
     /**
      * Determines whether the given property is enabled.
      */
@@ -89,23 +96,5 @@ abstract class AbstractFilter implements FilterInterface
         }
 
         return \array_key_exists($property, $this->properties);
-    }
-
-    protected function denormalizePropertyName($property)
-    {
-        if (!$this->nameConverter instanceof NameConverterInterface) {
-            return $property;
-        }
-
-        return implode('.', array_map([$this->nameConverter, 'denormalize'], explode('.', (string) $property)));
-    }
-
-    protected function normalizePropertyName($property)
-    {
-        if (!$this->nameConverter instanceof NameConverterInterface) {
-            return $property;
-        }
-
-        return implode('.', array_map([$this->nameConverter, 'normalize'], explode('.', (string) $property)));
     }
 }

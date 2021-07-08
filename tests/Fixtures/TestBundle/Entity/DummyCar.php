@@ -55,6 +55,7 @@ class DummyCar
      * @ORM\OneToMany(targetEntity="DummyCarColor", mappedBy="car")
      *
      * @Serializer\Groups({"colors"})
+     * @Serializer\SerializedName("couleurs")
      * @ApiFilter(SearchFilter::class, properties={"colors.prop"="ipartial", "colors"="exact"})
      */
     private $colors;

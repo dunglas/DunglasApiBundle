@@ -45,7 +45,7 @@ trait NumericFilterTrait
                 continue;
             }
 
-            $propertyName = $this->normalizePropertyName($property);
+            $propertyName = $this->normalizePropertyName($property, $resourceClass);
             $filterParameterNames = [$propertyName, $propertyName.'[]'];
             foreach ($filterParameterNames as $filterParameterName) {
                 $description[$filterParameterName] = [
@@ -69,7 +69,7 @@ trait NumericFilterTrait
 
     abstract protected function getLogger(): LoggerInterface;
 
-    abstract protected function normalizePropertyName($property);
+    abstract protected function normalizePropertyName($property/*, ?string $resourceClass = null, array $context = []*/);
 
     /**
      * Determines whether the given property refers to a numeric field.

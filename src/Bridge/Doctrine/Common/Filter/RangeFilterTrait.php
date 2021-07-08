@@ -44,11 +44,11 @@ trait RangeFilterTrait
                 continue;
             }
 
-            $description += $this->getFilterDescription($property, self::PARAMETER_BETWEEN);
-            $description += $this->getFilterDescription($property, self::PARAMETER_GREATER_THAN);
-            $description += $this->getFilterDescription($property, self::PARAMETER_GREATER_THAN_OR_EQUAL);
-            $description += $this->getFilterDescription($property, self::PARAMETER_LESS_THAN);
-            $description += $this->getFilterDescription($property, self::PARAMETER_LESS_THAN_OR_EQUAL);
+            $description += $this->getFilterDescription($property, self::PARAMETER_BETWEEN, $resourceClass);
+            $description += $this->getFilterDescription($property, self::PARAMETER_GREATER_THAN, $resourceClass);
+            $description += $this->getFilterDescription($property, self::PARAMETER_GREATER_THAN_OR_EQUAL, $resourceClass);
+            $description += $this->getFilterDescription($property, self::PARAMETER_LESS_THAN, $resourceClass);
+            $description += $this->getFilterDescription($property, self::PARAMETER_LESS_THAN_OR_EQUAL, $resourceClass);
         }
 
         return $description;
@@ -58,14 +58,27 @@ trait RangeFilterTrait
 
     abstract protected function getLogger(): LoggerInterface;
 
-    abstract protected function normalizePropertyName($property);
+    abstract protected function normalizePropertyName($property/*, ?string $resourceClass = null, array $context = []*/);
 
     /**
      * Gets filter description.
      */
-    protected function getFilterDescription(string $fieldName, string $operator): array
+    protected function getFilterDescription(string $property, string $operator/*, string $resourceClass = null*/): array
     {
-        $propertyName = $this->normalizePropertyName($fieldName);
+        if (\func_num_args() > 2) {
+            $resourceClass = null === ($arg = func_get_arg(2)) ? $arg : (string) $arg;
+        } else {
+            if (__CLASS__ !== static::class) {
+                $r = new \ReflectionMethod($this, __FUNCTION__);
+                if (__CLASS__ !== $r->getDeclaringClass()->getName()) {
+                    @trigger_error(sprintf('Method %s() will have a third `$resourceClass` argument in version API Platform 3.0. Not defining it is deprecated since API Platform 2.7.', __FUNCTION__), \E_USER_DEPRECATED);
+                }
+            }
+
+            $resourceClass = null;
+        }
+
+        $propertyName = $this->normalizePropertyName($property, $resourceClass);
 
         return [
             sprintf('%s[%s]', $propertyName, $operator) => [
