@@ -25,6 +25,27 @@ use PHPUnit\Runner\Version;
 
 class ApiTestCaseTest extends ApiTestCase
 {
+    public function testCreateClientBootsKernelIfNotPresent(): void
+    {
+        $this->assertNull(static::$kernel, "Kernel not booted");
+
+        $this->createClient();
+
+        $this->assertNotNull(static::$kernel, "Kernel booted by createClient()");
+    }
+
+    public function testCreateClientUsesExistingKernelIfPresent(): void
+    {
+        $this->assertNull(static::$kernel, "Kernel not booted");
+
+        $initialKernel = self::bootKernel();
+        $this->assertNotNull(static::$kernel, "Kernel booted successfully");
+
+        $this->createClient();
+
+        $this->assertSame(static::$kernel, $initialKernel, "Kernel not changed by createClient");
+    }
+
     public function testAssertJsonContains(): void
     {
         if (version_compare(Version::id(), '8.0.0', '<')) {
