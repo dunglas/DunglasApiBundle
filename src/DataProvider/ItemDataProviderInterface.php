@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace ApiPlatform\Core\DataProvider;
 
+use ApiPlatform\Core\Exception\ItemNotFoundException;
 use ApiPlatform\Core\Exception\ResourceClassNotSupportedException;
 
 /**
@@ -28,6 +29,7 @@ interface ItemDataProviderInterface
      * @param array|int|object|string $id
      *
      * @throws ResourceClassNotSupportedException
+     * @throws ItemNotFoundException              if the item does not exist
      *
      * @return object|null
      */

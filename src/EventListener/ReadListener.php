@@ -18,6 +18,7 @@ use ApiPlatform\Core\DataProvider\ItemDataProviderInterface;
 use ApiPlatform\Core\DataProvider\OperationDataProviderTrait;
 use ApiPlatform\Core\DataProvider\SubresourceDataProviderInterface;
 use ApiPlatform\Core\Exception\InvalidIdentifierException;
+use ApiPlatform\Core\Exception\ItemNotFoundException;
 use ApiPlatform\Core\Exception\RuntimeException;
 use ApiPlatform\Core\Identifier\IdentifierConverterInterface;
 use ApiPlatform\Core\Metadata\Resource\Factory\ResourceMetadataFactoryInterface;
@@ -84,7 +85,11 @@ final class ReadListener
         }
 
         if (isset($attributes['collection_operation_name'])) {
-            $request->attributes->set('data', $this->getCollectionData($attributes, $context));
+            try {
+                $request->attributes->set('data', $this->getCollectionData($attributes, $context));
+            } catch (ItemNotFoundException $e) {
+                throw new NotFoundHttpException($e->getMessage(), $e);
+            }
 
             return;
         }
@@ -99,14 +104,22 @@ final class ReadListener
             $identifiers = $this->extractIdentifiers($request->attributes->all(), $attributes);
 
             if (isset($attributes['item_operation_name'])) {
-                $data = $this->getItemData($identifiers, $attributes, $context);
+                try {
+                    $data = $this->getItemData($identifiers, $attributes, $context);
+                } catch (ItemNotFoundException $e) {
+                    throw new NotFoundHttpException($e->getMessage(), $e);
+                }
             } elseif (isset($attributes['subresource_operation_name'])) {
                 // Legacy
                 if (null === $this->subresourceDataProvider) {
                     throw new RuntimeException('No subresource data provider.');
                 }
 
-                $data = $this->getSubresourceData($identifiers, $attributes, $context);
+                try {
+                    $data = $this->getSubresourceData($identifiers, $attributes, $context);
+                } catch (ItemNotFoundException $e) {
+                    throw new NotFoundHttpException($e->getMessage(), $e);
+                }
             }
         } catch (InvalidIdentifierException $e) {
             throw new NotFoundHttpException('Invalid identifier value or configuration.', $e);

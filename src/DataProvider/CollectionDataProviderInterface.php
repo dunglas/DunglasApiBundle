@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace ApiPlatform\Core\DataProvider;
 
+use ApiPlatform\Core\Exception\ItemNotFoundException;
 use ApiPlatform\Core\Exception\ResourceClassNotSupportedException;
 
 /**
@@ -26,6 +27,7 @@ interface CollectionDataProviderInterface
      * Retrieves a collection.
      *
      * @throws ResourceClassNotSupportedException
+     * @throws ItemNotFoundException              if the collection does not exist
      *
      * @return iterable
      */

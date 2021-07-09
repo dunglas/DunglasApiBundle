@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace ApiPlatform\Core\DataProvider;
 
+use ApiPlatform\Core\Exception\ItemNotFoundException;
 use ApiPlatform\Core\Exception\ResourceClassNotSupportedException;
 
 /**
@@ -31,6 +32,7 @@ interface SubresourceDataProviderInterface
      * @param string $operationName
      *
      * @throws ResourceClassNotSupportedException
+     * @throws ItemNotFoundException              if the subresource does not exist
      *
      * @return iterable|object|null
      */
