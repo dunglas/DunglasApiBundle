@@ -168,6 +168,35 @@ class WriteListenerTest extends TestCase
         (new WriteListener($dataPersisterProphecy->reveal(), $iriConverterProphecy->reveal(), $resourceMetadataFactoryProphecy->reveal()))->onKernelView($event);
     }
 
+    public function testOnKernelViewCallIriConverterWhenOutputClassDisabledAndSetContentLocationEnabled()
+    {
+        $dummy = new Dummy();
+        $dummy->setName('Dummyrino');
+
+        $dataPersisterProphecy = $this->prophesize(DataPersisterInterface::class);
+        $dataPersisterProphecy->supports($dummy, Argument::type('array'))->willReturn(true)->shouldBeCalled();
+
+        $iriConverterProphecy = $this->prophesize(IriConverterInterface::class);
+        $iriConverterProphecy->getIriFromItem($dummy)->shouldBeCalled();
+
+        $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
+        $resourceMetadataFactoryProphecy->create(Dummy::class)->willReturn(new ResourceMetadata(null, null, null, null, null, ['set_content_location' => true, 'output' => ['class' => null]]));
+
+        $dataPersisterProphecy->persist($dummy, Argument::type('array'))->willReturn($dummy)->shouldBeCalled();
+
+        $request = new Request([], [], ['_api_resource_class' => Dummy::class, '_api_collection_operation_name' => 'post']);
+        $request->setMethod('POST');
+
+        $event = new GetResponseForControllerResultEvent(
+            $this->prophesize(HttpKernelInterface::class)->reveal(),
+            $request,
+            HttpKernelInterface::MASTER_REQUEST,
+            $dummy
+        );
+
+        (new WriteListener($dataPersisterProphecy->reveal(), $iriConverterProphecy->reveal(), $resourceMetadataFactoryProphecy->reveal()))->onKernelView($event);
+    }
+
     public function testOnKernelViewWithControllerResultAndRemove()
     {
         $dummy = new Dummy();

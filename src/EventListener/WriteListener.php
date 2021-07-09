@@ -87,6 +87,7 @@ final class WriteListener
                 }
 
                 $hasOutput = true;
+                $resourceMetadata = null;
                 if ($this->resourceMetadataFactory instanceof ResourceMetadataFactoryInterface) {
                     $resourceMetadata = $this->resourceMetadataFactory->create($attributes['resource_class']);
                     $outputMetadata = $resourceMetadata->getOperationAttribute($attributes, 'output', [
@@ -96,11 +97,11 @@ final class WriteListener
                     $hasOutput = \array_key_exists('class', $outputMetadata) && null !== $outputMetadata['class'];
                 }
 
-                if (!$hasOutput) {
-                    break;
+                if (null !== $resourceMetadata) {
+                    $hasOutput = $resourceMetadata->getOperationAttribute($attributes, 'set_content_location', $hasOutput, true);
                 }
 
-                if ($this->iriConverter instanceof IriConverterInterface && $this->isResourceClass($this->getObjectClass($controllerResult))) {
+                if ($hasOutput && $this->iriConverter instanceof IriConverterInterface && $this->isResourceClass($this->getObjectClass($controllerResult))) {
                     $request->attributes->set('_api_write_item_iri', $this->iriConverter->getIriFromItem($controllerResult));
                 }
 
