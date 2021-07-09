@@ -54,6 +54,12 @@
             <!-- Run after serializer.denormalizer.array but before serializer.normalizer.object -->
             <tag name="serializer.normalizer" priority="-995" />
         </service>
+
+        <!-- JSON Schema -->
+
+        <service id="api_platform.hal.json_schema.schema_factory" class="ApiPlatform\Core\Hal\JsonSchema\SchemaFactory" decorates="api_platform.json_schema.schema_factory">
+            <argument type="service" id="api_platform.hal.json_schema.schema_factory.inner" />
+        </service>
     </services>
 
 </container>
