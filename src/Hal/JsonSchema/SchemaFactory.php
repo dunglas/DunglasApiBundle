@@ -31,7 +31,7 @@ final class SchemaFactory implements SchemaFactoryInterface
         'href' => [
             'type' => 'string',
             'format' => 'iri-reference',
-        ]
+        ],
     ];
     private const BASE_PROPS = [
         '_links' => [
