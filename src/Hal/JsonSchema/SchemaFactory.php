@@ -27,18 +27,19 @@ use ApiPlatform\Core\JsonSchema\SchemaFactoryInterface;
  */
 final class SchemaFactory implements SchemaFactoryInterface
 {
+    private const HREF_PROP = [
+        'href' => [
+            'type' => 'string',
+            'format' => 'iri-reference',
+        ]
+    ];
     private const BASE_PROPS = [
         '_links' => [
             'type' => 'object',
             'properties' => [
                 'self' => [
                     'type' => 'object',
-                    'properties' => [
-                        'href' => [
-                            'type' => 'string',
-                            'format' => 'iri-reference',
-                        ]
-                    ],
+                    'properties' => self::HREF_PROP,
                 ],
             ],
         ],
@@ -98,48 +99,23 @@ final class SchemaFactory implements SchemaFactoryInterface
                     'properties' => [
                         'self' => [
                             'type' => 'object',
-                            'properties' => [
-                                'href' => [
-                                    'type' => 'string',
-                                    'format' => 'iri-reference',
-                                ]
-                            ],
+                            'properties' => self::HREF_PROP,
                         ],
                         'first' => [
                             'type' => 'object',
-                            'properties' => [
-                                'href' => [
-                                    'type' => 'string',
-                                    'format' => 'iri-reference',
-                                ]
-                            ],
+                            'properties' => self::HREF_PROP,
                         ],
                         'last' => [
                             'type' => 'object',
-                            'properties' => [
-                                'href' => [
-                                    'type' => 'string',
-                                    'format' => 'iri-reference',
-                                ]
-                            ],
+                            'properties' => self::HREF_PROP,
                         ],
                         'next' => [
                             'type' => 'object',
-                            'properties' => [
-                                'href' => [
-                                    'type' => 'string',
-                                    'format' => 'iri-reference',
-                                ]
-                            ],
+                            'properties' => self::HREF_PROP,
                         ],
                         'previous' => [
                             'type' => 'object',
-                            'properties' => [
-                                'href' => [
-                                    'type' => 'string',
-                                    'format' => 'iri-reference',
-                                ]
-                            ],
+                            'properties' => self::HREF_PROP,
                         ],
                     ],
                 ],
