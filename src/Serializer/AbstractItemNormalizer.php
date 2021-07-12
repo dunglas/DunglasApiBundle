@@ -147,8 +147,14 @@ abstract class AbstractItemNormalizer extends AbstractObjectNormalizer
 
         $resourceClass = $this->resourceClassResolver->getResourceClass($object, $context['resource_class'] ?? null);
         $context = $this->initContext($resourceClass, $context);
-        $iri = $context['iri'] ?? $this->iriConverter->getIriFromItem($object);
-        $context['iri'] = $iri;
+
+        try {
+            $iri = $context['iri'] ?? $this->iriConverter->getIriFromItem($object);
+            $context['iri'] = $iri;
+        } catch (InvalidArgumentException $e) {
+            // The original resource has no identifiers
+            $iri = null;
+        }
         $context['api_normalize'] = true;
 
         /*
@@ -161,15 +167,17 @@ abstract class AbstractItemNormalizer extends AbstractObjectNormalizer
          * It must not be propagated to subresources, as {@see PropertyMetadata::isReadableLink}
          * should take effect.
          */
-        $emptyResourceAsIri = $context['api_empty_resource_as_iri'] ?? false;
-        unset($context['api_empty_resource_as_iri']);
+        if (null !== $iri) {
+            $emptyResourceAsIri = $context['api_empty_resource_as_iri'] ?? false;
+            unset($context['api_empty_resource_as_iri']);
+        }
 
-        if (isset($context['resources'])) {
+        if (isset($context['resources']) && null !== $iri) {
             $context['resources'][$iri] = $iri;
         }
 
         $data = parent::normalize($object, $format, $context);
-        if ($emptyResourceAsIri && \is_array($data) && 0 === \count($data)) {
+        if (null !== $iri && $emptyResourceAsIri && \is_array($data) && 0 === \count($data)) {
             return $iri;
         }
 
