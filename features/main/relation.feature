@@ -396,6 +396,7 @@ Feature: Relations support
     }
     """
 
+  @createSchema
   Scenario: Issue #1222
     Given there are people having pets
     When I add "Content-Type" header equal to "application/ld+json"

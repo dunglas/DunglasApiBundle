@@ -13,12 +13,17 @@ declare(strict_types=1);
 
 namespace ApiPlatform\Core\JsonLd;
 
+use ApiPlatform\Core\Api\IdentifiersExtractor;
+use ApiPlatform\Core\Api\ResourceClassResolver;
 use ApiPlatform\Core\Api\UrlGeneratorInterface;
+use ApiPlatform\Core\Exception\RuntimeException;
+use ApiPlatform\Core\Identifier\CompositeIdentifierParser;
 use ApiPlatform\Core\Metadata\Property\Factory\PropertyMetadataFactoryInterface;
 use ApiPlatform\Core\Metadata\Property\Factory\PropertyNameCollectionFactoryInterface;
 use ApiPlatform\Core\Metadata\Resource\Factory\ResourceMetadataFactoryInterface;
 use ApiPlatform\Core\Metadata\Resource\Factory\ResourceNameCollectionFactoryInterface;
 use ApiPlatform\Core\Util\ClassInfoTrait;
+use Symfony\Component\PropertyAccess\PropertyAccess;
 use Symfony\Component\Serializer\NameConverter\NameConverterInterface;
 
 /**
@@ -42,6 +47,8 @@ final class ContextBuilder implements AnonymousContextBuilderInterface
      * @var NameConverterInterface|null
      */
     private $nameConverter;
+    private $identifiersExtractor;
+    private $propertyAccessor;
 
     public function __construct(ResourceNameCollectionFactoryInterface $resourceNameCollectionFactory, ResourceMetadataFactoryInterface $resourceMetadataFactory, PropertyNameCollectionFactoryInterface $propertyNameCollectionFactory, PropertyMetadataFactoryInterface $propertyMetadataFactory, UrlGeneratorInterface $urlGenerator, NameConverterInterface $nameConverter = null)
     {
@@ -51,6 +58,8 @@ final class ContextBuilder implements AnonymousContextBuilderInterface
         $this->propertyMetadataFactory = $propertyMetadataFactory;
         $this->urlGenerator = $urlGenerator;
         $this->nameConverter = $nameConverter;
+        $this->propertyAccessor = PropertyAccess::createPropertyAccessor();
+        $this->identifiersExtractor = new IdentifiersExtractor($propertyNameCollectionFactory, $propertyMetadataFactory, null, new ResourceClassResolver($resourceNameCollectionFactory));
     }
 
     /**
@@ -133,7 +142,7 @@ final class ContextBuilder implements AnonymousContextBuilderInterface
                 $shortName
             ),
             '@type' => $shortName,
-            '@id' => $context['iri'] ?? '_:'.(\function_exists('spl_object_id') ? spl_object_id($object) : spl_object_hash($object)),
+            '@id' => $this->getAnonymousResourceIdentifier($object, $outputClass, $context),
         ];
 
         if ($context['has_context'] ?? false) {
@@ -146,6 +155,30 @@ final class ContextBuilder implements AnonymousContextBuilderInterface
         }
 
         return $jsonLdContext;
+    }
+
+    private function getAnonymousResourceIdentifier($object, $class, array $context = [])
+    {
+        if (isset($context['iri'])) {
+            return $context['iri'];
+        }
+
+        // Non-resource may have no identifiers in which case we will generate one
+        try {
+            $identifiers = $this->identifiersExtractor->getIdentifiersFromResourceClass($class);
+            $values = [];
+            foreach ($identifiers as $identifier) {
+                if (!is_scalar($value = $this->propertyAccessor->getValue($object, $identifier))) {
+                    throw new RuntimeException('Anonymous identifiers value must be scalar.');
+                }
+
+                $values[$identifier] = $value;
+            }
+
+            return '_:'.(\count($values) > 1 ? CompositeIdentifierParser::stringify($values) : current($values));
+        } catch (RuntimeException $e) {
+            return '_:'.(\function_exists('spl_object_id') ? spl_object_id($object) : spl_object_hash($object));
+        }
     }
 
     private function getResourceContextWithShortname(string $resourceClass, int $referenceType, string $shortName): array

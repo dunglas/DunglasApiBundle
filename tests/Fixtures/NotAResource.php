@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace ApiPlatform\Core\Tests\Fixtures;
 
+use ApiPlatform\Core\Annotation\ApiProperty;
 use Symfony\Component\Serializer\Annotation\Groups;
 
 /**
@@ -22,6 +23,11 @@ use Symfony\Component\Serializer\Annotation\Groups;
  */
 class NotAResource
 {
+    /**
+     * @ApiProperty(identifier=true)
+     */
+    private $id;
+
     /**
      * @Groups("contain_non_resource")
      */
@@ -36,6 +42,11 @@ class NotAResource
     {
         $this->foo = $foo;
         $this->bar = $bar;
+    }
+
+    public function getId(): string
+    {
+        return md5($this->foo.$this->bar);
     }
 
     public function getFoo()

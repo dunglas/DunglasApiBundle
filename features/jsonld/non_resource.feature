@@ -12,7 +12,7 @@ Feature: JSON-LD non-resource handling
     Then the response status code should be 200
     And the response should be in JSON
     And the header "Content-Type" should be equal to "application/ld+json; charset=utf-8"
-    And the JSON should be a superset of:
+    And the JSON should be equal to:
     """
     {
       "@context": "/contexts/ContainNonResource",
@@ -26,12 +26,14 @@ Feature: JSON-LD non-resource handling
         "nested": null,
         "notAResource": {
           "@type": "NotAResource",
+          "@id": "_:7e075feb68a66b8e398bd5ec1ac0bf90",
           "foo": "f2",
           "bar": "b2"
         }
       },
       "notAResource": {
         "@type": "NotAResource",
+        "@id": "_:82a2e6df651246c369ba0176220d8102",
         "foo": "f1",
         "bar": "b1"
       }
