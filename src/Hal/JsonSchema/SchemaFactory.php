@@ -14,7 +14,6 @@ declare(strict_types=1);
 namespace ApiPlatform\Core\Hal\JsonSchema;
 
 use ApiPlatform\Core\JsonSchema\Schema;
-use ApiPlatform\Core\JsonSchema\SchemaFactory as BaseSchemaFactory;
 use ApiPlatform\Core\JsonSchema\SchemaFactoryInterface;
 
 /**
@@ -132,6 +131,4 @@ final class SchemaFactory implements SchemaFactoryInterface
     {
         $this->schemaFactory->addDistinctFormat($format);
     }
-
-
 }

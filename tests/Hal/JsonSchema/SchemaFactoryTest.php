@@ -15,9 +15,9 @@ namespace ApiPlatform\Core\Tests\Hal\JsonSchema;
 
 use ApiPlatform\Core\Api\OperationType;
 use ApiPlatform\Core\Hal\JsonSchema\SchemaFactory;
+use ApiPlatform\Core\Hydra\JsonSchema\SchemaFactory as HydraSchemaFactory;
 use ApiPlatform\Core\JsonSchema\Schema;
 use ApiPlatform\Core\JsonSchema\SchemaFactory as BaseSchemaFactory;
-use ApiPlatform\Core\Hydra\JsonSchema\SchemaFactory as HydraSchemaFactory;
 use ApiPlatform\Core\JsonSchema\TypeFactoryInterface;
 use ApiPlatform\Core\Metadata\Property\Factory\PropertyMetadataFactoryInterface;
 use ApiPlatform\Core\Metadata\Property\Factory\PropertyNameCollectionFactoryInterface;
@@ -92,9 +92,9 @@ class SchemaFactoryTest extends TestCase
                             'href' => [
                                 'type' => 'string',
                                 'format' => 'iri-reference',
-                            ]
-                        ]
-                    ]
+                            ],
+                        ],
+                    ],
                 ],
             ],
             $properties['_links']

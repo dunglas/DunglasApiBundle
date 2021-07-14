@@ -15,7 +15,6 @@ namespace ApiPlatform\Core\Hydra\JsonSchema;
 
 use ApiPlatform\Core\JsonLd\ContextBuilder;
 use ApiPlatform\Core\JsonSchema\Schema;
-use ApiPlatform\Core\JsonSchema\SchemaFactory as BaseSchemaFactory;
 use ApiPlatform\Core\JsonSchema\SchemaFactoryInterface;
 
 /**
