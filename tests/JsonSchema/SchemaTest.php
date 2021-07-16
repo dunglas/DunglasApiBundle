@@ -73,11 +73,11 @@ class SchemaTest extends TestCase
         if (Schema::VERSION_OPENAPI === $version) {
             $this->assertArrayHasKey('schemas', $schema['components']);
         } else {
-            $this->assertArrayHasKey('definitions', $schema);
+            $this->assertArrayHasKey('definitions', $schema->getArrayCopy(true));
         }
 
         $definitions = $schema->getDefinitions();
-        $this->assertArrayHasKey('foo', $definitions);
+        $this->assertArrayHasKey('foo', $definitions->getArrayCopy());
 
         $this->assertArrayNotHasKey('definitions', $schema->getArrayCopy(false));
         $this->assertArrayNotHasKey('components', $schema->getArrayCopy(false));
