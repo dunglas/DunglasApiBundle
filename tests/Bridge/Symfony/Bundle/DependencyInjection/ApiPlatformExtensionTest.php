@@ -88,6 +88,7 @@ use ApiPlatform\Core\Serializer\Filter\PropertyFilter;
 use ApiPlatform\Core\Serializer\SerializerContextBuilderInterface;
 use ApiPlatform\Core\Tests\Fixtures\TestBundle\TestBundle;
 use ApiPlatform\Core\Tests\ProphecyTrait;
+use ApiPlatform\Core\Translation\ResourceTranslatorInterface;
 use ApiPlatform\Core\Validator\ValidatorInterface;
 use Doctrine\Bundle\DoctrineBundle\DoctrineBundle;
 use Doctrine\ORM\OptimisticLockException;
@@ -1394,6 +1395,7 @@ class ApiPlatformExtensionTest extends TestCase
             'api_platform.problem.normalizer.error',
             'api_platform.swagger.action.ui',
             'api_platform.swagger.listener.ui',
+            'api_platform.translation.resource_translator',
             'api_platform.validator',
             'api_platform.validator.query_parameter_validator',
         ];
@@ -1496,6 +1498,7 @@ class ApiPlatformExtensionTest extends TestCase
             GraphQlSerializerContextBuilderInterface::class => 'api_platform.graphql.serializer.context_builder',
             TypeFactoryInterface::class => 'api_platform.json_schema.type_factory',
             SchemaFactoryInterface::class => 'api_platform.json_schema.schema_factory',
+            ResourceTranslatorInterface::class => 'api_platform.translation.resource_translator',
         ];
 
         if (\in_array('odm', $doctrineIntegrationsToLoad, true)) {

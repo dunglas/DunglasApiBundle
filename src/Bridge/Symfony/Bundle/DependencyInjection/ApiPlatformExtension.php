@@ -120,6 +120,7 @@ final class ApiPlatformExtension extends Extension implements PrependExtensionIn
         $this->registerDoctrineOrmConfiguration($container, $config, $loader);
         $this->registerDoctrineMongoDbOdmConfiguration($container, $config, $loader);
         $this->registerHttpCacheConfiguration($container, $config, $loader);
+        $this->registerTranslationConfiguration($loader);
         $this->registerValidatorConfiguration($container, $config, $loader);
         $this->registerDataCollectorConfiguration($container, $config, $loader);
         $this->registerMercureConfiguration($container, $config, $loader);
@@ -614,6 +615,11 @@ final class ApiPlatformExtension extends Extension implements PrependExtensionIn
         }
 
         return $formats;
+    }
+
+    private function registerTranslationConfiguration(XmlFileLoader $loader): void
+    {
+        $loader->load('translation.xml');
     }
 
     private function registerValidatorConfiguration(ContainerBuilder $container, array $config, XmlFileLoader $loader): void

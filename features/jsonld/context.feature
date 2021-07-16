@@ -86,3 +86,23 @@ Feature: JSON-LD contexts generation
           }
       }
       """
+
+  Scenario: The JSON-LD context of a translatable resource contains the language
+    When I send a "GET" request to "/dummy_translatables"
+    Then the response status code should be 200
+    And the response should be in JSON
+    And the header "Content-Type" should be equal to "application/ld+json; charset=utf-8"
+    And the JSON node "@context.@language" should be equal to "en"
+    When I send a "GET" request to "/dummy_translatables/fr"
+    Then the response status code should be 200
+    And the response should be in JSON
+    And the header "Content-Type" should be equal to "application/ld+json; charset=utf-8"
+    And the JSON node "@context.@language" should be equal to "fr"
+
+  Scenario: The JSON-LD context of a translatable resource with all its translations uses the language map
+    When I send a "GET" request to "/dummy_translatables?allTranslations=true"
+    Then the response status code should be 200
+    And the response should be in JSON
+    And the header "Content-Type" should be equal to "application/ld+json; charset=utf-8"
+    And the JSON node "@context.name.@container" should be equal to "@language"
+    And the JSON node "@context.description.@container" should be equal to "@language"

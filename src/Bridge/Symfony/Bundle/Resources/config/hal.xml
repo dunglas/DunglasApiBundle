@@ -42,6 +42,7 @@
             <argument type="tagged" tag="api_platform.data_transformer" on-invalid="ignore" />
             <argument type="service" id="api_platform.metadata.resource.metadata_factory" on-invalid="ignore" />
             <argument type="service" id="api_platform.security.resource_access_checker" on-invalid="ignore" />
+            <argument type="service" id="api_platform.translation.resource_translator" on-invalid="ignore" />
 
             <!-- Run before serializer.normalizer.json_serializable -->
             <tag name="serializer.normalizer" priority="-890" />

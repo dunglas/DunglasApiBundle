@@ -15,6 +15,7 @@ namespace ApiPlatform\Core\GraphQl\Serializer;
 
 use ApiPlatform\Core\Metadata\Resource\Factory\ResourceMetadataFactoryInterface;
 use ApiPlatform\Core\Metadata\Resource\ResourceMetadata;
+use ApiPlatform\Core\Translation\ResourceTranslatorInterface;
 use GraphQL\Type\Definition\ResolveInfo;
 use Symfony\Component\Serializer\NameConverter\AdvancedNameConverterInterface;
 use Symfony\Component\Serializer\NameConverter\NameConverterInterface;
@@ -30,11 +31,13 @@ final class SerializerContextBuilder implements SerializerContextBuilderInterfac
 {
     private $resourceMetadataFactory;
     private $nameConverter;
+    private $resourceTranslator;
 
-    public function __construct(ResourceMetadataFactoryInterface $resourceMetadataFactory, ?NameConverterInterface $nameConverter)
+    public function __construct(ResourceMetadataFactoryInterface $resourceMetadataFactory, ?NameConverterInterface $nameConverter, ResourceTranslatorInterface $resourceTranslator = null)
     {
         $this->resourceMetadataFactory = $resourceMetadataFactory;
         $this->nameConverter = $nameConverter;
+        $this->resourceTranslator = $resourceTranslator;
     }
 
     public function create(?string $resourceClass, string $operationName, array $resolverContext, bool $normalization): array
@@ -53,6 +56,10 @@ final class SerializerContextBuilder implements SerializerContextBuilderInterfac
         if ($resourceMetadata) {
             $context['input'] = $resourceMetadata->getGraphqlAttribute($operationName, 'input', null, true);
             $context['output'] = $resourceMetadata->getGraphqlAttribute($operationName, 'output', null, true);
+
+            if ($this->resourceTranslator) {
+                $context['all_translations_enabled'] = $this->resourceTranslator->isAllTranslationsEnabled($resourceClass, $resolverContext['args']);
+            }
 
             $key = $normalization ? 'normalization_context' : 'denormalization_context';
             $context = array_merge($resourceMetadata->getGraphqlAttribute($operationName, $key, [], true), $context);

@@ -25,8 +25,13 @@ use ApiPlatform\Core\Metadata\Resource\ResourceMetadata;
 use ApiPlatform\Core\Metadata\Resource\ResourceNameCollection;
 use ApiPlatform\Core\Tests\Fixtures\TestBundle\Dto\OutputDto;
 use ApiPlatform\Core\Tests\Fixtures\TestBundle\Entity\Dummy;
+use ApiPlatform\Core\Tests\Fixtures\TestBundle\Entity\DummyTranslatable;
 use ApiPlatform\Core\Tests\ProphecyTrait;
+use ApiPlatform\Core\Translation\ResourceTranslator;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\RequestStack;
+use Symfony\Component\PropertyAccess\PropertyAccess;
 use Symfony\Component\PropertyInfo\Type;
 
 /**
@@ -149,6 +154,54 @@ class ContextBuilderTest extends TestCase
         ];
 
         $this->assertEquals($expected, $contextBuilder->getResourceContext($this->entityClass));
+    }
+
+    public function testResourceContextWithLanguage()
+    {
+        $resourceClass = DummyTranslatable::class;
+
+        $this->resourceMetadataFactoryProphecy->create($resourceClass)->willReturn(new ResourceMetadata('DummyTranslatable'));
+        $this->propertyNameCollectionFactoryProphecy->create($resourceClass)->willReturn(new PropertyNameCollection([]));
+        $requestStack = new RequestStack();
+        $request = new Request();
+        $request->setLocale('fr');
+        $requestStack->push($request);
+        $resourceTranslator = new ResourceTranslator($requestStack, PropertyAccess::createPropertyAccessor(), $this->resourceMetadataFactoryProphecy->reveal());
+
+        $contextBuilder = new ContextBuilder($this->resourceNameCollectionFactoryProphecy->reveal(), $this->resourceMetadataFactoryProphecy->reveal(), $this->propertyNameCollectionFactoryProphecy->reveal(), $this->propertyMetadataFactoryProphecy->reveal(), $this->urlGeneratorProphecy->reveal(), null, $resourceTranslator);
+
+        $expected = [
+            '@vocab' => '#',
+            'hydra' => 'http://www.w3.org/ns/hydra/core#',
+            '@language' => 'fr',
+        ];
+
+        $this->assertEquals($expected, $contextBuilder->getResourceContext($resourceClass));
+    }
+
+    public function testResourceContextWithAllTranslationsEnabled()
+    {
+        $resourceClass = DummyTranslatable::class;
+
+        $resourceMetadata = new ResourceMetadata('DummyTranslatable');
+        $resourceMetadata = $resourceMetadata->withAttributes(['translation' => ['allTranslationsEnabled' => true]]);
+        $this->resourceMetadataFactoryProphecy->create($resourceClass)->willReturn($resourceMetadata);
+        $this->propertyNameCollectionFactoryProphecy->create($resourceClass)->willReturn(new PropertyNameCollection(['dummyPropertyA']));
+        $this->propertyMetadataFactoryProphecy->create($resourceClass, 'dummyPropertyA')->willReturn(new PropertyMetadata(new Type(Type::BUILTIN_TYPE_STRING), 'Dummy property A', true, true, true));
+        $resourceTranslator = new ResourceTranslator(new RequestStack(), PropertyAccess::createPropertyAccessor(), $this->resourceMetadataFactoryProphecy->reveal());
+
+        $contextBuilder = new ContextBuilder($this->resourceNameCollectionFactoryProphecy->reveal(), $this->resourceMetadataFactoryProphecy->reveal(), $this->propertyNameCollectionFactoryProphecy->reveal(), $this->propertyMetadataFactoryProphecy->reveal(), $this->urlGeneratorProphecy->reveal(), null, $resourceTranslator);
+
+        $expected = [
+            '@vocab' => '#',
+            'hydra' => 'http://www.w3.org/ns/hydra/core#',
+            'dummyPropertyA' => [
+                '@container' => '@language',
+                '@id' => 'DummyTranslatable/dummyPropertyA',
+            ],
+        ];
+
+        $this->assertEquals($expected, $contextBuilder->getResourceContext($resourceClass));
     }
 
     public function testAnonymousResourceContext()
