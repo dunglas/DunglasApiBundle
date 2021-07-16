@@ -44,12 +44,15 @@ final class SchemaFactory implements SchemaFactoryInterface
         ],
     ];
 
-    private $schemaFactory;
+    private SchemaFactoryInterface $schemaFactory;
 
     public function __construct(SchemaFactoryInterface $schemaFactory)
     {
         $this->schemaFactory = $schemaFactory;
-        $schemaFactory->addDistinctFormat('jsonhal');
+
+        if (method_exists($schemaFactory, 'addDistinctFormat')) {
+            $schemaFactory->addDistinctFormat('jsonhal');
+        }
     }
 
     /**
@@ -125,10 +128,5 @@ final class SchemaFactory implements SchemaFactoryInterface
         }
 
         return $schema;
-    }
-
-    public function addDistinctFormat(string $format): void
-    {
-        $this->schemaFactory->addDistinctFormat($format);
     }
 }
