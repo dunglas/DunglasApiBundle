@@ -11,7 +11,7 @@
 
 declare(strict_types=1);
 
-namespace ApiPlatform\Core\Api;
+namespace ApiPlatform\Api;
 
 /**
  * UrlGeneratorInterface is the interface that all URL generator classes must implement.

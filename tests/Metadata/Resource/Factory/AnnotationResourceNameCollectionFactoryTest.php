@@ -19,12 +19,14 @@ use ApiPlatform\Core\Metadata\Resource\ResourceNameCollection;
 use ApiPlatform\Core\Tests\ProphecyTrait;
 use Doctrine\Common\Annotations\Reader;
 use PHPUnit\Framework\TestCase;
+use Symfony\Bridge\PhpUnit\ExpectDeprecationTrait;
 
 /**
  * @author Antoine Bluchet <soyuka@gmail.com>
  */
 class AnnotationResourceNameCollectionFactoryTest extends TestCase
 {
+    use ExpectDeprecationTrait;
     use ProphecyTrait;
 
     public function testCreate()
@@ -39,9 +41,6 @@ class AnnotationResourceNameCollectionFactoryTest extends TestCase
         $this->assertEquals(new ResourceNameCollection(['foo', 'bar']), $metadata->create());
     }
 
-    /**
-     * @requires PHP 8.0
-     */
     public function testCreateAttribute()
     {
         $decorated = $this->prophesize(ResourceNameCollectionFactoryInterface::class);

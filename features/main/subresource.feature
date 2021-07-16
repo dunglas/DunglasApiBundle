@@ -24,13 +24,16 @@ Feature: Subresource support
     }
     """
 
+  @createSchema
   Scenario: Get a non existent subresource
     Given there is an answer "42" to the question "What's the answer to the Ultimate Question of Life, the Universe and Everything?"
     When I send a "GET" request to "/questions/999999/answer"
     Then the response status code should be 404
     And the response should be in JSON
 
+  @createSchema
   Scenario: Get recursive subresource one to many relation
+    Given there is an answer "42" to the question "What's the answer to the Ultimate Question of Life, the Universe and Everything?"
     When I send a "GET" request to "/questions/1/answer/related_questions"
     And the response status code should be 200
     And the response should be in JSON
@@ -53,6 +56,7 @@ Feature: Subresource support
     }
     """
 
+  @createSchema
   Scenario: Get the subresource relation collection
     Given there is a dummy object with a fourth level relation
     When I send a "GET" request to "/dummies/1/related_dummies"
@@ -142,7 +146,9 @@ Feature: Subresource support
     }
     """
 
+  @createSchema
   Scenario: Get filtered embedded relation subresource collection
+    Given there is a dummy object with a fourth level relation
     When I send a "GET" request to "/dummies/1/related_dummies?name=Hello"
     Then the response status code should be 200
     And the response should be in JSON

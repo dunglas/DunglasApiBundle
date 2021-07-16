@@ -11,12 +11,14 @@
 
 declare(strict_types=1);
 
-namespace ApiPlatform\Core\Api;
+namespace ApiPlatform\Api;
 
+use ApiPlatform\Core\Api\ResourceClassResolverInterface;
 use ApiPlatform\Core\Exception\RuntimeException;
 use ApiPlatform\Core\Metadata\Property\Factory\PropertyMetadataFactoryInterface;
 use ApiPlatform\Core\Metadata\Property\Factory\PropertyNameCollectionFactoryInterface;
 use ApiPlatform\Core\Util\ResourceClassInfoTrait;
+use ApiPlatform\Metadata\Resource\Factory\ResourceMetadataCollectionFactoryInterface;
 use Symfony\Component\PropertyAccess\PropertyAccess;
 use Symfony\Component\PropertyAccess\PropertyAccessorInterface;
 
@@ -29,88 +31,83 @@ final class IdentifiersExtractor implements IdentifiersExtractorInterface
 {
     use ResourceClassInfoTrait;
 
-    private $propertyNameCollectionFactory;
-    private $propertyMetadataFactory;
-    private $propertyAccessor;
-
-    public function __construct(PropertyNameCollectionFactoryInterface $propertyNameCollectionFactory, PropertyMetadataFactoryInterface $propertyMetadataFactory, PropertyAccessorInterface $propertyAccessor = null, ResourceClassResolverInterface $resourceClassResolver = null)
+    public function __construct(ResourceMetadataCollectionFactoryInterface $resourceMetadataFactory, ResourceClassResolverInterface $resourceClassResolver, PropertyNameCollectionFactoryInterface $propertyNameCollectionFactory, PropertyMetadataFactoryInterface $propertyMetadataFactory, PropertyAccessorInterface $propertyAccessor = null)
     {
+        $this->resourceMetadataFactory = $resourceMetadataFactory;
+        $this->resourceClassResolver = $resourceClassResolver;
         $this->propertyNameCollectionFactory = $propertyNameCollectionFactory;
         $this->propertyMetadataFactory = $propertyMetadataFactory;
         $this->propertyAccessor = $propertyAccessor ?? PropertyAccess::createPropertyAccessor();
-        $this->resourceClassResolver = $resourceClassResolver;
-
-        if (null === $this->resourceClassResolver) {
-            @trigger_error(sprintf('Not injecting %s in the IdentifiersExtractor might introduce cache issues with object identifiers.', ResourceClassResolverInterface::class), \E_USER_DEPRECATED);
-        }
     }
 
     /**
      * {@inheritdoc}
+     *
+     * TODO: 3.0 identifiers should be stringable?
      */
-    public function getIdentifiersFromResourceClass(string $resourceClass): array
-    {
-        $identifiers = [];
-        foreach ($properties = $this->propertyNameCollectionFactory->create($resourceClass) as $property) {
-            if ($this->propertyMetadataFactory->create($resourceClass, $property)->isIdentifier() ?? false) {
-                $identifiers[] = $property;
-            }
-        }
-
-        if (!$identifiers) {
-            if (\in_array('id', iterator_to_array($properties), true)) {
-                return ['id'];
-            }
-
-            throw new RuntimeException(sprintf('No identifier defined in "%s". You should add #[\ApiPlatform\Core\Annotation\ApiProperty(identifier: true)]" on the property identifying the resource."', $resourceClass));
-        }
-
-        return $identifiers;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getIdentifiersFromItem($item): array
+    public function getIdentifiersFromItem($item, string $operationName = null, array $context = []): array
     {
         $identifiers = [];
         $resourceClass = $this->getResourceClass($item, true);
-        $identifierProperties = $this->getIdentifiersFromResourceClass($resourceClass);
+        $operation = $context['operation'] ?? $this->resourceMetadataFactory->create($resourceClass)->getOperation($operationName);
 
-        foreach ($this->propertyNameCollectionFactory->create($resourceClass) as $propertyName) {
-            if (!\in_array($propertyName, $identifierProperties, true)) {
+        foreach ($operation->getIdentifiers() as $parameterName => [$class, $property]) {
+            $identifierValue = $this->resolveIdentifierValue($item, $class, $property);
+
+            if (!$identifierValue) {
+                throw new RuntimeException('No identifier value found, did you forgot to persist the entity?');
+            }
+
+            if (is_scalar($identifierValue) || $identifierValue instanceof \Stringable) {
+                $identifiers[$parameterName] = (string) $identifierValue;
                 continue;
             }
 
-            $propertyMetadata = $this->propertyMetadataFactory->create($resourceClass, $propertyName);
-            $identifier = $identifiers[$propertyName] = $this->propertyAccessor->getValue($item, $propertyName);
+            // we could recurse to find correct identifiers until there it is a scalar but this is not really supported and adds a lot of complexity
+            // instead we're deprecating this behavior in favor of something that can be transformed to a string
+            if ($this->isResourceClass($relatedResourceClass = $this->getObjectClass($identifierValue))) {
+                trigger_deprecation('api-platform/core', '2.7', 'Using a resource class as identifier is deprecated, please make this identifier Stringable');
+                $relatedOperation = $this->resourceMetadataFactory->create($relatedResourceClass)->getOperation();
+                $relatedIdentifiers = $relatedOperation->getIdentifiers();
+                if (1 === \count($relatedIdentifiers)) {
+                    $identifierValue = $this->resolveIdentifierValue($identifierValue, $relatedResourceClass, current($relatedIdentifiers)[1]);
 
-            if (!\is_object($identifier)) {
-                continue;
-            }
-
-            if (null === $relatedResourceClass = $this->getResourceClass($identifier)) {
-                continue;
-            }
-
-            $relatedItem = $identifier;
-            unset($identifiers[$propertyName]);
-            foreach ($this->propertyNameCollectionFactory->create($relatedResourceClass) as $relatedPropertyName) {
-                $propertyMetadata = $this->propertyMetadataFactory->create($relatedResourceClass, $relatedPropertyName);
-                if ($propertyMetadata->isIdentifier()) {
-                    if (isset($identifiers[$propertyName])) {
-                        throw new RuntimeException(sprintf('Composite identifiers not supported in "%s" through relation "%s" of "%s" used as identifier', $relatedResourceClass, $propertyName, $resourceClass));
+                    if (is_scalar($identifierValue) || $identifierValue instanceof \Stringable) {
+                        $identifiers[$parameterName] = (string) $identifierValue;
+                        continue;
                     }
-
-                    $identifiers[$propertyName] = $this->propertyAccessor->getValue($relatedItem, $relatedPropertyName);
                 }
             }
 
-            if (!isset($identifiers[$propertyName])) {
-                throw new RuntimeException(sprintf('No identifier found in "%s" through relation "%s" of "%s" used as identifier', $relatedResourceClass, $propertyName, $resourceClass));
-            }
+            throw new RuntimeException(sprintf('We were not able to resolve the identifier matching parameter "%s".', $parameterName));
         }
 
         return $identifiers;
+    }
+
+    private function resolveIdentifierValue($item, string $class, string $property)
+    {
+        if ($item instanceof $class) {
+            return $this->propertyAccessor->getValue($item, $property);
+        }
+
+        $resourceClass = $this->getResourceClass($item, true);
+        foreach ($this->propertyNameCollectionFactory->create($resourceClass) as $propertyName) {
+            $propertyMetadata = $this->propertyMetadataFactory->create($resourceClass, $propertyName);
+            $type = $propertyMetadata->getType();
+            if (!$type) {
+                continue;
+            }
+
+            if ($type->getClassName() === $class) {
+                return $this->propertyAccessor->getValue($item, "$propertyName.$property");
+            }
+
+            if ($type->isCollection() && $type->getCollectionValueType()->getClassName() === $class) {
+                return $this->propertyAccessor->getValue($item, sprintf('%s[0].%s', $propertyName, $property));
+            }
+        }
+
+        throw new \RuntimeException('Not able to retrieve identifiers.');
     }
 }

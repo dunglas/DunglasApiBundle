@@ -33,6 +33,9 @@ class ApiPropertyTest extends TestCase
         $property->iri = 'http://example.com/prop';
         $property->identifier = true;
         $property->attributes = ['foo' => 'bar'];
+        $property->example = 'foo';
+        $property->schema = ['foo'];
+        $property->builtinTypes = ['foo', 'bar'];
 
         $this->assertEquals('description', $property->description);
         $this->assertTrue($property->readable);
@@ -43,6 +46,9 @@ class ApiPropertyTest extends TestCase
         $this->assertEquals('http://example.com/prop', $property->iri);
         $this->assertTrue($property->identifier);
         $this->assertEquals(['foo' => 'bar'], $property->attributes);
+        $this->assertEquals('foo', $property->example);
+        $this->assertEquals(['foo'], $property->schema);
+        $this->assertEquals(['foo', 'bar'], $property->builtinTypes);
     }
 
     public function testConstruct()

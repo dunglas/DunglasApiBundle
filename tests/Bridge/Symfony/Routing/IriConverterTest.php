@@ -24,14 +24,19 @@ use ApiPlatform\Core\DataProvider\SubresourceDataProviderInterface;
 use ApiPlatform\Core\Exception\InvalidArgumentException;
 use ApiPlatform\Core\Exception\InvalidIdentifierException;
 use ApiPlatform\Core\Exception\ItemNotFoundException;
+use ApiPlatform\Core\Exception\ResourceClassNotFoundException;
 use ApiPlatform\Core\Identifier\IdentifierConverterInterface;
 use ApiPlatform\Core\Metadata\Property\Factory\PropertyMetadataFactoryInterface;
 use ApiPlatform\Core\Metadata\Property\Factory\PropertyNameCollectionFactoryInterface;
 use ApiPlatform\Core\Metadata\Resource\Factory\ResourceMetadataFactoryInterface;
 use ApiPlatform\Core\Metadata\Resource\ResourceMetadata;
+use ApiPlatform\Core\Metadata\ResourceCollection\Factory\ResourceCollectionMetadataFactoryInterface;
+use ApiPlatform\Core\Metadata\ResourceCollection\ResourceCollection;
 use ApiPlatform\Core\Tests\Fixtures\TestBundle\Entity\Dummy;
 use ApiPlatform\Core\Tests\Fixtures\TestBundle\Entity\RelatedDummy;
 use ApiPlatform\Core\Tests\ProphecyTrait;
+use ApiPlatform\Metadata\Get;
+use ApiPlatform\Metadata\Resource;
 use PHPUnit\Framework\TestCase;
 use Prophecy\Argument;
 use Symfony\Bridge\PhpUnit\ExpectDeprecationTrait;
@@ -186,8 +191,12 @@ class IriConverterTest extends TestCase
         $converter->getIriFromResourceClass(Dummy::class);
     }
 
+    /**
+     * @group legacy
+     */
     public function testGetSubresourceIriFromResourceClass()
     {
+        $this->expectDeprecation('getSubresourceIriFromResourceClass is deprecated since 2.7 and will not be available anymore in 3.0');
         $routeNameResolverProphecy = $this->prophesize(RouteNameResolverInterface::class);
         $routeNameResolverProphecy->getRouteName(Dummy::class, OperationType::SUBRESOURCE, Argument::type('array'))->willReturn('api_dummies_related_dummies_get_subresource');
 
@@ -198,8 +207,12 @@ class IriConverterTest extends TestCase
         $this->assertEquals($converter->getSubresourceIriFromResourceClass(Dummy::class, ['subresource_identifiers' => ['id' => 1], 'subresource_resources' => [RelatedDummy::class => 1]]), '/dummies/1/related_dummies');
     }
 
+    /**
+     * @group legacy
+     */
     public function testNotAbleToGenerateGetSubresourceIriFromResourceClass()
     {
+        $this->expectDeprecation('getSubresourceIriFromResourceClass is deprecated since 2.7 and will not be available anymore in 3.0');
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Unable to generate an IRI for "ApiPlatform\\Core\\Tests\\Fixtures\\TestBundle\\Entity\\Dummy"');
 
@@ -213,8 +226,12 @@ class IriConverterTest extends TestCase
         $converter->getSubresourceIriFromResourceClass(Dummy::class, ['subresource_identifiers' => ['id' => 1], 'subresource_resources' => [RelatedDummy::class => 1]]);
     }
 
+    /**
+     * @group legacy
+     */
     public function testGetItemIriFromResourceClass()
     {
+        $this->expectDeprecation('getItemIriFromResourceClass is deprecated since 2.7 and will not be available anymore in 3.0');
         $routeNameResolverProphecy = $this->prophesize(RouteNameResolverInterface::class);
         $routeNameResolverProphecy->getRouteName(Dummy::class, OperationType::ITEM)->willReturn('api_dummies_get_item');
 
@@ -228,8 +245,12 @@ class IriConverterTest extends TestCase
         $this->assertEquals($converter->getItemIriFromResourceClass(Dummy::class, ['id' => 1]), '/dummies/1');
     }
 
+    /**
+     * @group legacy
+     */
     public function testGetItemIriFromResourceClassAbsoluteUrl()
     {
+        $this->expectDeprecation('getItemIriFromResourceClass is deprecated since 2.7 and will not be available anymore in 3.0');
         $routeNameResolverProphecy = $this->prophesize(RouteNameResolverInterface::class);
         $routeNameResolverProphecy->getRouteName(Dummy::class, OperationType::ITEM)->willReturn('api_dummies_get_item');
 
@@ -243,8 +264,12 @@ class IriConverterTest extends TestCase
         $this->assertEquals($converter->getItemIriFromResourceClass(Dummy::class, ['id' => 1]), 'http://example.com/dummies/1');
     }
 
+    /**
+     * @group legacy
+     */
     public function testNotAbleToGenerateGetItemIriFromResourceClass()
     {
+        $this->expectDeprecation('getItemIriFromResourceClass is deprecated since 2.7 and will not be available anymore in 3.0');
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Unable to generate an IRI for "ApiPlatform\\Core\\Tests\\Fixtures\\TestBundle\\Entity\\Dummy"');
 
@@ -381,6 +406,67 @@ class IriConverterTest extends TestCase
         );
     }
 
+    /**
+     * @requires PHP 8.0
+     */
+    public function testGetIriFromResourceClassWithResourceCollection()
+    {
+        $routeNameResolverProphecy = $this->prophesize(RouteNameResolverInterface::class);
+        $routeNameResolverProphecy->getRouteName(Dummy::class, OperationType::COLLECTION)->willReturn('dummies')->shouldNotBeCalled();
+
+        $routerProphecy = $this->prophesize(RouterInterface::class);
+        $routerProphecy->generate('operationName', [], UrlGeneratorInterface::ABS_PATH)->willReturn('/dummies');
+        $resourceCollectionMetadataFactory = $this->prophesize(ResourceCollectionMetadataFactoryInterface::class);
+        $resource = new Resource();
+        $itemOperation = new Get();
+        $itemOperation->identifiers = ['id'];
+        $resource->operations = ['itemOperationName' => $itemOperation, 'operationName' => new Get()];
+        $resourceCollectionMetadataFactory->create(Dummy::class)->willReturn(new ResourceCollection([$resource]));
+
+        $converter = $this->getIriConverter($routerProphecy, $routeNameResolverProphecy, null, null, null, $resourceCollectionMetadataFactory->reveal());
+        $this->assertEquals($converter->getIriFromResourceClass(Dummy::class, UrlGeneratorInterface::ABS_PATH, ['operation_name' => 'operationName']), '/dummies');
+    }
+
+    /**
+     * @requires PHP 8.0
+     */
+    public function testGetIriFromResourceClassWithResourceCollectionNotFound()
+    {
+        $routeNameResolverProphecy = $this->prophesize(RouteNameResolverInterface::class);
+        $routeNameResolverProphecy->getRouteName(Dummy::class, OperationType::COLLECTION)->willReturn('dummies');
+
+        $routerProphecy = $this->prophesize(RouterInterface::class);
+        $routerProphecy->generate('dummies', [], UrlGeneratorInterface::ABS_PATH)->willReturn('/dummies');
+        $resourceCollectionMetadataFactory = $this->prophesize(ResourceCollectionMetadataFactoryInterface::class);
+        $resourceCollectionMetadataFactory->create(Dummy::class)->willThrow(ResourceClassNotFoundException::class);
+
+        $converter = $this->getIriConverter($routerProphecy, $routeNameResolverProphecy, null, null, null, $resourceCollectionMetadataFactory->reveal());
+        $this->assertEquals($converter->getIriFromResourceClass(Dummy::class, UrlGeneratorInterface::ABS_PATH, ['operation_name' => null]), '/dummies');
+    }
+
+    /**
+     * @requires PHP 8.0
+     */
+    public function testGetIriFromItem()
+    {
+        $routeNameResolverProphecy = $this->prophesize(RouteNameResolverInterface::class);
+        $routeNameResolverProphecy->getRouteName(Dummy::class, OperationType::COLLECTION)->willReturn('dummies')->shouldNotBeCalled();
+
+        $routerProphecy = $this->prophesize(RouterInterface::class);
+        $routerProphecy->generate('itemOperationName', ['id' => 1], UrlGeneratorInterface::ABS_PATH)->willReturn('/dummies/1');
+        $resourceCollectionMetadataFactory = $this->prophesize(ResourceCollectionMetadataFactoryInterface::class);
+        $resource = new Resource();
+        $itemOperation = new Get();
+        $itemOperation->identifiers = ['id'];
+        $resource->operations = ['itemOperationName' => $itemOperation, 'operationName' => new Get()];
+        $resourceCollectionMetadataFactory->create(Dummy::class)->willReturn(new ResourceCollection([$resource]));
+
+        $converter = $this->getIriConverter($routerProphecy, $routeNameResolverProphecy, null, null, null, $resourceCollectionMetadataFactory->reveal());
+        $dummy = new Dummy();
+        $dummy->setId(1);
+        $this->assertEquals($converter->getIriFromItem($dummy, UrlGeneratorInterface::ABS_PATH, ['identifiers' => ['id' => [Dummy::class, 'id']], 'operation_name' => 'itemOperationName']), '/dummies/1');
+    }
+
     private function getResourceClassResolver()
     {
         $resourceClassResolver = $this->prophesize(ResourceClassResolverInterface::class);
@@ -388,10 +474,14 @@ class IriConverterTest extends TestCase
             return true;
         });
 
+        $resourceClassResolver->getResourceClass(Argument::cetera())->will(function ($args) {
+            return \get_class($args[0]);
+        });
+
         return $resourceClassResolver->reveal();
     }
 
-    private function getIriConverter($routerProphecy = null, $routeNameResolverProphecy = null, $itemDataProviderProphecy = null, $subresourceDataProviderProphecy = null, $identifierConverterProphecy = null, ResourceMetadataFactoryInterface $resourceMetadataFactory = null)
+    private function getIriConverter($routerProphecy = null, $routeNameResolverProphecy = null, $itemDataProviderProphecy = null, $subresourceDataProviderProphecy = null, $identifierConverterProphecy = null, $resourceMetadataFactory = null)
     {
         $propertyNameCollectionFactoryProphecy = $this->prophesize(PropertyNameCollectionFactoryInterface::class);
         $propertyMetadataFactoryProphecy = $this->prophesize(PropertyMetadataFactoryInterface::class);

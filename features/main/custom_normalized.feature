@@ -30,6 +30,7 @@ Feature: Using custom normalized entity
     }
     """
 
+  @createSchema
   Scenario: Create a resource with a custom normalized dummy
     When I add "Content-Type" header equal to "application/json"
     When I add "Accept" header equal to "application/json"
@@ -53,7 +54,26 @@ Feature: Using custom normalized entity
     }
     """
 
+  @createSchema
   Scenario: Create a resource with a custom normalized dummy and an id
+    When I add "Content-Type" header equal to "application/json"
+    And I send a "POST" request to "/custom_normalized_dummies" with body:
+    """
+    {
+      "name": "My Dummy",
+      "alias": "My alias"
+    }
+    """
+    Then the response status code should be 201
+    When I add "Content-Type" header equal to "application/json"
+    When I add "Accept" header equal to "application/json"
+    And I send a "POST" request to "/related_normalized_dummies" with body:
+    """
+    {
+      "name": "My Dummy"
+    }
+    """
+    Then the response status code should be 201
     When I add "Content-Type" header equal to "application/json"
     When I add "Accept" header equal to "application/json"
     And I send a "PUT" request to "/related_normalized_dummies/1" with body:
@@ -85,7 +105,6 @@ Feature: Using custom normalized entity
          }]
     }
     """
-
 
   Scenario: Get a custom normalized dummy resource
     When I send a "GET" request to "/custom_normalized_dummies/1"

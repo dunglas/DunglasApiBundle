@@ -27,6 +27,7 @@ use ApiPlatform\Core\Tests\Fixtures\DummyResourceInterface;
 use ApiPlatform\Core\Tests\Fixtures\TestBundle\Entity\Dummy;
 use ApiPlatform\Core\Tests\Fixtures\TestBundle\Entity\FileConfigDummy;
 use ApiPlatform\Core\Tests\ProphecyTrait;
+use Symfony\Bridge\PhpUnit\ExpectDeprecationTrait;
 
 /**
  * Tests extractor resource metadata factory.
@@ -35,6 +36,7 @@ use ApiPlatform\Core\Tests\ProphecyTrait;
  */
 class ExtractorResourceMetadataFactoryTest extends FileConfigurationMetadataFactoryProvider
 {
+    use ExpectDeprecationTrait;
     use ProphecyTrait;
 
     /**

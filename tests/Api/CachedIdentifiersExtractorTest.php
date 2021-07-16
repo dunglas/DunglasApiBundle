@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace ApiPlatform\Core\Tests\Api;
 
 use ApiPlatform\Core\Api\CachedIdentifiersExtractor;
+use ApiPlatform\Core\Api\ContextAwareIdentifiersExtractorInterface;
 use ApiPlatform\Core\Api\IdentifiersExtractorInterface;
 use ApiPlatform\Core\Api\ResourceClassResolverInterface;
 use ApiPlatform\Core\Tests\Fixtures\TestBundle\Doctrine\Generator\Uuid;
@@ -59,7 +60,7 @@ class CachedIdentifiersExtractorTest extends TestCase
         $cacheItemPoolProphecy->save($cacheItemProphecy)->shouldBeCalled();
 
         $decoratedProphecy = $this->prophesize(IdentifiersExtractorInterface::class);
-        $decoratedProphecy->getIdentifiersFromItem($item)->willReturn($expected);
+        $decoratedProphecy->getIdentifiersFromItem($item, Argument::any())->willReturn($expected);
 
         $resourceClassResolverProphecy = $this->prophesize(ResourceClassResolverInterface::class);
         $resourceClassResolverProphecy->getResourceClass($item)->willReturn(Dummy::class);
@@ -164,7 +165,7 @@ class CachedIdentifiersExtractorTest extends TestCase
         $cacheItemPoolProphecy->getItem($relatedCacheItemKey)->willReturn($relatedCacheItemProphecy);
 
         $decoratedProphecy = $this->prophesize(IdentifiersExtractorInterface::class);
-        $decoratedProphecy->getIdentifiersFromItem($item)->willReturn($expected);
+        $decoratedProphecy->getIdentifiersFromItem($item, Argument::any())->willReturn($expected);
 
         $resourceClassResolverProphecy = $this->prophesize(ResourceClassResolverInterface::class);
         $resourceClassResolverProphecy->getResourceClass($item)->willReturn(Dummy::class);
@@ -200,7 +201,7 @@ class CachedIdentifiersExtractorTest extends TestCase
         $cacheItemPoolProphecy->getItem($relatedCacheItemKey)->willReturn($relatedCacheItemProphecy);
 
         $decoratedProphecy = $this->prophesize(IdentifiersExtractorInterface::class);
-        $decoratedProphecy->getIdentifiersFromItem($item)->shouldNotBeCalled();
+        $decoratedProphecy->getIdentifiersFromItem($item, Argument::any())->shouldNotBeCalled();
 
         $resourceClassResolverProphecy = $this->prophesize(ResourceClassResolverInterface::class);
         $resourceClassResolverProphecy->getResourceClass($item)->willReturn(Dummy::class);
@@ -225,5 +226,34 @@ class CachedIdentifiersExtractorTest extends TestCase
         $decoration = $this->prophesize(IdentifiersExtractorInterface::class);
 
         new CachedIdentifiersExtractor($cacheItemPool->reveal(), $decoration->reveal(), null);
+    }
+
+    /**
+     * @dataProvider itemProvider
+     */
+    public function testPassWithContext($item, $expected)
+    {
+        $cacheItemKey = 'iri_identifiers'.md5(Dummy::class);
+
+        $cacheItemProphecy = $this->prophesize(CacheItemInterface::class);
+        $cacheItemProphecy->isHit()->willReturn(false);
+        $cacheItemProphecy->set(['id'])->shouldNotBeCalled();
+
+        $cacheItemPoolProphecy = $this->prophesize(CacheItemPoolInterface::class);
+        $cacheItemPoolProphecy->getItem($cacheItemKey)->willReturn($cacheItemProphecy);
+        $cacheItemPoolProphecy->save($cacheItemProphecy)->shouldNotBeCalled();
+
+        $context = ['identifiers' => ['id' => [Dummy::class, 'id']]];
+        $decoratedProphecy = $this->prophesize(ContextAwareIdentifiersExtractorInterface::class);
+        $decoratedProphecy->getIdentifiersFromItem($item, $context)->willReturn($expected);
+
+        $resourceClassResolverProphecy = $this->prophesize(ResourceClassResolverInterface::class);
+        $resourceClassResolverProphecy->getResourceClass($item)->willReturn(Dummy::class);
+        $resourceClassResolverProphecy->isResourceClass(Dummy::class)->willReturn(true);
+        $resourceClassResolverProphecy->isResourceClass(Uuid::class)->willReturn(false);
+
+        $identifiersExtractor = new CachedIdentifiersExtractor($cacheItemPoolProphecy->reveal(), $decoratedProphecy->reveal(), null, $resourceClassResolverProphecy->reveal());
+
+        $this->assertSame($expected, $identifiersExtractor->getIdentifiersFromItem($item, $context));
     }
 }

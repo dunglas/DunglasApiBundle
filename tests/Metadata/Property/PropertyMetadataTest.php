@@ -90,6 +90,18 @@ class PropertyMetadataTest extends TestCase
         $newMetadata = $metadata->withExample('foobarexample');
         $this->assertNotSame($metadata, $newMetadata);
         $this->assertEquals('foobarexample', $newMetadata->getExample());
+
+        $newMetadata = $metadata->withSchema(['foobarexample']);
+        $this->assertNotSame($metadata, $newMetadata);
+        $this->assertEquals(['foobarexample'], $newMetadata->getSchema());
+
+        $newMetadata = $metadata->withBuiltinTypes(['footype', 'bartype']);
+        $this->assertNotSame($metadata, $newMetadata);
+        $this->assertEquals(['footype', 'bartype'], $newMetadata->getBuiltinTypes());
+
+        $newMetadata = $metadata->withTypes(['foo', 'bar']);
+        $this->assertNotSame($metadata, $newMetadata);
+        $this->assertEquals(['foo', 'bar'], $newMetadata->getTypes());
     }
 
     public function testShouldReturnRequiredFalseWhenRequiredTrueIsSetButMaskedByWritableFalse()
