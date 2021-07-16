@@ -44,7 +44,7 @@ final class SchemaFactory implements SchemaFactoryInterface
         ],
     ];
 
-    private SchemaFactoryInterface $schemaFactory;
+    private $schemaFactory;
 
     public function __construct(SchemaFactoryInterface $schemaFactory)
     {
