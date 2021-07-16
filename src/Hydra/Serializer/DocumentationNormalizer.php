@@ -201,9 +201,13 @@ final class DocumentationNormalizer implements NormalizerInterface, CacheableSup
         /** @var string[] $classes */
         $classes = array_keys($classes);
         $properties = [];
+        $options = [];
+        if ($validationGroups = $this->getValidationGroups($resourceMetadata)) {
+            $options['validation_groups'] = $validationGroups;
+        }
         foreach ($classes as $class) {
             foreach ($this->propertyNameCollectionFactory->create($class, $this->getPropertyNameCollectionFactoryContext($resourceMetadata)) as $propertyName) {
-                $propertyMetadata = $this->propertyMetadataFactory->create($class, $propertyName);
+                $propertyMetadata = $this->propertyMetadataFactory->create($class, $propertyName, $options);
                 if (true === $propertyMetadata->isIdentifier() && false === $propertyMetadata->isWritable()) {
                     continue;
                 }
@@ -217,6 +221,17 @@ final class DocumentationNormalizer implements NormalizerInterface, CacheableSup
         }
 
         return $properties;
+    }
+
+    private function getValidationGroups(ResourceMetadata $resourceMetadata): array
+    {
+        foreach ($resourceMetadata->getCollectionOperations() as $operationName => $operation) {
+            if ('POST' === $operation['method']) {
+                return \is_array($validationGroups = $resourceMetadata->getTypedOperationAttribute(OperationType::COLLECTION, $operationName, 'validation_groups', [])) ? $validationGroups : [];
+            }
+        }
+
+        return [];
     }
 
     /**
