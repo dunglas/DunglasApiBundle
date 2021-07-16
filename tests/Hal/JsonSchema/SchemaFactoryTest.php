@@ -77,7 +77,6 @@ class SchemaFactoryTest extends TestCase
         $definitions = $resultSchema->getDefinitions();
         $rootDefinitionKey = $resultSchema->getRootDefinitionKey();
 
-        $this->assertEquals(str_replace('\\', '.', Dummy::class).'.jsonhal', $rootDefinitionKey);
         $this->assertArrayHasKey($rootDefinitionKey, $definitions);
         $this->assertArrayHasKey('properties', $definitions[$rootDefinitionKey]);
         $properties = $resultSchema['definitions'][$rootDefinitionKey]['properties'];
