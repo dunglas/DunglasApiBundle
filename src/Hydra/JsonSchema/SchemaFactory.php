@@ -64,9 +64,7 @@ final class SchemaFactory implements SchemaFactoryInterface
     {
         $this->schemaFactory = $schemaFactory;
 
-        if ($schemaFactory instanceof BaseSchemaFactory) {
-            $schemaFactory->addDistinctFormat('jsonld');
-        }
+        $this->addDistinctFormat('jsonld');
     }
 
     /**
@@ -172,5 +170,12 @@ final class SchemaFactory implements SchemaFactoryInterface
         }
 
         return $schema;
+    }
+
+    public function addDistinctFormat(string $format): void
+    {
+        if ($this->schemaFactory instanceof BaseSchemaFactory) {
+            $this->schemaFactory->addDistinctFormat($format);
+        }
     }
 }

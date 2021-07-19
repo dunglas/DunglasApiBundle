@@ -71,7 +71,7 @@ class SchemaFactoryTest extends TestCase
         $definitions = $resultSchema->getDefinitions();
 
         $this->assertSame((new \ReflectionClass(NotAResource::class))->getShortName(), $rootDefinitionKey);
-        $this->assertArrayHasKey($rootDefinitionKey, $definitions);
+        $this->assertArrayHasKey($rootDefinitionKey, $definitions->getArrayCopy());
         $this->assertArrayHasKey('type', $definitions[$rootDefinitionKey]);
         $this->assertSame('object', $definitions[$rootDefinitionKey]['type']);
         $this->assertArrayNotHasKey('additionalProperties', $definitions[$rootDefinitionKey]);
@@ -144,7 +144,7 @@ class SchemaFactoryTest extends TestCase
         $definitions = $resultSchema->getDefinitions();
 
         $this->assertSame((new \ReflectionClass(OverriddenOperationDummy::class))->getShortName().'-'.$serializerGroup, $rootDefinitionKey);
-        $this->assertArrayHasKey($rootDefinitionKey, $definitions);
+        $this->assertArrayHasKey($rootDefinitionKey, $definitions->getArrayCopy());
         $this->assertArrayHasKey('type', $definitions[$rootDefinitionKey]);
         $this->assertSame('object', $definitions[$rootDefinitionKey]['type']);
         $this->assertFalse($definitions[$rootDefinitionKey]['additionalProperties']);
